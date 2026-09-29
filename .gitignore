@@ -1,0 +1,62 @@
+# macOS
+.DS_Store
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Local IDE/editor state
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Logs / runtime state
+*.log
+*.pid
+
+# DUTchMate local runtime data
+.dutchmate/
+
+# Local coding-agent installations and runtime state
+/.agents/skills/brainstorming/
+/.agents/skills/systematic-debugging/
+/.agents/skills/test-driven-development/
+/.agents/skills/verification-before-completion/
+/.codex/skills/graphify/
+/.codex/hooks.json
+/.superpowers/
+
+# Graphify generated graph/output
+graphify-out/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
