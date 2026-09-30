@@ -1,5 +1,6 @@
 """Domain-model contracts for the continuous RX evidence foundation."""
 
+from dataclasses import FrozenInstanceError
 from typing import cast
 
 import pytest
@@ -7,8 +8,10 @@ import pytest
 from dutchmate_core.model import (
     BackendCapabilities,
     BackendCapability,
+    BackendConnectionProvenance,
     BackendObservationTimestamp,
     BackendObservationTimestampDomain,
+    ConnectionDescriptor,
     ConnectionInstanceId,
     IncomparableTimestampsError,
     ObserverLossCause,
@@ -19,6 +22,7 @@ from dutchmate_core.model import (
     TimestampMeaning,
     TimestampObserver,
     TimestampUnit,
+    UpstreamLossNotObservable,
     compare_backend_observation_timestamps,
 )
 
@@ -68,6 +72,24 @@ def test_capabilities_are_an_immutable_reported_set() -> None:
     assert isinstance(hash(capabilities), int)
     assert capabilities.supports(BackendCapability.UART_RECEIVE)
     assert not capabilities.supports(BackendCapability.UART_SEND)
+
+
+def test_connection_descriptor_stores_immutable_opaque_provenance() -> None:
+    connection_provenance = BackendConnectionProvenance()
+    descriptor = ConnectionDescriptor(
+        capabilities=BackendCapabilities(
+            frozenset({BackendCapability.UART_RECEIVE})
+        ),
+        backend_observation_timestamp_domain=_timestamp_domain(),
+        loss_observability=UpstreamLossNotObservable(),
+        connection_provenance=connection_provenance,
+    )
+
+    assert descriptor.connection_provenance is connection_provenance
+    with pytest.raises(FrozenInstanceError):
+        descriptor.connection_provenance = (  # type: ignore[misc]
+            BackendConnectionProvenance()
+        )
 
 
 @pytest.mark.parametrize("identifier_type", [ConnectionInstanceId, SegmentId])

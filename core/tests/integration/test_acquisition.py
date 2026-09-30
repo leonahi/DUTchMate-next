@@ -14,6 +14,7 @@ from dutchmate_core.acquisition import (
 from dutchmate_core.evidence import InMemoryEvidenceRecorder
 from dutchmate_core.model import (
     BackendCapabilities,
+    BackendConnectionProvenance,
     BackendObservationTimestampDomain,
     InvalidTimestampOriginResetError,
     ObserverLossCause,
@@ -298,6 +299,56 @@ async def test_segment_preserves_reported_loss_observability_without_lossless_cl
         == fixture.connection.descriptor.loss_observability
     )
     assert not any(isinstance(record, ObserverLossEvidence) for record in records)
+
+
+@pytest.mark.parametrize("fixture_factory", BACKEND_FIXTURE_FACTORIES)
+@pytest.mark.asyncio
+async def test_segment_copies_connection_provenance_without_backend_branching(
+    fixture_factory: BackendFixtureFactory,
+) -> None:
+    fixture = fixture_factory()
+    recorder = InMemoryEvidenceRecorder()
+    acquisition = Acquisition(recorder)
+    await acquisition.start(fixture.backend)
+
+    await fixture.connection.disconnect()
+    await _wait_for_termination(acquisition)
+
+    segment_start = recorder.snapshot()[0]
+    assert isinstance(segment_start, SegmentStartedEvidence)
+    assert (
+        segment_start.provenance.connection_provenance
+        is fixture.connection.descriptor.connection_provenance
+    )
+
+
+@pytest.mark.asyncio
+async def test_origin_reset_preserves_the_same_opaque_connection_provenance() -> None:
+    connection_provenance = BackendConnectionProvenance()
+    initial_domain = _host_timestamp_domain("host-domain-1", "host-origin-1")
+    reset_domain = _host_timestamp_domain("host-domain-2", "host-origin-2")
+    connection = BasicShapedBackendConnection(
+        timestamp_domain=initial_domain,
+        connection_provenance=connection_provenance,
+    )
+    recorder = InMemoryEvidenceRecorder()
+    acquisition = Acquisition(recorder)
+    await acquisition.start(BasicShapedBackend(connection))
+
+    await connection.reset_timestamp_origin(reset_domain)
+    await connection.disconnect()
+    await _wait_for_termination(acquisition)
+
+    segment_starts = [
+        record
+        for record in recorder.snapshot()
+        if isinstance(record, SegmentStartedEvidence)
+    ]
+    assert len(segment_starts) == 2
+    assert all(
+        record.provenance.connection_provenance is connection_provenance
+        for record in segment_starts
+    )
 
 
 @pytest.mark.asyncio

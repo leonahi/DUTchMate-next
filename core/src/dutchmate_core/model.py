@@ -180,10 +180,16 @@ class ObserverReportsUartLoss(LossObservability):
 
 
 @dataclass(frozen=True, slots=True)
+class BackendConnectionProvenance:
+    """Opaque immutable connection details supplied by a backend adapter."""
+
+
+@dataclass(frozen=True, slots=True)
 class ConnectionDescriptor:
     capabilities: BackendCapabilities
     backend_observation_timestamp_domain: BackendObservationTimestampDomain
     loss_observability: LossObservability
+    connection_provenance: BackendConnectionProvenance
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,6 +250,7 @@ class SegmentProvenance:
     capabilities: BackendCapabilities
     backend_observation_timestamp_domain: BackendObservationTimestampDomain
     loss_observability: LossObservability
+    connection_provenance: BackendConnectionProvenance
 
 
 class SegmentEndReason(StrEnum):

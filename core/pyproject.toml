@@ -7,7 +7,9 @@ name = "dutchmate-core"
 version = "0.0.0"
 description = "Deterministic core contracts for DUTchMate"
 requires-python = ">=3.14,<3.15"
-dependencies = []
+dependencies = [
+    "pyserial==3.5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dutchmate_core"]

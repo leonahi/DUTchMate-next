@@ -138,6 +138,7 @@ class Acquisition:
                     descriptor.backend_observation_timestamp_domain
                 ),
                 loss_observability=descriptor.loss_observability,
+                connection_provenance=descriptor.connection_provenance,
             )
             try:
                 await self._recorder.append(PendingSegmentStartedEvidence(provenance))
@@ -316,6 +317,7 @@ class Acquisition:
                         capabilities=provenance.capabilities,
                         backend_observation_timestamp_domain=new_domain,
                         loss_observability=provenance.loss_observability,
+                        connection_provenance=provenance.connection_provenance,
                     )
                     try:
                         await self._append_segment_end(

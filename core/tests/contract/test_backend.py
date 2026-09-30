@@ -1,10 +1,38 @@
 """Contract tests for one owned normalized backend connection."""
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
-from dutchmate_core.backend import EventStreamAlreadyConsumedError
+from dutchmate_core.backend import (
+    BackendFailureKind,
+    BackendFailureOperation,
+    EventStreamAlreadyConsumedError,
+    NormalizedBackendFailure,
+)
 from dutchmate_core.model import Disconnected, RxBytesObserved
 from tests.fakes import BACKEND_FIXTURE_FACTORIES, BackendFixtureFactory
+
+
+@pytest.mark.parametrize("operation", list(BackendFailureOperation))
+@pytest.mark.parametrize("kind", list(BackendFailureKind))
+def test_normalized_backend_failure_has_only_stable_boundary_values(
+    operation: BackendFailureOperation,
+    kind: BackendFailureKind,
+) -> None:
+    failure = NormalizedBackendFailure(
+        operation=operation,
+        kind=kind,
+        detail="diagnostic only",
+    )
+
+    assert failure.operation is operation
+    assert failure.kind is kind
+    assert failure.detail == "diagnostic only"
+    assert not hasattr(failure, "serial_exception")
+    assert not hasattr(failure, "serial_handle")
+    with pytest.raises(FrozenInstanceError):
+        failure.kind = BackendFailureKind.IO_FAILURE  # type: ignore[misc]
 
 
 @pytest.mark.parametrize("fixture_factory", BACKEND_FIXTURE_FACTORIES)

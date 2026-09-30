@@ -12,6 +12,7 @@ from dutchmate_core.evidence import (
 from dutchmate_core.model import (
     BackendCapabilities,
     BackendCapability,
+    BackendConnectionProvenance,
     BackendEvent,
     BackendObservationTimestamp,
     BackendObservationTimestampDomain,
@@ -47,6 +48,7 @@ class BasicShapedBackendConnection:
         timestamp_domain: BackendObservationTimestampDomain | None = None,
         capabilities: BackendCapabilities | None = None,
         loss_observability: LossObservability | None = None,
+        connection_provenance: BackendConnectionProvenance | None = None,
     ) -> None:
         initial_timestamp_domain = timestamp_domain or (
             BackendObservationTimestampDomain(
@@ -62,6 +64,9 @@ class BasicShapedBackendConnection:
             or BackendCapabilities(frozenset({BackendCapability.UART_RECEIVE})),
             backend_observation_timestamp_domain=initial_timestamp_domain,
             loss_observability=loss_observability or UpstreamLossNotObservable(),
+            connection_provenance=(
+                connection_provenance or BackendConnectionProvenance()
+            ),
         )
         self._current_timestamp_domain = initial_timestamp_domain
         self._events: asyncio.Queue[BackendEvent | _EndOfStream] = asyncio.Queue()

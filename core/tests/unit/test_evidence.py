@@ -15,6 +15,7 @@ from dutchmate_core.evidence import (
 from dutchmate_core.model import (
     BackendCapabilities,
     BackendCapability,
+    BackendConnectionProvenance,
     BackendObservationTimestamp,
     BackendObservationTimestampDomain,
     ConnectionInstanceId,
@@ -43,6 +44,7 @@ def _provenance() -> SegmentProvenance:
             origin_id="host-process-1",
         ),
         loss_observability=UpstreamLossNotObservable(),
+        connection_provenance=BackendConnectionProvenance(),
     )
 
 
