@@ -3,6 +3,151 @@
 Completed slice records are kept newest first. Current status and next work live
 only in `docs/development_status.md`.
 
+## 2026-10-01 — Feature 003 Durable Evidence Journal Complete (T001–T030)
+
+Completed the feature-003 implementation and completion documentation for one
+SQLite-backed durable session journal. The delivered software provides
+immutable finite session policy, generic opaque provenance envelopes, canonical
+exact-byte evidence storage, serialized durable append and reopen, rolling
+bounded retention with a coalesced marker, stable reference resolution, bounded
+fixed-snapshot raw pages, and fail-closed compatibility/corruption handling.
+SQLite connections remain confined to their journal-owned single worker and
+shared acquisition depends only on the backend-neutral recorder contract.
+
+The accepted durability guarantee is intentionally limited to clean reopen and
+tested software process-crash recovery under committed SQLite transactions.
+Exactly-once retry after commit-before-return ambiguity, arbitrary power-loss or
+lying flush hardware, and filesystem, media, directory, backup, or live-copy
+survival are explicitly not guaranteed.
+
+T028's final review found one lifecycle defect: cancellation of create/open
+after worker submission could discard a successful bootstrap result without
+closing its SQLite connection. A parametrized RED regression reproduced both
+paths. The correction waits for the bootstrap worker, recovers a successful
+result, closes the connection on that same owning worker, and then propagates
+cancellation. The focused regression passed 2 tests, journal contract/recovery
+passed 78 tests, the complete feature-003 group passed 137 tests, and the full
+repository passed 347 tests with no failures. Ruff, mypy, all three Import
+Linter contracts, and `git diff --check` passed in the T030 software validation.
+
+Final pre-commit review found one further boundedness defect: corrupt persisted
+sequence metadata could make open validation materialize an enormous expected
+range before reporting corruption. A focused RED regression intercepted the
+attempt at the signed-64-bit terminal value. Validation now compares row count
+and contiguous sequence values without allocating from the persisted span; the
+regression is GREEN. This is a fail-closed corruption correction only and adds
+no persistence framework, migration, repair, or delivery behavior. The
+corrected final candidate passed 348 tests with no failures or skips; Ruff,
+mypy, all three Import Linter contracts, and `git diff --check` passed.
+
+Graphify's structural-change criteria were evaluated. The one earlier
+feature-003 incremental update already captured the new SQLite adapter and
+shared provenance interface (1,426 nodes, 3,039 edges, 78 communities); T028's
+localized private helper and regression test did not require another update.
+No physical hardware was enumerated, opened, accessed, modified, or validated,
+and no power-loss acceptance was performed.
+
+## 2026-10-01 — Feature 003 Fail-Closed Open Validation (T026)
+
+Made the T025 compatibility/corruption matrix GREEN with a bounded SQLite
+adapter correction. Open now forces rollback-journal processing before
+application validation, classifies stored decode failures as open failures,
+maps malformed persisted invariants to corrupt-journal outcomes, and proves a
+validated connection writable with a rolled-back no-op update before applying
+the physical page ceiling. Supported generic envelopes still round-trip unknown
+backend provenance kind/schema values opaquely, while SQLite operational errors
+retain their normalized operational classifications. No migration, repair,
+salvage, delivery behavior, or physical hardware work was added. The complete
+feature-003 group passed 135 tests and the full repository passed 345 tests.
+
+## 2026-10-01 — Feature 003 Compatibility/Corruption RED Matrix (T025)
+
+Added 15 software-only contract cases for incompatible application, store,
+record, and generic provenance-envelope versions; opaque unknown backend
+provenance; missing schema objects; malformed metadata/payload invariants;
+aggregate/sequence corruption; failed integrity checks; locked/read-only opens;
+source preservation; and the rollback-recovery-before-validation exception.
+The focused selection produced the intended 8 failures and 7 passing controls.
+All 120 earlier feature-003 tests remain GREEN. No production code or physical
+hardware was touched.
+
+## 2026-10-01 — Feature 003 Pagination Validation Gate (T024)
+
+Completed the software-only validation checkpoint before compatibility and
+corruption work. The exact quickstart retention/reference/retrieval selection
+passed 40 tests; the complete durable-journal model, codec, contract, recovery,
+and acquisition-integration group passed 120 tests; and feature-001 evidence
+ordering and timestamp regressions passed 64 tests. The full repository passed
+330 tests. Ruff, mypy, all three Import Linter contracts, and
+`git diff --check` passed. No defect was found and no production or test code
+changed. No physical hardware was accessed.
+
+## 2026-10-01 — Feature 003 Stable Pagination Continuation (T023)
+
+Completed fixed-snapshot continuation and explicit between-page expiry for the
+bounded raw evidence journal. Continuations now preserve the first page's
+exclusive snapshot boundary, exclude later appends, report a newly expired
+cursor-to-low-water interval with the current coalesced retention marker, and
+resume retained sequence-key retrieval without changing T022's page bounds or
+whole-record behavior. Both remaining T021 RED cases pass. No external cursor
+encoding, delivery schema, or physical hardware behavior was added.
+
+## 2026-10-01 — Feature 003 Bounded Raw Retrieval (T022)
+
+Implemented policy-capped, whole-record raw evidence pages ordered by durable
+sequence, with charged-byte accounting, oversized-next-record reporting, and
+typed keyset continuation cursors. Retrieval values now live in the planned
+backend-neutral `evidence.py` contract; SQLite remains confined to its adapter
+and journal worker. T020's nine pagination cases pass. Five T021 cursor,
+lock-release, and cancellation cases pass; fixed-snapshot continuation and
+between-page expiry remain intentionally RED for T023. No physical hardware
+was accessed.
+
+## 2026-09-30 — Feature 003 Durable Journal Foundation (T001–T005)
+
+Completed the software-only durable value, codec, and SQLite bootstrap
+foundation. No physical device was enumerated, opened, modified, or validated.
+
+### Delivered
+
+- Added immutable session identity, finite session policy with independent
+  retrieval ceilings, signed-64-bit persisted counter/sequence validation,
+  stable references, retention endpoints, retrieval values, and normalized
+  journal failures.
+- Added generic provenance envelope version 1 with opaque backend kind/schema
+  version and scalar-only sorted fields. Basic serial owns its flattened
+  mapping; unknown conforming backend values remain opaque and round-trip.
+- Added strict canonical JSON metadata codecs for all four current evidence
+  variants, exact RX BLOB handling, and deterministic logical byte charge.
+- Added one-session SQLite schema-version-1 create/open/close with `DUTM`
+  application identity, 4096-byte pages, rollback `DELETE`, `synchronous=FULL`,
+  persisted immutable policy, and no added runtime dependency.
+- Persisted `max_database_pages` as policy while reapplying and verifying
+  `max_page_count` on every writable create/open. Oversized databases and an
+  unavailable requested ceiling have distinct normalized failures.
+- Confined each connection's creation, use, and close to one journal-owned
+  `ThreadPoolExecutor(max_workers=1)` worker with one asyncio serialization
+  gate. Shared Core still does not import adapters; no architecture exemption
+  was added.
+- Stopped before durable append, retention, retrieval, recovery subprocesses,
+  cancellation/commit ambiguity, delivery surfaces, or hardware behavior.
+
+### Validation Evidence
+
+- RED: the initial model suite failed 45 tests for missing feature-003 values;
+  the codec/bootstrap suite failed 14 tests for absent codecs/journal behavior;
+  two follow-up invariant tests failed before their minimal validations were
+  added.
+- `uv run --frozen pytest core/tests/unit/test_evidence_journal_model.py
+  core/tests/unit/test_sqlite_evidence_codec.py
+  core/tests/contract/test_sqlite_evidence_journal.py -q`: 62 passed.
+- `uv run --frozen ruff check .`: passed.
+- `uv run --frozen mypy .`: no issues in 25 source files.
+- `uv run --frozen lint-imports`: 3 contracts kept, 0 broken.
+- `uv run --frozen pytest`: 272 passed, 0 skipped, 0 failed.
+- `git diff --check`: passed.
+- No physical hardware was touched.
+
 ## 2026-09-30 — Feature 002 Basic Serial Backend Adapter (T001–T020)
 
 Completed the first production Basic serial adapter behind feature 001's

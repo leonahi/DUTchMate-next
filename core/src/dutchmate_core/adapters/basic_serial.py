@@ -26,7 +26,9 @@ from dutchmate_core.model import (
     BackendObservationTimestamp,
     BackendObservationTimestampDomain,
     ConnectionDescriptor,
+    ConnectionProvenanceSnapshot,
     Disconnected,
+    ProvenanceField,
     RxBytesObserved,
     TimestampMeaning,
     TimestampObserver,
@@ -248,6 +250,57 @@ class BasicSerialConnectionProvenance(BackendConnectionProvenance):
             raise TypeError("serial-open line provenance must be validated")
         if not isinstance(self.exclusivity, SerialExclusivityProvenance):
             raise TypeError("serial exclusivity provenance must be validated")
+
+    def to_snapshot(self) -> ConnectionProvenanceSnapshot:
+        """Flatten Basic provenance into the generic durable envelope."""
+
+        requested = self.requested_configuration
+        effective = self.effective_configuration
+        line = self.open_line_provenance
+        exclusivity = self.exclusivity
+        values: dict[str, None | bool | int | str] = {
+            "effective_baud_rate": effective.baud_rate,
+            "effective_data_bits": int(effective.data_bits),
+            "effective_hardware_flow_control": effective.hardware_flow_control,
+            "effective_parity": effective.parity.value,
+            "effective_software_flow_control": effective.software_flow_control,
+            "effective_stop_bits": effective.stop_bits.value,
+            "electrical_verification": line.electrical_verification.value,
+            "exclusivity_mechanism": exclusivity.mechanism.value,
+            "exclusivity_requested": exclusivity.requested,
+            "exclusivity_result": exclusivity.result.value,
+            "library_reported_dtr": (
+                line.library_reported_dtr.value
+                if line.library_reported_dtr is not None
+                else None
+            ),
+            "library_reported_rts": (
+                line.library_reported_rts.value
+                if line.library_reported_rts is not None
+                else None
+            ),
+            "open_apply_strategy": line.apply_strategy.value,
+            "open_transition_guarantee": line.transition_guarantee.value,
+            "opened_device_name": self.opened_device_name,
+            "requested_baud_rate": requested.baud_rate,
+            "requested_data_bits": int(requested.data_bits),
+            "requested_dtr": line.requested.dtr.value,
+            "requested_hardware_flow_control": requested.hardware_flow_control,
+            "requested_parity": requested.parity.value,
+            "requested_rts": line.requested.rts.value,
+            "requested_software_flow_control": requested.software_flow_control,
+            "requested_stop_bits": requested.stop_bits.value,
+            "selected_device_name": self.selected_device_name,
+        }
+        return ConnectionProvenanceSnapshot(
+            envelope_version=1,
+            backend_kind="basic_serial",
+            backend_schema_version=1,
+            fields=tuple(
+                ProvenanceField(name, value)
+                for name, value in sorted(values.items())
+            ),
+        )
 
 
 class _SerialHandle(Protocol):

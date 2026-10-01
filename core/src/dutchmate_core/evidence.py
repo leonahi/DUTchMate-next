@@ -2,21 +2,189 @@
 
 import asyncio
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol
 
 from dutchmate_core.model import (
     BackendObservationTimestamp,
     ConnectionInstanceId,
+    EvidenceRangeReference,
     EvidenceRecord,
     ObserverLossCause,
     ObserverLossEvidence,
+    RetentionMarker,
     RxBytesEvidence,
     SegmentEndedEvidence,
     SegmentEndReason,
     SegmentId,
     SegmentProvenance,
     SegmentStartedEvidence,
+    SequenceRange,
+    SessionId,
+    validate_persisted_counter,
 )
+
+
+class JournalOperation(StrEnum):
+    CREATE = "create"
+    OPEN = "open"
+    CLOSE = "close"
+    ENCODE = "encode"
+    DECODE = "decode"
+    APPEND = "append"
+    RETRIEVE = "retrieve"
+
+
+class JournalFailureKind(StrEnum):
+    INVALID_INPUT = "invalid_input"
+    JOURNAL_EXISTS = "journal_exists"
+    JOURNAL_MISSING = "journal_missing"
+    SESSION_MISMATCH = "session_mismatch"
+    INCOMPATIBLE_APPLICATION = "incompatible_application"
+    INCOMPATIBLE_SCHEMA_VERSION = "incompatible_schema_version"
+    INCOMPATIBLE_RECORD_VERSION = "incompatible_record_version"
+    INCOMPATIBLE_PROVENANCE_ENVELOPE_VERSION = (
+        "incompatible_provenance_envelope_version"
+    )
+    CORRUPT_JOURNAL = "corrupt_journal"
+    INVARIANT_VIOLATION = "invariant_violation"
+    BUSY = "busy"
+    CAPACITY = "capacity"
+    DATABASE_OVER_CEILING = "capacity/database_over_ceiling"
+    PHYSICAL_CEILING_UNAVAILABLE = "capacity/physical_ceiling_unavailable"
+    SEQUENCE_EXHAUSTED = "capacity/sequence_exhausted"
+    COUNTER_EXHAUSTED = "capacity/counter_exhausted"
+    READ_ONLY = "read_only"
+    PERMISSION_DENIED = "permission_denied"
+    IO_FAILURE = "io_failure"
+    CLOSED = "closed"
+
+
+@dataclass(frozen=True, slots=True)
+class JournalFailure(RuntimeError):
+    """Stable journal failure without storage-library exception leakage."""
+
+    operation: JournalOperation
+    kind: JournalFailureKind
+    detail: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.operation, JournalOperation):
+            raise TypeError("journal failure operation must be declared")
+        if not isinstance(self.kind, JournalFailureKind):
+            raise TypeError("journal failure kind must be declared")
+        if self.detail is not None and not isinstance(self.detail, str):
+            raise TypeError("journal failure detail must be text or absent")
+        message = f"{self.operation.value}/{self.kind.value}"
+        if self.detail:
+            message = f"{message}: {self.detail}"
+        RuntimeError.__init__(self, message)
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceCursor:
+    session_id: SessionId
+    range_start_inclusive: int
+    range_end_exclusive: int | None
+    snapshot_end_exclusive: int
+    next_sequence: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.session_id, SessionId):
+            raise TypeError("cursor requires a session ID")
+        validate_persisted_counter(
+            self.range_start_inclusive,
+            name="cursor range start",
+        )
+        validate_persisted_counter(
+            self.snapshot_end_exclusive,
+            name="cursor snapshot end",
+        )
+        validate_persisted_counter(
+            self.next_sequence,
+            name="cursor next sequence",
+        )
+        if self.range_end_exclusive is not None:
+            validate_persisted_counter(
+                self.range_end_exclusive,
+                name="cursor range end",
+            )
+            if self.snapshot_end_exclusive > self.range_end_exclusive:
+                raise ValueError("cursor snapshot exceeds the requested range")
+        if not (
+            self.range_start_inclusive
+            <= self.next_sequence
+            <= self.snapshot_end_exclusive
+        ):
+            raise ValueError("cursor position must remain within its snapshot")
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceRetrievalRequest:
+    reference: SessionId | EvidenceRangeReference
+    max_records: int
+    max_charged_bytes: int
+    cursor: EvidenceCursor | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.reference, (SessionId, EvidenceRangeReference)):
+            raise TypeError("retrieval requires a session or range reference")
+        _validate_positive_persisted_integer(
+            self.max_records,
+            name="max records",
+        )
+        _validate_positive_persisted_integer(
+            self.max_charged_bytes,
+            name="max charged bytes",
+        )
+        if self.cursor is not None and not isinstance(self.cursor, EvidenceCursor):
+            raise TypeError("retrieval cursor must be validated")
+
+
+class EvidencePageOutcome(StrEnum):
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    EXPIRED = "expired"
+    NOT_FOUND = "not_found"
+
+
+@dataclass(frozen=True, slots=True)
+class EvidencePage:
+    records: tuple[EvidenceRecord, ...]
+    snapshot_end_exclusive: int
+    expired_range: SequenceRange | None
+    retention_marker: RetentionMarker | None
+    never_existed_range: SequenceRange | None
+    outcome: EvidencePageOutcome
+    truncated: bool
+    continuation: EvidenceCursor | None
+    charged_bytes: int
+    next_record_required_bytes: int | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.records, tuple):
+            raise TypeError("evidence page records must be a tuple")
+        validate_persisted_counter(
+            self.snapshot_end_exclusive,
+            name="page snapshot end",
+        )
+        if not isinstance(self.outcome, EvidencePageOutcome):
+            raise TypeError("evidence page outcome must be declared")
+        if type(self.truncated) is not bool:
+            raise TypeError("evidence page truncation must be boolean")
+        validate_persisted_counter(self.charged_bytes, name="page charged bytes")
+        if self.next_record_required_bytes is not None:
+            _validate_positive_persisted_integer(
+                self.next_record_required_bytes,
+                name="next record required bytes",
+            )
+
+
+def _validate_positive_persisted_integer(value: int, *, name: str) -> int:
+    validate_persisted_counter(value, name=name)
+    if value == 0:
+        raise ValueError(f"{name} must be positive")
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,8 +230,6 @@ class EvidenceRecorder(Protocol):
     """Atomic append boundary for the active evidence journal."""
 
     async def append(self, draft: PendingEvidenceRecord) -> EvidenceRecord: ...
-
-    def snapshot(self) -> tuple[EvidenceRecord, ...]: ...
 
 
 class InMemoryEvidenceRecorder:

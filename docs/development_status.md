@@ -8,32 +8,41 @@ specifications.
 ## Resume Here
 
 - **Active phase**: Phase 1 — Basic backend through CLI.
-- **Completed milestones**: `001-rx-continuous-evidence` and
-  `002-basic-serial-adapter` are software-complete against their focused
-  specifications.
-- **Most recently completed specification**: `002-basic-serial-adapter`; all
-  defined tasks T001–T020 are complete.
-- **Next action**: Review and commit the accepted feature-002 baseline. The
-  feature-002 task list defines no T021; after the commit, select and specify
-  the next Phase 1 slice before implementing it.
-- **Scope guard**: Do not infer the next product contract or add TX, semantic
-  Control, discovery, reconnect, profile delivery, persistence, service/HTTP,
-  CLI, Enhanced protocol/firmware, or MCP from feature 002.
+- **Completed milestones**: `001-rx-continuous-evidence`,
+  `002-basic-serial-adapter`, and `003-durable-evidence-journal` are
+  software-complete against their focused specifications. Features 001 and 002
+  are committed through `e2cd2cf`; feature 003 completed T001–T030 and its
+  pre-commit review.
+- **Most recently completed specification**:
+  `003-durable-evidence-journal`; all defined tasks T001–T030 are complete.
+- **Next action**: Await explicit selection and specification of the next
+  Phase 1 slice. Do not infer or start it from feature 003.
+- **Scope guard**: Feature 003 is one SQLite-backed durable session journal with
+  bounded rolling retention and raw sequence retrieval. Do not add Profile or
+  run orchestration, service/HTTP, CLI, Monitor/Interact, TX/Control, reconnect,
+  release/reacquire, Enhanced behavior, MCP, or hardware work.
 - **Hardware**: No physical hardware has been accessed or validated. The
   platform/electrical acceptance cases remain opt-in and separately authorized.
-- **Blockers**: None for committing the software-only feature-002 baseline.
-  Python 3.14 remains the declared initial baseline.
+- **Blockers**: The next Phase 1 slice has not been selected; this is an
+  intentional stopping point rather than a feature-003 blocker. Python 3.14
+  remains the declared initial baseline.
 
 ## Repository Baseline
 
-- The accepted committed baseline contains the reproducible agent tooling and
-  completed feature-001 continuous-RX evidence foundation.
+- The accepted committed baseline contains the reproducible agent tooling,
+  completed feature-001 continuous-RX evidence foundation, and completed
+  feature-002 Basic serial adapter through commit `e2cd2cf`.
 - The Python 3.14 uv workspace contains the `dutchmate-core` package and a
   hardware-free test/static-analysis harness.
 - Shared Core provides normalized backend/connection protocols, immutable
   capability and provenance values, exact-byte RX and observer-loss evidence,
   an in-memory append-only journal, and exclusive continuous acquisition with
   explicit segment transitions, teardown ordering, and normalized failures.
+- Feature 003 T001–T030 add immutable durable session/policy/reference values,
+  generic opaque provenance envelope version 1, strict evidence codecs,
+  serialized durable append/reopen, rolling retention and its coalesced marker,
+  stable reference resolution, and bounded fixed-snapshot sequence-key raw
+  retrieval with explicit between-page expiry reporting.
 - Feature 002 adds the first production Basic serial adapter behind that
   normalized boundary. It requires an exact device name, configures a closed
   pySerial handle before one open, reports receive-only capability and opaque
@@ -49,6 +58,37 @@ specifications.
 - The Enhanced-shaped backend remains a minimal test-only neutrality fixture;
   it contains no Enhanced hardware, firmware, USB framing, timing, or helper
   protocol behavior.
+
+## Completed Feature: Durable Evidence Journal
+
+`specs/003-durable-evidence-journal/` is software-complete through T030.
+It provides the model, codec, SQLite bootstrap, durable append/recovery,
+retention, references, bounded fixed-snapshot pagination, fail-closed
+compatibility/corruption handling, quickstart validation, final scope review,
+and completion documentation. Its accepted boundary is:
+
+- one SQLite database per durable session, using Python 3.14's standard-library
+  `sqlite3`, rollback-journal `DELETE` mode, `synchronous=FULL`, strict schema
+  version 1, exact RX BLOBs, and no added runtime dependency;
+- commit-before-acknowledgment with clean-reopen and tested process-crash
+  recovery. Exactly-once retry after commit-before-return ambiguity, arbitrary
+  power-loss or lying flush hardware, and filesystem, media, directory, backup,
+  or live-copy survival are explicitly not guaranteed;
+- authoritative sequence scoped to the immutable session identity and continued
+  after reopen without reuse or retention renumbering;
+- required finite record, byte, per-record, and database-page limits; rolling
+  minimum-prefix eviction; and one bounded coalesced retention marker;
+- stable session-plus-sequence references with explicit retained, expired,
+  partial, and not-found outcomes;
+- raw bounded sequence-key pages over a fixed snapshot upper bound, with typed
+  internal cursors and explicit between-page expiry;
+- normalized versioned backend provenance snapshots so persistence remains
+  backend-neutral and never imports Basic types into shared Core.
+
+Session naming/listing/sealing, numerical product defaults, Profile mapping,
+delivery APIs, annotations, derived representations, operation lookup, repair,
+migrations beyond rejecting non-v1 stores, and all later workflows remain
+deferred.
 
 ## Completed Feature: Basic Serial Backend Adapter
 
@@ -103,9 +143,11 @@ through physical close completion.
   remain hardware acceptance cases rather than validated claims.
 - No serial discovery, automatic device selection, reconnect, or
   release/reacquire workflow.
-- No durable persistence, bounded retention, retrieval, sessions, cursors,
-  annotations, or crash-recovery guarantee; the in-memory journal remains
-  foundation/test infrastructure.
+- Feature 003 has production schema-version-1 append/reopen, rolling retention,
+  stable reference resolution, and bounded whole-record sequence pages with a
+  fixed continuation snapshot and explicit between-page expiry. Compatibility
+  and corruption validation is fail-closed; annotations and broader session/run
+  lifecycle remain deferred.
 - No TX, semantic Control, Monitor, Interact, follow, console, or DUT Profile
   delivery behavior.
 - No service/HTTP, authentication, browser-origin rejection, CLI, MCP, or AI
@@ -114,6 +156,17 @@ through physical close completion.
   behavior, or Enhanced hardware-support claim.
 
 ## Planning Artifacts
+
+Completed feature 003:
+
+- `specs/003-durable-evidence-journal/spec.md`
+- `specs/003-durable-evidence-journal/checklists/requirements.md`
+- `specs/003-durable-evidence-journal/plan.md`
+- `specs/003-durable-evidence-journal/research.md`
+- `specs/003-durable-evidence-journal/data-model.md`
+- `specs/003-durable-evidence-journal/contracts/durable-evidence-journal.md`
+- `specs/003-durable-evidence-journal/quickstart.md`
+- `specs/003-durable-evidence-journal/tasks.md`
 
 Completed feature 002:
 
@@ -139,35 +192,44 @@ Completed feature 001:
 
 ## Blockers and Open Decisions
 
-- No product decision blocks committing feature 002.
+- Numerical product defaults and service/profile path selection remain outside
+  feature 003; journal creation requires explicit finite values. The next
+  focused Phase 1 slice requires explicit selection and specification.
 - Actual glitch behavior, electrical DTR/RTS state, disconnect classification,
   non-standard baud support, RX load behavior, and cancellation/close behavior
   remain OS/driver/adapter-specific hardware acceptance questions. Their cases
   are documented but intentionally unexecuted.
-- The next Phase 1 feature and its concrete contracts have not been selected in
-  this document. Feature 002 defines no T021, so later behavior must begin with
-  an explicitly selected focused slice rather than being inferred here.
+- SQLite rollback-journal process-crash recovery is software-tested. Arbitrary
+  power-loss behavior, storage-device flush honesty, media recovery, and
+  live-file copying are not accepted claims and do not block this slice.
 
 ## Validation Status
 
-- Final feature-002 software validation passes 210 tests with 0 skipped and 0
-  failed. The Basic adapter contract suite passes 56 tests, including the T019
-  FR-024 cancellation-failure regression.
-- `uv run --frozen ruff check .` passes; `uv run --frozen mypy .` reports no
-  issues in 20 source files; `uv run --frozen lint-imports` keeps all 3
-  contracts; and `git diff --check` is clean.
-- Feature-002 model, adapter-contract, integration, safety, and feature-001
-  regression selections are GREEN. Focused searches confine pySerial and
-  Basic-specific types to the adapter boundary and find no enumeration, URL
-  handlers, shared-Core Basic identity branch, second RX path, TX/Control,
-  reconnect, delivery framework, Enhanced implementation, firmware, or MCP.
+- T027 ran every quickstart command, including the full feature-001/002
+  regression groups. T028's post-correction validation then passed the focused
+  create/open cancellation regression (2 tests), journal contract and recovery
+  group (78 tests), complete feature-003 group (137 tests), and full repository
+  regression (347 tests, no failures).
+- The corrected final commit candidate passes 348 tests with no failures or
+  skips. Ruff passes, mypy reports no issues in 27 source files, Import Linter
+  keeps all 3 contracts, and `git diff --check` is clean.
+- T028 found that cancellation of create/open after worker submission could
+  discard a successful bootstrap result without closing its SQLite connection.
+  The cancellation-resistant bootstrap join now retrieves that result, closes
+  the connection on its owning journal worker, and only then propagates
+  cancellation; the parametrized create/open regression is GREEN.
+- Final pre-commit review found that corrupt persisted sequence metadata could
+  cause open validation to materialize an attacker-sized expected range before
+  rejecting it. Validation now checks row count and contiguous sequence values
+  without allocating from the persisted span; the focused RED/GREEN regression
+  covers the signed-64-bit terminal value.
 - The default pytest harness replaces `serial.Serial` with a fail-closed
   sentinel; all normal adapter tests inject fakes. No test enumerated or opened
   a physical serial device.
-- Graphify 0.9.48 received one code-only incremental update because feature 002
-  added an adapter module and changed shared provenance interfaces. It produced
-  1,126 nodes, 2,445 edges, and 70 communities; targeted explanations resolve
-  the Basic adapter and normalized provenance relationships, and the structural
-  diagnostic reports no missing/dangling endpoints, self-loops, duplicate or
-  collapsed edges. Generated output remains ignored local tooling state and is
-  not software acceptance evidence.
+- Graphify 0.9.48 already received the one code-only incremental update required
+  by feature 003's new SQLite adapter and shared provenance interface. It
+  produced 1,426 nodes, 3,039 edges, and 78 communities. T029 did not repeat the
+  update because T028's private helper and regression test were localized and
+  did not add a module, change a shared interface or dependency direction, or
+  perform a significant multi-module refactor. Generated output remains ignored
+  local tooling state and is not software acceptance evidence.
