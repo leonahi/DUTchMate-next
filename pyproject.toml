@@ -70,5 +70,6 @@ source_modules = [
   "dutchmate_core.backend",
   "dutchmate_core.evidence",
   "dutchmate_core.model",
+  "dutchmate_core.profile",
 ]
 forbidden_modules = ["dutchmate_core.adapters"]

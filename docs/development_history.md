@@ -3,6 +3,72 @@
 Completed slice records are kept newest first. Current status and next work live
 only in `docs/development_status.md`.
 
+## 2026-10-03 — Feature 004 Observation-Only DUT Profile Complete (T001–T021)
+
+Completed the feature-004 production implementation and completion
+documentation through T021. The software resolves one explicit caller-supplied
+path containing strict, human-authored UTF-8 TOML with
+`profile_version = 1`. The closed format is bounded to 65,536 serialized bytes;
+resolution reads at most 65,537 bytes and enforces that ceiling on the captured
+bytes before decoding or parsing. It returns immutable backend-neutral values
+for DUT identity/name, explicit Basic selection and exact expected device, UART
+configuration, DTR/RTS open intent, observation policy, and the existing
+feature-003 `SessionPolicy` constructed directly from all six explicit finite
+limits.
+
+Profile v1 requires RX and evidence recording to remain enabled as mandatory
+observation invariants. Its current permissions remain fail closed: UART TX,
+semantic Control, and automatic reconnect are disabled. Opposite values and
+recognized TX, Interact/console, Control, reconnect, or reacquire configuration
+fail explicitly as `unsupported_behavior`; they are never silently ignored.
+The deterministic failure matrix also distinguishes filesystem failures,
+oversized input, invalid syntax, incompatible version, missing/unknown fields,
+invalid values, and unsupported backends without exposing a parser tree,
+partial result, or raw exception cause/context.
+
+The generic Profile module contains no Basic or pySerial implementation type.
+A TOML adapter owns filesystem/format resolution, and a separate pure Basic
+adapter-side translator maps the resolved snapshot field-for-field into the
+existing feature-002 `BasicSerialOpenRequest`. Resolution and translation do
+not enumerate or open a device, construct a backend, start acquisition, create
+a journal/session, or own lifecycle. No registry or generalized Profile manager
+was introduced.
+
+T018's final implementation review found and corrected four bounded defects.
+Recognized Interact/console configuration had been classified as an unknown
+field rather than unsupported behavior; invalid path values could leak a raw
+`ValueError`; normalized failures retained raw exceptions through
+`__context__`; and the quickstart import-search exclusion did not match the
+nested Basic adapter path. Focused RED/GREEN regressions cover the behavioral
+corrections, and the search was corrected and rerun.
+
+Post-correction software validation passed 217 focused feature-004 tests and
+565 full-repository tests with no failures or skips. Ruff passed, mypy reported
+no issues in 33 source files, all 3 Import Linter contracts were kept after
+analyzing 28 files and 56 dependencies, and `git diff --check` passed.
+
+T020 confirmed that the shared Profile module and two adapter modules satisfy
+Graphify's structural-change criteria, then ran the one required code-only
+incremental update with Graphify 0.9.48. The ignored graph now contains 1,928
+nodes, 4,471 edges, and 96 communities. Graphify reported one non-fatal
+zero-node source (`pyproject.toml`) and refreshed 23 community names from their
+hubs after the community set changed. No semantic/LLM extraction ran and no
+generated Graphify output entered version control.
+
+T021's fresh final gate passed: Ruff reported no violations; mypy reported no
+issues in 33 source files; Import Linter kept all 3 contracts after analyzing 28
+files and 56 dependencies; pytest passed 565 tests with 0 skipped and 0 failed;
+and `git diff --check` passed. Feature 004 is software-complete and ready for
+commit. The final pre-commit review corrected stale spec/status completion
+metadata and found no production-contract defect.
+
+Lifecycle and ownership, session orchestration, service/HTTP and authentication,
+CLI, Monitor/follow, TX/Interact/console execution, semantic Control execution,
+reconnect, release/reacquire/handoff, Enhanced, MCP, Profile discovery/default
+paths, Profile writing/migration/overlay/reload, and numerical product defaults
+remain deferred. No physical hardware was enumerated, opened, accessed,
+modified, or validated, and no electrical or platform acceptance is claimed.
+
 ## 2026-10-01 — Feature 003 Durable Evidence Journal Complete (T001–T030)
 
 Completed the feature-003 implementation and completion documentation for one

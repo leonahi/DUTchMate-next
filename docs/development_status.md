@@ -9,29 +9,32 @@ specifications.
 
 - **Active phase**: Phase 1 — Basic backend through CLI.
 - **Completed milestones**: `001-rx-continuous-evidence`,
-  `002-basic-serial-adapter`, and `003-durable-evidence-journal` are
-  software-complete against their focused specifications. Features 001 and 002
-  are committed through `e2cd2cf`; feature 003 completed T001–T030 and its
-  pre-commit review.
-- **Most recently completed specification**:
-  `003-durable-evidence-journal`; all defined tasks T001–T030 are complete.
+  `002-basic-serial-adapter`, `003-durable-evidence-journal`, and
+  `004-dut-profile-policy` are software-complete against their focused
+  specifications. Features 001–003 are committed through `15890e59`; feature
+  004 is included in the current `HEAD`.
+- **Most recently completed specification**: `004-dut-profile-policy`; all
+  defined tasks T001–T021 are complete.
 - **Next action**: Await explicit selection and specification of the next
-  Phase 1 slice. Do not infer or start it from feature 003.
-- **Scope guard**: Feature 003 is one SQLite-backed durable session journal with
-  bounded rolling retention and raw sequence retrieval. Do not add Profile or
-  run orchestration, service/HTTP, CLI, Monitor/Interact, TX/Control, reconnect,
+  coherent Phase 1 slice. Do not infer or start it automatically.
+- **Scope guard**: Feature 004 resolves one explicit, bounded TOML Profile v1
+  into immutable Core values and translates those values into an existing Basic
+  open request without opening hardware. Do not add lifecycle/session
+  orchestration, service/HTTP, CLI, Monitor/Interact, TX/Control, reconnect,
   release/reacquire, Enhanced behavior, MCP, or hardware work.
 - **Hardware**: No physical hardware has been accessed or validated. The
   platform/electrical acceptance cases remain opt-in and separately authorized.
 - **Blockers**: The next Phase 1 slice has not been selected; this is an
-  intentional stopping point rather than a feature-003 blocker. Python 3.14
+  intentional stopping point rather than a feature-004 blocker. Python 3.14
   remains the declared initial baseline.
 
 ## Repository Baseline
 
-- The accepted committed baseline contains the reproducible agent tooling,
-  completed feature-001 continuous-RX evidence foundation, and completed
-  feature-002 Basic serial adapter through commit `e2cd2cf`.
+- The accepted committed baseline contains the reproducible agent tooling and
+  completed features 001, 002, 003, and 004 through the current `HEAD`; feature
+  003 and its predecessors are anchored by commit `15890e59`.
+- Feature 004 adds the observation-only Profile domain, strict TOML-v1
+  resolver, and pure Basic request translator.
 - The Python 3.14 uv workspace contains the `dutchmate-core` package and a
   hardware-free test/static-analysis harness.
 - Shared Core provides normalized backend/connection protocols, immutable
@@ -58,6 +61,41 @@ specifications.
 - The Enhanced-shaped backend remains a minimal test-only neutrality fixture;
   it contains no Enhanced hardware, firmware, USB framing, timing, or helper
   protocol behavior.
+
+## Completed Feature: DUT Profile and Policy
+
+`specs/004-dut-profile-policy/` is software-complete through T021. The delivered
+software-only scope is:
+
+- one explicit caller-supplied path containing strict, human-authored UTF-8
+  TOML with `profile_version = 1`, a closed schema, and a 65,536-byte serialized
+  input ceiling enforced against at most 65,537 bytes actually read before
+  decoding or parsing;
+- immutable backend-neutral resolved values for explicit DUT identity/name,
+  explicit `basic_serial` selection and exact expected device, complete UART
+  configuration, and DTR/RTS open intent;
+- mandatory version-1 observation invariants of RX enabled and evidence
+  recording enabled, plus fail-closed permissions of TX disabled, semantic
+  Control disabled, and automatic reconnect disabled;
+- direct construction of the existing immutable feature-003 `SessionPolicy`
+  from all six explicit finite persistence, retention, and retrieval limits,
+  without Profile-specific quota types or numerical defaults;
+- deterministic normalized Profile failures, including `input_too_large`, with
+  no parser tree, partial resolved value, or retained raw exception cause or
+  context; and
+- separate adapter-side TOML resolution and pure Basic request translation.
+  Shared Profile values contain no Basic or pySerial implementation type, and
+  neither path enumerates or opens devices, starts acquisition, creates a
+  journal/session, or owns lifecycle.
+
+T018's complete diff/search review corrected four genuine defects: recognized
+Interact/console configuration now fails as `unsupported_behavior`; invalid
+path values no longer leak `ValueError`; normalized failures no longer retain a
+raw exception through `__context__`; and the quickstart serial-import search now
+correctly excludes the nested Basic adapter path. Focused regressions cover each
+behavior. T020 found the structural-change criteria satisfied by the new shared
+Profile module and two adapter modules, then performed the single prescribed
+code-only incremental Graphify update. T021's fresh full validation gate passed.
 
 ## Completed Feature: Durable Evidence Journal
 
@@ -148,14 +186,26 @@ through physical close completion.
   fixed continuation snapshot and explicit between-page expiry. Compatibility
   and corruption validation is fail-closed; annotations and broader session/run
   lifecycle remain deferred.
-- No TX, semantic Control, Monitor, Interact, follow, console, or DUT Profile
-  delivery behavior.
+- No TX, semantic Control, Monitor, Interact, follow, console, Profile delivery,
+  lifecycle selection, or runtime policy enforcement behavior. Feature 004
+  provides only immutable Profile resolution and pure Basic request translation.
 - No service/HTTP, authentication, browser-origin rejection, CLI, MCP, or AI
   integration.
 - No real Enhanced backend, protocol, firmware, USB framing, GPIO/event
   behavior, or Enhanced hardware-support claim.
 
 ## Planning Artifacts
+
+Completed feature 004:
+
+- `specs/004-dut-profile-policy/spec.md`
+- `specs/004-dut-profile-policy/checklists/requirements.md`
+- `specs/004-dut-profile-policy/plan.md`
+- `specs/004-dut-profile-policy/research.md`
+- `specs/004-dut-profile-policy/data-model.md`
+- `specs/004-dut-profile-policy/contracts/dut-profile-v1.md`
+- `specs/004-dut-profile-policy/quickstart.md`
+- `specs/004-dut-profile-policy/tasks.md`
 
 Completed feature 003:
 
@@ -192,9 +242,10 @@ Completed feature 001:
 
 ## Blockers and Open Decisions
 
-- Numerical product defaults and service/profile path selection remain outside
-  feature 003; journal creation requires explicit finite values. The next
-  focused Phase 1 slice requires explicit selection and specification.
+- There is no blocker to the feature-004 software completion work. Product
+  defaults for the six persistence limits, service/Profile path selection,
+  Profile discovery/default paths, writing, migration, overlay, reload, and
+  lifecycle activation remain intentionally deferred.
 - Actual glitch behavior, electrical DTR/RTS state, disconnect classification,
   non-standard baud support, RX load behavior, and cancellation/close behavior
   remain OS/driver/adapter-specific hardware acceptance questions. Their cases
@@ -205,31 +256,25 @@ Completed feature 001:
 
 ## Validation Status
 
-- T027 ran every quickstart command, including the full feature-001/002
-  regression groups. T028's post-correction validation then passed the focused
-  create/open cancellation regression (2 tests), journal contract and recovery
-  group (78 tests), complete feature-003 group (137 tests), and full repository
-  regression (347 tests, no failures).
-- The corrected final commit candidate passes 348 tests with no failures or
-  skips. Ruff passes, mypy reports no issues in 27 source files, Import Linter
-  keeps all 3 contracts, and `git diff --check` is clean.
-- T028 found that cancellation of create/open after worker submission could
-  discard a successful bootstrap result without closing its SQLite connection.
-  The cancellation-resistant bootstrap join now retrieves that result, closes
-  the connection on its owning journal worker, and only then propagates
-  cancellation; the parametrized create/open regression is GREEN.
-- Final pre-commit review found that corrupt persisted sequence metadata could
-  cause open validation to materialize an attacker-sized expected range before
-  rejecting it. Validation now checks row count and contiguous sequence values
-  without allocating from the persisted span; the focused RED/GREEN regression
-  covers the signed-64-bit terminal value.
+- T018 post-correction validation passed all 217 focused feature-004 tests and
+  the full repository regression of 565 tests, with no failures or skips. Ruff
+  passed, mypy reported no issues in 33 source files, all 3 Import Linter
+  contracts were kept after analyzing 28 files and 56 dependencies, and
+  `git diff --check` passed.
+- T018 added RED/GREEN regressions for the Interact/console classification,
+  invalid-path normalization, and raw exception-context isolation defects. It
+  also corrected and reran the feature quickstart's serial-import scope search.
 - The default pytest harness replaces `serial.Serial` with a fail-closed
   sentinel; all normal adapter tests inject fakes. No test enumerated or opened
   a physical serial device.
-- Graphify 0.9.48 already received the one code-only incremental update required
-  by feature 003's new SQLite adapter and shared provenance interface. It
-  produced 1,426 nodes, 3,039 edges, and 78 communities. T029 did not repeat the
-  update because T028's private helper and regression test were localized and
-  did not add a module, change a shared interface or dependency direction, or
-  perform a significant multi-module refactor. Generated output remains ignored
-  local tooling state and is not software acceptance evidence.
+- No physical-hardware or electrical validation was performed. Feature 004 has
+  no hardware acceptance case, and its software results make no hardware claim.
+- Feature 004's one code-only Graphify incremental update completed at 1,928
+  nodes, 4,471 edges, and 96 communities. Graphify reported one non-fatal
+  zero-node source (`pyproject.toml`) and automatically refreshed 23 community
+  names from their hubs after the community set changed. Generated Graphify
+  output remains ignored.
+- T021's final gate passed: Ruff reported no violations; mypy reported no issues
+  in 33 source files; Import Linter kept all 3 contracts after analyzing 28 files
+  and 56 dependencies; pytest passed 565 tests with 0 skipped and 0 failed; and
+  `git diff --check` passed. No physical hardware was accessed or validated.
