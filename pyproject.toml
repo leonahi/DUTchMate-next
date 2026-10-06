@@ -57,6 +57,7 @@ forbidden_modules = ["pytest", "pytest_asyncio"]
 name = "Core module dependencies point inward"
 type = "layers"
 layers = [
+  "dutchmate_core.runtime",
   "dutchmate_core.acquisition",
   "dutchmate_core.backend | dutchmate_core.evidence",
   "dutchmate_core.model",
@@ -66,6 +67,7 @@ layers = [
 name = "Shared Core does not depend on adapters"
 type = "forbidden"
 source_modules = [
+  "dutchmate_core.runtime",
   "dutchmate_core.acquisition",
   "dutchmate_core.backend",
   "dutchmate_core.evidence",

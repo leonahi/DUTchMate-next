@@ -2,279 +2,189 @@
 
 This is the single authority for current progress, active phase, blockers,
 milestone, and next work. It is subordinate to
-`docs/project_context_core.md` and active focused implementation
-specifications.
+`docs/project_context_core.md` and active focused implementation specifications.
+Completed-slice evidence is kept in [development history](development_history.md).
 
 ## Resume Here
 
-- **Active phase**: Phase 1 — Basic backend through CLI.
-- **Completed milestones**: `001-rx-continuous-evidence`,
-  `002-basic-serial-adapter`, `003-durable-evidence-journal`, and
-  `004-dut-profile-policy` are software-complete against their focused
-  specifications. Features 001–003 are committed through `15890e59`; feature
-  004 is included in the current `HEAD`.
-- **Most recently completed specification**: `004-dut-profile-policy`; all
-  defined tasks T001–T021 are complete.
-- **Next action**: Await explicit selection and specification of the next
-  coherent Phase 1 slice. Do not infer or start it automatically.
-- **Scope guard**: Feature 004 resolves one explicit, bounded TOML Profile v1
-  into immutable Core values and translates those values into an existing Basic
-  open request without opening hardware. Do not add lifecycle/session
-  orchestration, service/HTTP, CLI, Monitor/Interact, TX/Control, reconnect,
-  release/reacquire, Enhanced behavior, MCP, or hardware work.
-- **Hardware**: No physical hardware has been accessed or validated. The
-  platform/electrical acceptance cases remain opt-in and separately authorized.
-- **Blockers**: The next Phase 1 slice has not been selected; this is an
-  intentional stopping point rather than a feature-004 blocker. Python 3.14
-  remains the declared initial baseline.
+- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is not complete.
+- **Committed software baseline**: Features 001–004 are committed and accepted.
+  Feature 005 is included in `Implement observation runtime lifecycle` on `main`,
+  following feature-004 commit `6d10cf7`.
+- **Completed slice**: `005-observation-runtime` — observation-only Device Core
+  runtime for Profile activation, in-memory durable-session association, and
+  attach/status/detach. Implementation and review through T025 are delivered;
+  T026/T027/T028 are complete. Final pre-commit review found no new defect;
+  the software-complete change set is committed under the explicit human instruction.
+- **Fresh pre-commit evidence**: Ruff clean; mypy 40 files clean; all three import
+  contracts kept (31 files/77 dependencies); pytest 924 passed with zero failures/
+  errors/skips; diff/whitespace checks clean before and after documentation edits.
+  The suite includes 349 feature cases, 565 completed regressions and ten fixtures.
+- **Next action**: Await explicit selection and specification of the next coherent
+  Phase 1 slice. Do not infer or start it automatically.
+- **Planning progress**: All T001–T028 markers are now checked. T028 reconciles
+  the previously completed T026 marker against its existing evidence, while
+  preserving T026's original two-file-only execution record and all deferrals.
+- **Scope guard**: One observation run, one RX path, immutable resolved Profile,
+  fresh journal/session per attach, in-memory association only, unchanged schema-v1,
+  ordered joined cleanup, conservative uncertainty blocking, and no auto reconnect.
+  Service/CLI/Monitor/TX/Control/handoff/Enhanced/MCP/AI/hardware work stays deferred.
+- **Hardware**: No physical device has been accessed, modified or validated.
+  Fake/temporary-journal and Enhanced-shaped results prove software contracts only;
+  opt-in platform/electrical acceptance remains separately authorized and unexecuted.
+- **Open issues**: No unresolved feature-005 product decision. The existing
+  feature-003 `JournalFailure` context-manager limitation remains unfixed and
+  outside feature 005. No failed required check or unresolved feature-005 blocker
+  remains; physical-hardware acceptance is not implied.
+  Python 3.14 remains the declared baseline.
 
 ## Repository Baseline
 
-- The accepted committed baseline contains the reproducible agent tooling and
-  completed features 001, 002, 003, and 004 through the current `HEAD`; feature
-  003 and its predecessors are anchored by commit `15890e59`.
-- Feature 004 adds the observation-only Profile domain, strict TOML-v1
-  resolver, and pure Basic request translator.
-- The Python 3.14 uv workspace contains the `dutchmate-core` package and a
-  hardware-free test/static-analysis harness.
-- Shared Core provides normalized backend/connection protocols, immutable
-  capability and provenance values, exact-byte RX and observer-loss evidence,
-  an in-memory append-only journal, and exclusive continuous acquisition with
-  explicit segment transitions, teardown ordering, and normalized failures.
-- Feature 003 T001–T030 add immutable durable session/policy/reference values,
-  generic opaque provenance envelope version 1, strict evidence codecs,
-  serialized durable append/reopen, rolling retention and its coalesced marker,
-  stable reference resolution, and bounded fixed-snapshot sequence-key raw
-  retrieval with explicit between-page expiry reporting.
-- Feature 002 adds the first production Basic serial adapter behind that
-  normalized boundary. It requires an exact device name, configures a closed
-  pySerial handle before one open, reports receive-only capability and opaque
-  immutable provenance, emits sequential exact-byte RX with host-observation
-  timestamps, and coordinates cancellation, read completion, and one physical
-  close.
-- pySerial 3.5 and types-pyserial 3.5.0.20260712 are locked. pySerial objects,
-  exceptions, handles, and Basic-specific configuration stay inside
-  `dutchmate_core.adapters.basic_serial`.
-- Import Linter and Ruff rules enforce inward Core dependencies, keep test
-  frameworks out of production Core, prevent shared Core from importing
-  adapters, and confine pySerial to the Basic adapter boundary.
-- The Enhanced-shaped backend remains a minimal test-only neutrality fixture;
-  it contains no Enhanced hardware, firmware, USB framing, timing, or helper
-  protocol behavior.
+The feature-005 commit on `main` is identified by the subject
+`Implement observation runtime lifecycle`; its parent is feature-004 commit
+`6d10cf72014c46d7eeb5481b26857222ee40b7fd`. Git records the feature-005 hash.
+The committed baseline includes reproducible agent tooling and these software milestones:
 
-## Completed Feature: DUT Profile and Policy
+| Feature | Committed software scope | Commit |
+|---|---|---|
+| [001](../specs/001-rx-continuous-evidence/spec.md) | Normalized backend boundary, authoritative continuous exact-byte RX, evidence ordering and provenance | `a13522c` |
+| [002](../specs/002-basic-serial-adapter/spec.md) | Explicit-device receive-only Basic adapter, configure-before-open, joined read/close lifecycle | `e2cd2cf` |
+| [003](../specs/003-durable-evidence-journal/spec.md) | SQLite schema-v1 durable append/reopen, bounded retention/references/fixed-snapshot retrieval | `15890e59` |
+| [004](../specs/004-dut-profile-policy/spec.md) | Strict bounded observation-only TOML-v1 Profile resolution, immutable values and pure Basic translation | `6d10cf7` |
+| [005](../specs/005-observation-runtime/spec.md) | Observation-only run ownership, in-memory Profile/session association and serialized attach/status/detach | `Implement observation runtime lifecycle` |
 
-`specs/004-dut-profile-policy/` is software-complete through T021. The delivered
-software-only scope is:
+Feature 005 is software-complete and included in the commit identified above.
+It adds `core/src/dutchmate_core/runtime.py` and
+`core/src/dutchmate_core/adapters/observation_runtime.py`, explicitly additive
+Acquisition snapshot/join support, tests/fixture gates, planning artifacts and
+runtime coverage in existing import contracts.
+Package exports, dependencies/lockfile, schema-v1 and existing evidence/Backend
+execution contracts remain unchanged; architecture contracts were strengthened
+without new exemptions. The uv workspace remains Python 3.14 with
+`dutchmate-core`, pySerial 3.5 and the locked development toolchain.
 
-- one explicit caller-supplied path containing strict, human-authored UTF-8
-  TOML with `profile_version = 1`, a closed schema, and a 65,536-byte serialized
-  input ceiling enforced against at most 65,537 bytes actually read before
-  decoding or parsing;
-- immutable backend-neutral resolved values for explicit DUT identity/name,
-  explicit `basic_serial` selection and exact expected device, complete UART
-  configuration, and DTR/RTS open intent;
-- mandatory version-1 observation invariants of RX enabled and evidence
-  recording enabled, plus fail-closed permissions of TX disabled, semantic
-  Control disabled, and automatic reconnect disabled;
-- direct construction of the existing immutable feature-003 `SessionPolicy`
-  from all six explicit finite persistence, retention, and retrieval limits,
-  without Profile-specific quota types or numerical defaults;
-- deterministic normalized Profile failures, including `input_too_large`, with
-  no parser tree, partial resolved value, or retained raw exception cause or
-  context; and
-- separate adapter-side TOML resolution and pure Basic request translation.
-  Shared Profile values contain no Basic or pySerial implementation type, and
-  neither path enumerates or opens devices, starts acquisition, creates a
-  journal/session, or owns lifecycle.
+## Active Feature: Observation Runtime
 
-T018's complete diff/search review corrected four genuine defects: recognized
-Interact/console configuration now fails as `unsupported_behavior`; invalid
-path values no longer leak `ValueError`; normalized failures no longer retain a
-raw exception through `__context__`; and the quickstart serial-import search now
-correctly excludes the nested Basic adapter path. Focused regressions cover each
-behavior. T020 found the structural-change criteria satisfied by the new shared
-Profile module and two adapter modules, then performed the single prescribed
-code-only incremental Graphify update. T021's fresh full validation gate passed.
+The governing artifacts are [specification](../specs/005-observation-runtime/spec.md),
+[plan](../specs/005-observation-runtime/plan.md),
+[internal contract](../specs/005-observation-runtime/contracts/observation-runtime.md),
+[quickstart](../specs/005-observation-runtime/quickstart.md), and
+[task definitions](../specs/005-observation-runtime/tasks.md).
+Their completion metadata is reconciled by T028; all 28 implementation tasks
+are complete. Current project progress remains recorded here.
 
-## Completed Feature: Durable Evidence Journal
+Delivered software behavior:
 
-`specs/003-durable-evidence-journal/` is software-complete through T030.
-It provides the model, codec, SQLite bootstrap, durable append/recovery,
-retention, references, bounded fixed-snapshot pagination, fail-closed
-compatibility/corruption handling, quickstart validation, final scope review,
-and completion documentation. Its accepted boundary is:
+- A backend-neutral, owning-loop/thread-bound runtime with serialized
+  attach/status/detach and exactly one accepted observation generation.
+- The Basic/SQLite edge checks context, resolves the explicit bounded Profile,
+  then prepares a fresh journal and unopened backend only after runtime admission.
+  Runtime busy rejection performs no preparation; an outer busy edge call may
+  still read the explicit Profile as defined by the contract.
+- Acquisition remains the sole backend opener/continuous RX consumer. Runtime
+  projects normalized primary failure, close failure, trigger, committed
+  provenance and release certainty separately, using the additive join barrier.
+- One owner handles explicit stop, cancellation and autonomous termination.
+  Actual Acquisition startup/consumer/close work is joined before recorder close
+  and terminal settlement. Repeated cancellation cannot abandon cleanup;
+  unconfirmed physical or recorder release permanently blocks that instance's reuse.
+- Immediate terminal Acquisition cannot publish active capture. Observed
+  disconnect wins terminal cause independently of primary/cleanup failures;
+  historical status and old-generation results remain isolated from a fresh run.
+- Profile/session association is in memory only. Cancelled/failed journals are
+  retained; explicit subsequent attach uses a fresh destination/session. Existing
+  sequence, retention, expiry, pagination and provenance-envelope semantics persist.
+- Both normalized fixture shapes exercise the same shared lifecycle/readback
+  assertions, including device-domain timestamps, observer-scoped loss, origin
+  resets and explicit missing-RX rejection. This adds no Enhanced production support.
+- T011 corrected normalized rejection transport; T024 corrected preparation
+  failure transport while retaining read-only facts and validation. Full review
+  found no other feature-005 scope/contract defect.
 
-- one SQLite database per durable session, using Python 3.14's standard-library
-  `sqlite3`, rollback-journal `DELETE` mode, `synchronous=FULL`, strict schema
-  version 1, exact RX BLOBs, and no added runtime dependency;
-- commit-before-acknowledgment with clean-reopen and tested process-crash
-  recovery. Exactly-once retry after commit-before-return ambiguity, arbitrary
-  power-loss or lying flush hardware, and filesystem, media, directory, backup,
-  or live-copy survival are explicitly not guaranteed;
-- authoritative sequence scoped to the immutable session identity and continued
-  after reopen without reuse or retention renumbering;
-- required finite record, byte, per-record, and database-page limits; rolling
-  minimum-prefix eviction; and one bounded coalesced retention marker;
-- stable session-plus-sequence references with explicit retained, expired,
-  partial, and not-found outcomes;
-- raw bounded sequence-key pages over a fixed snapshot upper bound, with typed
-  internal cursors and explicit between-page expiry;
-- normalized versioned backend provenance snapshots so persistence remains
-  backend-neutral and never imports Basic types into shared Core.
+| Work | Recorded completion |
+|---|---|
+| T001–T005 | Foundations and additive Acquisition/runtime values |
+| T006–T011 | Normal lifecycle, Basic composition, durable readback and US1 review |
+| T012–T018 | Request/cancellation, preparation/failure cleanup, certainty and US2 review |
+| T019–T023 | Fixture gates, autonomous termination, backend neutrality and US3 review |
+| T024 | Full FR-001–030/contract/diff review and bounded preparation-error correction |
+| T025 | All quickstart-focused scenarios and pre-final scope commands |
+| T026 | Development status/history reconciliation; prior completion now checked in tasks |
+| T027 | Trigger satisfied; one code-only incremental Graphify update completed |
+| T028 | Fresh full software gate and final diff/completion review passed |
 
-Session naming/listing/sealing, numerical product defaults, Profile mapping,
-delivery APIs, annotations, derived representations, operation lookup, repair,
-migrations beyond rejecting non-v1 stores, and all later workflows remain
-deferred.
+All feature-005 implementation and validation above is software-only.
+The feature is software-complete and committed following final pre-commit review.
+Phase 1 remains incomplete; no subsequent slice has been selected or started.
+Per-task RED/GREEN evidence and earlier milestone details remain in development
+history rather than a competing chronological status narrative.
 
-## Completed Feature: Basic Serial Backend Adapter
+## Validation Evidence
 
-`specs/002-basic-serial-adapter/` is complete for its software-only scope. It
-delivers:
+The final pre-commit gate is fresh evidence; earlier rows retain their checkpoint
+meaning. No software tests were rerun during T026/T027:
 
-- explicit, exact user-selected device names with no enumeration, URL handler,
-  automatic, first-device, or fallback selection;
-- validated baud/data/parity/stop/flow settings and configure-before-open
-  ordering on a closed `serial.Serial(port=None)` handle;
-- DTR and applicable static RTS intent applied while closed, with RTS explicitly
-  driver-managed under RTS/CTS and honest provenance that glitch-free
-  transitions and physical electrical state are not guaranteed or verified;
-- receive-only normalized capability reporting, fresh connection/segment and
-  host-observation timestamp identities, and unchanged opaque provenance copied
-  by acquisition;
-- one sequential `asyncio.to_thread` read at a time, exact binary preservation,
-  post-read host timestamps captured in the worker, empty-read suppression, and
-  one event-stream consumer;
-- normalized open/read/close failures, stable-attribute-only device-loss
-  classification, and no raw pySerial or OS exception leakage;
-- caller/lifecycle-thread `cancel_read()`, mandatory outstanding-read join,
-  exactly one physical close, idempotent concurrent close, primary-failure
-  preservation, and restart blocking while physical release is incomplete or
-  unconfirmed;
-- fake-driven adapter-through-acquisition coverage and fail-closed guards that
-  prevent the default test suite from opening or enumerating physical serial
-  devices.
+| Checkpoint | Recorded result | Evidence boundary |
+|---|---|---|
+| T024 focused/full software validation | 349 feature cases; 924 default-suite cases; zero failures/errors/skips | Most recent full software gate; does not complete T028 |
+| T024 correction regressions | Six RED failures/eight passes became 14 GREEN; existing normalization case also passed | Preparation exception transport and read-only facts |
+| T025 focused scenarios | All 21 pytest commands passed; canonical groups 105/214/30; feature focus 349, completed regressions 565 and T019 fixtures ten | Selected software-only runs; no unrestricted full-suite invocation |
+| T025 architecture/scope | Five commands passed; Ruff clean, mypy 40 files clean, three import contracts kept (31 files/77 dependencies), schema-v1 and empty SQLite/model/Backend diff | Pre-final architecture/scope checks; final-gate block deliberately omitted |
+| T026 documentation | Verified branch/HEAD/commit references, two-file scope, links, whitespace and Resume Here length | No software tests, Graphify update or hardware validation rerun |
+| T027 Graphify | Version 0.9.48; one changed-code-only incremental update; 2,435 nodes, 6,370 edges, 117 communities; zero input/output LLM tokens | 38 code sources; no semantic extraction; generated outputs/backups ignored |
+| T028 final gate | Ruff clean; mypy 40 files clean; three import contracts kept (31 files/77 dependencies); 924 passed, zero failures/errors/skips; clean diff checks before/after docs | Fresh hardware-free default-suite run; 349 feature cases, 565 completed regressions and ten fixture cases |
+| Final pre-commit review/gate | No new defect; Ruff clean; mypy 40 files clean; three import contracts kept (31 files/77 dependencies); 924 passed, zero failures/errors/skips; unstaged/staged whitespace checks clean | Full feature review and fresh hardware-free gate before the explicitly authorized commit; generated output excluded |
 
-T019 found one FR-024 lifecycle defect: if `cancel_read()` failed, physical
-close could occur before the outstanding blocking read returned. A focused RED
-regression test proved the ordering error. The adapter now always awaits that
-read before its one physical close while retaining the normalized cancellation
-failure as the primary close-path error. No other specification or boundary
-defect remained after focused diff/search review.
+No physical-hardware test was executed or passed. Hardware cases remain unexecuted,
+not counted as successful software validation. T028 makes a software-only
+readiness claim, not an electrical/platform, Enhanced-hardware or complete Phase 1 claim.
 
-## Completed Feature: Continuous RX Evidence Foundation
+## Blockers, Limitations and Deferred Work
 
-`specs/001-rx-continuous-evidence/` remains complete. Shared Core retains one
-capability-driven backend boundary and one authoritative RX consumer; continuous
-ambient exact-byte evidence; journal-assigned authoritative sequence order;
-explicit connection, segment, timestamp-domain/origin, and loss provenance;
-guarded same-domain timestamp comparison and origin-reset segments;
-observer-scoped loss evidence; and generation-local, non-restartable teardown
-through physical close completion.
-
-## Current Limitations and Deferred Work
-
-- No physical-hardware acceptance has occurred. Safe-open line behavior,
-  electrical DTR/RTS state, platform/driver disconnect classification,
-  non-standard baud behavior, RX under load, and cancellation/close behavior
-  remain hardware acceptance cases rather than validated claims.
-- No serial discovery, automatic device selection, reconnect, or
-  release/reacquire workflow.
-- Feature 003 has production schema-version-1 append/reopen, rolling retention,
-  stable reference resolution, and bounded whole-record sequence pages with a
-  fixed continuation snapshot and explicit between-page expiry. Compatibility
-  and corruption validation is fail-closed; annotations and broader session/run
-  lifecycle remain deferred.
-- No TX, semantic Control, Monitor, Interact, follow, console, Profile delivery,
-  lifecycle selection, or runtime policy enforcement behavior. Feature 004
-  provides only immutable Profile resolution and pure Basic request translation.
-- No service/HTTP, authentication, browser-origin rejection, CLI, MCP, or AI
-  integration.
-- No real Enhanced backend, protocol, firmware, USB framing, GPIO/event
-  behavior, or Enhanced hardware-support claim.
-
-## Planning Artifacts
-
-Completed feature 004:
-
-- `specs/004-dut-profile-policy/spec.md`
-- `specs/004-dut-profile-policy/checklists/requirements.md`
-- `specs/004-dut-profile-policy/plan.md`
-- `specs/004-dut-profile-policy/research.md`
-- `specs/004-dut-profile-policy/data-model.md`
-- `specs/004-dut-profile-policy/contracts/dut-profile-v1.md`
-- `specs/004-dut-profile-policy/quickstart.md`
-- `specs/004-dut-profile-policy/tasks.md`
-
-Completed feature 003:
-
-- `specs/003-durable-evidence-journal/spec.md`
-- `specs/003-durable-evidence-journal/checklists/requirements.md`
-- `specs/003-durable-evidence-journal/plan.md`
-- `specs/003-durable-evidence-journal/research.md`
-- `specs/003-durable-evidence-journal/data-model.md`
-- `specs/003-durable-evidence-journal/contracts/durable-evidence-journal.md`
-- `specs/003-durable-evidence-journal/quickstart.md`
-- `specs/003-durable-evidence-journal/tasks.md`
-
-Completed feature 002:
-
-- `specs/002-basic-serial-adapter/spec.md`
-- `specs/002-basic-serial-adapter/checklists/requirements.md`
-- `specs/002-basic-serial-adapter/plan.md`
-- `specs/002-basic-serial-adapter/research.md`
-- `specs/002-basic-serial-adapter/data-model.md`
-- `specs/002-basic-serial-adapter/contracts/basic-serial-adapter.md`
-- `specs/002-basic-serial-adapter/quickstart.md`
-- `specs/002-basic-serial-adapter/tasks.md`
-
-Completed feature 001:
-
-- `specs/001-rx-continuous-evidence/spec.md`
-- `specs/001-rx-continuous-evidence/checklists/requirements.md`
-- `specs/001-rx-continuous-evidence/plan.md`
-- `specs/001-rx-continuous-evidence/research.md`
-- `specs/001-rx-continuous-evidence/data-model.md`
-- `specs/001-rx-continuous-evidence/contracts/normalized-backend.md`
-- `specs/001-rx-continuous-evidence/quickstart.md`
-- `specs/001-rx-continuous-evidence/tasks.md`
-
-## Blockers and Open Decisions
-
-- There is no blocker to the feature-004 software completion work. Product
-  defaults for the six persistence limits, service/Profile path selection,
-  Profile discovery/default paths, writing, migration, overlay, reload, and
-  lifecycle activation remain intentionally deferred.
-- Actual glitch behavior, electrical DTR/RTS state, disconnect classification,
-  non-standard baud support, RX load behavior, and cancellation/close behavior
-  remain OS/driver/adapter-specific hardware acceptance questions. Their cases
-  are documented but intentionally unexecuted.
+- There is no unresolved product decision for the accepted feature-005 scope.
+  All 28 tasks, final pre-commit review and the required software gate are complete.
+  The feature is committed; selection/specification of the next slice requires
+  explicit human instruction.
+- The existing frozen/slotted feature-003 `JournalFailure` can be masked by
+  `TypeError` when a generator context manager restores `__traceback__` on
+  Python 3.14. It was reproduced during T010 and remains outside the feature-005
+  correction. The distinct feature-005 preparation-error defect is fixed by T024.
+- Runtime activation and observation policy enforcement now exist. Profile
+  discovery/default paths, writing, migration, overlay/reload and numerical
+  persistence defaults remain deferred; inputs and destinations stay explicit.
+  Serial hardware discovery, automatic device selection and fallback remain absent.
+- Service/HTTP/authentication/browser-origin rejection, CLI, process-wide
+  ownership/deployment, Monitor/follow, TX/Interact/console, semantic Control,
+  annotations/derived views and broader retrieval workflows are not implemented.
+- Automatic reconnect, native-USB topology, release/reacquire/handoff,
+  external-program execution, durable full-Profile identity, session catalogue/
+  naming/sealing/resumption/rotation/deletion and cleanup retry attestations remain
+  deferred. No lifecycle timeout or forced worker abandonment is introduced;
+  pending status remains inspectable, and uncertain cleanup blocks reuse.
+- Enhanced production protocol/firmware/USB/framing/GPIO/event behavior, MCP
+  and AI integration remain deferred. The Enhanced-shaped fixture is a software
+  neutrality test, not a hardware or Profile-selection implementation.
+- Safe-open DTR/RTS electrical state/glitch behavior, OS/driver disconnect
+  classification, non-standard baud, RX load and physical cancellation/close
+  behavior remain separately authorized hardware acceptance cases.
 - SQLite rollback-journal process-crash recovery is software-tested. Arbitrary
-  power-loss behavior, storage-device flush honesty, media recovery, and
-  live-file copying are not accepted claims and do not block this slice.
+  power loss, lying flush hardware, media/filesystem recovery and live-file copying
+  remain outside accepted guarantees.
 
-## Validation Status
+## Planning and Evidence References
 
-- T018 post-correction validation passed all 217 focused feature-004 tests and
-  the full repository regression of 565 tests, with no failures or skips. Ruff
-  passed, mypy reported no issues in 33 source files, all 3 Import Linter
-  contracts were kept after analyzing 28 files and 56 dependencies, and
-  `git diff --check` passed.
-- T018 added RED/GREEN regressions for the Interact/console classification,
-  invalid-path normalization, and raw exception-context isolation defects. It
-  also corrected and reran the feature quickstart's serial-import scope search.
-- The default pytest harness replaces `serial.Serial` with a fail-closed
-  sentinel; all normal adapter tests inject fakes. No test enumerated or opened
-  a physical serial device.
-- No physical-hardware or electrical validation was performed. Feature 004 has
-  no hardware acceptance case, and its software results make no hardware claim.
-- Feature 004's one code-only Graphify incremental update completed at 1,928
-  nodes, 4,471 edges, and 96 communities. Graphify reported one non-fatal
-  zero-node source (`pyproject.toml`) and automatically refreshed 23 community
-  names from their hubs after the community set changed. Generated Graphify
-  output remains ignored.
-- T021's final gate passed: Ruff reported no violations; mypy reported no issues
-  in 33 source files; Import Linter kept all 3 contracts after analyzing 28 files
-  and 56 dependencies; pytest passed 565 tests with 0 skipped and 0 failed; and
-  `git diff --check` passed. No physical hardware was accessed or validated.
+Product semantics remain in [Core](project_context_core.md); reasoning is in
+[Rationale](project_context_rationale.md). Agent workflow and tooling remain in
+[AGENTS.md](../AGENTS.md) and [agent tooling](agent_tooling.md). Completed feature specifications
+are linked in the baseline table. Detailed completed-slice evidence, including
+earlier Graphify runs, remains in [development history](development_history.md).
+T027's assessment found the two new runtime/composition modules, additive
+Acquisition snapshot/join interfaces and expanded dependency-contract coverage
+satisfy the structural trigger. Exactly one incremental update used Graphify's
+existing updater with the changed code paths only; the CLI default's full-corpus
+rescan was not used. Existing documentation graph content was preserved without
+semantic refresh. Graphify reported one zero-node source (`pyproject.toml`) and
+deterministically renamed 34 community labels by their hubs; no retry or LLM
+labeling was run. Graphify explain verified runtime, composition, snapshot and
+join symbols; `.gitignore` keeps all outputs/backups ignored and no graph file is
+tracked. Detailed command/results remain in development history.

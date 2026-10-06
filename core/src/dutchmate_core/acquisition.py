@@ -1,7 +1,7 @@
 """Exclusive continuous acquisition into authoritative evidence."""
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from uuid import uuid4
 
@@ -16,6 +16,7 @@ from dutchmate_core.evidence import (
 from dutchmate_core.model import (
     BackendCapability,
     BackendObservationTimestamp,
+    ConnectionDescriptor,
     ConnectionInstanceId,
     Disconnected,
     InvalidTimestampOriginResetError,
@@ -54,6 +55,52 @@ class AcquisitionFailure:
     cause: Exception
 
 
+class AcquisitionTerminalTrigger(StrEnum):
+    EXPLICIT_STOP = "explicit_stop"
+    DISCONNECTED = "disconnected"
+    CAPABILITY_REJECTION = "capability_rejection"
+    RECORDING_FAILURE = "recording_failure"
+    TRANSPORT_FAILURE = "transport_failure"
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionSnapshot:
+    """Normalized facts; primary failure excludes physical-close failures."""
+
+    state: AcquisitionState
+    descriptor: ConnectionDescriptor | None = None
+    provenance: SegmentProvenance | None = None
+    terminal_trigger: AcquisitionTerminalTrigger | None = None
+    primary_failure_kind: AcquisitionFailureKind | None = None
+    close_failed: bool = False
+    physical_release_confirmed: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.state, AcquisitionState):
+            raise TypeError("acquisition state must be declared")
+        for name, expected_type in (
+            ("descriptor", ConnectionDescriptor),
+            ("provenance", SegmentProvenance),
+            ("terminal_trigger", AcquisitionTerminalTrigger),
+            ("primary_failure_kind", AcquisitionFailureKind),
+        ):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, expected_type):
+                raise TypeError(f"{name} must be a normalized immutable value")
+        for name in ("close_failed", "physical_release_confirmed"):
+            if type(getattr(self, name)) is not bool:
+                raise TypeError(f"{name} must be boolean")
+
+
+@dataclass(slots=True)
+class _AcquisitionGeneration:
+    snapshot: AcquisitionSnapshot
+    terminated: asyncio.Event = field(default_factory=asyncio.Event)
+    startup_settled: asyncio.Event = field(default_factory=asyncio.Event)
+    consumer_task: asyncio.Task[None] | None = None
+    close_task: asyncio.Task[None] | None = None
+
+
 class AcquisitionAlreadyActiveError(RuntimeError):
     """Raised when a second owner attempts to start acquisition."""
 
@@ -77,7 +124,11 @@ class Acquisition:
         self._consumer_task: asyncio.Task[None] | None = None
         self._close_task: asyncio.Task[None] | None = None
         self._connection_close_unconfirmed = False
-        self._terminated = asyncio.Event()
+        self._generation = _AcquisitionGeneration(
+            AcquisitionSnapshot(AcquisitionState.IDLE)
+        )
+        self._generation.startup_settled.set()
+        self._terminated = self._generation.terminated
         self._lifecycle_lock = asyncio.Lock()
 
     @property
@@ -88,81 +139,131 @@ class Acquisition:
     def failure(self) -> AcquisitionFailure | None:
         return self._failure
 
+    def snapshot(self) -> AcquisitionSnapshot:
+        """Return current or historical immutable acquisition facts."""
+        return self._generation.snapshot
+
+    def _set_state(self, state: AcquisitionState) -> None:
+        self._state = state
+        self._generation.snapshot = replace(self._generation.snapshot, state=state)
+
+    def _record_primary_failure(self, kind: AcquisitionFailureKind) -> None:
+        snapshot = self._generation.snapshot
+        trigger = snapshot.terminal_trigger
+        if trigger is None or trigger is AcquisitionTerminalTrigger.EXPLICIT_STOP:
+            trigger = AcquisitionTerminalTrigger(kind.value)
+        self._generation.snapshot = replace(
+            snapshot,
+            primary_failure_kind=snapshot.primary_failure_kind or kind,
+            terminal_trigger=trigger,
+        )
+
+    def _record_explicit_stop(self) -> None:
+        if self._generation.snapshot.terminal_trigger is None:
+            self._generation.snapshot = replace(
+                self._generation.snapshot,
+                terminal_trigger=AcquisitionTerminalTrigger.EXPLICIT_STOP,
+            )
+
     async def start(self, backend: Backend) -> ConnectionInstanceId:
         async with self._lifecycle_lock:
-            if self._state in {
-                AcquisitionState.STARTING,
-                AcquisitionState.ACQUIRING,
-                AcquisitionState.STOPPING,
-            } or self._connection_close_unconfirmed:
+            if (
+                self._state
+                in {
+                    AcquisitionState.STARTING,
+                    AcquisitionState.ACQUIRING,
+                    AcquisitionState.STOPPING,
+                }
+                or self._connection_close_unconfirmed
+            ):
                 raise AcquisitionAlreadyActiveError(
                     "authoritative acquisition is already active"
                 )
 
+            generation = _AcquisitionGeneration(
+                AcquisitionSnapshot(
+                    AcquisitionState.STARTING, physical_release_confirmed=False
+                )
+            )
+            self._generation = generation
             self._state = AcquisitionState.STARTING
             self._failure = None
-            termination_event = asyncio.Event()
+            termination_event = generation.terminated
             self._terminated = termination_event
             try:
-                connection = await backend.open()
-            except Exception as open_error:
-                self._failure = AcquisitionFailure(
-                    kind=AcquisitionFailureKind.TRANSPORT_FAILURE,
-                    cause=open_error,
-                )
-                self._state = AcquisitionState.FAILED
-                termination_event.set()
-                raise
-            self._connection = connection
-            self._close_task = None
-            self._connection_close_unconfirmed = True
-            descriptor = connection.descriptor
-            if not descriptor.capabilities.supports(BackendCapability.UART_RECEIVE):
-                capability_error = UnsupportedBackendCapabilityError(
-                    "backend connection does not report uart_receive"
-                )
-                await self._fail(
-                    AcquisitionFailureKind.CAPABILITY_REJECTION,
-                    capability_error,
-                    connection,
-                )
-                termination_event.set()
-                raise capability_error
-            connection_id = ConnectionInstanceId(uuid4().hex)
-            segment_id = SegmentId(uuid4().hex)
-            provenance = SegmentProvenance(
-                connection_id=connection_id,
-                segment_id=segment_id,
-                capabilities=descriptor.capabilities,
-                backend_observation_timestamp_domain=(
-                    descriptor.backend_observation_timestamp_domain
-                ),
-                loss_observability=descriptor.loss_observability,
-                connection_provenance=descriptor.connection_provenance,
+                return await self._start_generation(backend, termination_event)
+            finally:
+                generation.startup_settled.set()
+
+    async def _start_generation(
+        self, backend: Backend, termination_event: asyncio.Event
+    ) -> ConnectionInstanceId:
+        try:
+            connection = await backend.open()
+        except Exception as open_error:
+            self._record_primary_failure(AcquisitionFailureKind.TRANSPORT_FAILURE)
+            self._failure = AcquisitionFailure(
+                kind=AcquisitionFailureKind.TRANSPORT_FAILURE, cause=open_error
             )
-            try:
-                await self._recorder.append(PendingSegmentStartedEvidence(provenance))
-            except Exception as error:
-                await self._fail(
-                    AcquisitionFailureKind.RECORDING_FAILURE,
-                    error,
-                    connection,
-                )
-                termination_event.set()
-                raise
-            self._state = AcquisitionState.ACQUIRING
-            self._consumer_task = asyncio.create_task(
-                self._consume(connection, provenance, termination_event),
-                name=f"dutchmate-rx-{connection_id.value}",
+            self._set_state(AcquisitionState.FAILED)
+            termination_event.set()
+            raise
+        self._connection = connection
+        self._close_task = None
+        self._connection_close_unconfirmed = True
+        descriptor = connection.descriptor
+        self._generation.snapshot = replace(
+            self._generation.snapshot, descriptor=descriptor
+        )
+        if not descriptor.capabilities.supports(BackendCapability.UART_RECEIVE):
+            capability_error = UnsupportedBackendCapabilityError(
+                "backend connection does not report uart_receive"
             )
-            return connection_id
+            await self._fail(
+                AcquisitionFailureKind.CAPABILITY_REJECTION,
+                capability_error,
+                connection,
+            )
+            termination_event.set()
+            raise capability_error
+        connection_id = ConnectionInstanceId(uuid4().hex)
+        segment_id = SegmentId(uuid4().hex)
+        provenance = SegmentProvenance(
+            connection_id=connection_id,
+            segment_id=segment_id,
+            capabilities=descriptor.capabilities,
+            backend_observation_timestamp_domain=(
+                descriptor.backend_observation_timestamp_domain
+            ),
+            loss_observability=descriptor.loss_observability,
+            connection_provenance=descriptor.connection_provenance,
+        )
+        try:
+            await self._recorder.append(PendingSegmentStartedEvidence(provenance))
+        except Exception as error:
+            await self._fail(
+                AcquisitionFailureKind.RECORDING_FAILURE, error, connection
+            )
+            termination_event.set()
+            raise
+        self._generation.snapshot = replace(
+            self._generation.snapshot, provenance=provenance
+        )
+        self._set_state(AcquisitionState.ACQUIRING)
+        self._consumer_task = asyncio.create_task(
+            self._consume(connection, provenance, termination_event),
+            name=f"dutchmate-rx-{connection_id.value}",
+        )
+        self._generation.consumer_task = self._consumer_task
+        return connection_id
 
     async def stop(self) -> AcquisitionState:
         async with self._lifecycle_lock:
             if self._state in {AcquisitionState.STOPPED, AcquisitionState.FAILED}:
                 return self._state
             if self._state is AcquisitionState.IDLE:
-                self._state = AcquisitionState.STOPPED
+                self._record_explicit_stop()
+                self._set_state(AcquisitionState.STOPPED)
                 self._terminated.set()
                 return self._state
             termination_event = self._terminated
@@ -172,7 +273,7 @@ class Acquisition:
                 consumer_task = None
             else:
                 wait_for_existing_teardown = False
-                self._state = AcquisitionState.STOPPING
+                self._set_state(AcquisitionState.STOPPING)
                 connection = self._connection
                 consumer_task = self._consumer_task
 
@@ -183,6 +284,7 @@ class Acquisition:
         if connection is not None:
             close_error = await self._close_connection(connection)
             if close_error is not None:
+                self._record_explicit_stop()
                 if consumer_task is not None and not consumer_task.done():
                     consumer_task.cancel()
                     try:
@@ -194,13 +296,14 @@ class Acquisition:
                         kind=AcquisitionFailureKind.TRANSPORT_FAILURE,
                         cause=close_error,
                     )
-                self._state = AcquisitionState.FAILED
+                self._set_state(AcquisitionState.FAILED)
                 termination_event.set()
                 return self._state
         if consumer_task is not None:
             await consumer_task
         if self._state is AcquisitionState.STOPPING:
-            self._state = AcquisitionState.STOPPED
+            self._record_explicit_stop()
+            self._set_state(AcquisitionState.STOPPED)
         termination_event.set()
         return self._state
 
@@ -208,6 +311,25 @@ class Acquisition:
         termination_event = self._terminated
         await termination_event.wait()
         return self._state
+
+    async def join_terminated(self) -> AcquisitionSnapshot:
+        """Join this generation's startup, consumer and close, not just its event.
+
+        A later start cannot change the captured result. Shield task joins so a
+        cancelled join waiter cannot cancel the authoritative consumer/close.
+        Task failures are already represented by the normalized snapshot.
+        """
+        generation = self._generation
+        await generation.startup_settled.wait()
+        await generation.terminated.wait()
+        tasks = tuple(
+            task
+            for task in (generation.consumer_task, generation.close_task)
+            if task is not None
+        )
+        if tasks:
+            await asyncio.shield(asyncio.gather(*tasks, return_exceptions=True))
+        return generation.snapshot
 
     async def _consume(
         self,
@@ -335,8 +457,15 @@ class Acquisition:
                         )
                         return
                     provenance = new_provenance
+                    self._generation.snapshot = replace(
+                        self._generation.snapshot, provenance=provenance
+                    )
                     last_recorded_timestamp = None
                 elif isinstance(event, Disconnected):
+                    self._generation.snapshot = replace(
+                        self._generation.snapshot,
+                        terminal_trigger=AcquisitionTerminalTrigger.DISCONNECTED,
+                    )
                     try:
                         await self._append_segment_end(
                             provenance,
@@ -349,16 +478,16 @@ class Acquisition:
                             connection,
                         )
                         return
-                    self._state = AcquisitionState.STOPPING
+                    self._set_state(AcquisitionState.STOPPING)
                     close_error = await self._close_connection(connection)
                     if close_error is not None:
                         self._failure = AcquisitionFailure(
                             kind=AcquisitionFailureKind.TRANSPORT_FAILURE,
                             cause=close_error,
                         )
-                        self._state = AcquisitionState.FAILED
+                        self._set_state(AcquisitionState.FAILED)
                     else:
-                        self._state = AcquisitionState.STOPPED
+                        self._set_state(AcquisitionState.STOPPED)
                     return
 
             if self._state is AcquisitionState.STOPPING:
@@ -374,6 +503,7 @@ class Acquisition:
                         connection,
                     )
                     return
+                self._record_explicit_stop()
                 return
 
             transport_error = BackendStreamEndedError(
@@ -413,11 +543,12 @@ class Acquisition:
         cause: Exception,
         connection: BackendConnection,
     ) -> None:
+        self._record_primary_failure(kind)
         if self._failure is None:
             self._failure = AcquisitionFailure(kind=kind, cause=cause)
-        self._state = AcquisitionState.STOPPING
+        self._set_state(AcquisitionState.STOPPING)
         await self._close_connection(connection)
-        self._state = AcquisitionState.FAILED
+        self._set_state(AcquisitionState.FAILED)
 
     async def _close_connection(
         self,
@@ -425,11 +556,18 @@ class Acquisition:
     ) -> Exception | None:
         if self._close_task is None:
             self._close_task = asyncio.create_task(connection.close())
+            self._generation.close_task = self._close_task
         try:
             await self._close_task
         except Exception as error:
+            self._generation.snapshot = replace(
+                self._generation.snapshot, close_failed=True
+            )
             return error
         self._connection_close_unconfirmed = False
+        self._generation.snapshot = replace(
+            self._generation.snapshot, physical_release_confirmed=True
+        )
         return None
 
     async def _terminate_transport_failure(
@@ -438,6 +576,7 @@ class Acquisition:
         cause: Exception,
         connection: BackendConnection,
     ) -> None:
+        self._record_primary_failure(AcquisitionFailureKind.TRANSPORT_FAILURE)
         try:
             await self._append_segment_end(
                 provenance,

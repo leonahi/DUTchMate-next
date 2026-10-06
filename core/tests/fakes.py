@@ -39,6 +39,19 @@ class _EndOfStream:
 _END_OF_STREAM = _EndOfStream()
 
 
+class FixtureLifecycleGate:
+    """Default-open, test-owned checkpoint with no elapsed-time behavior."""
+
+    def __init__(self) -> None:
+        self.entered = asyncio.Event()
+        self.allow = asyncio.Event()
+        self.allow.set()
+
+    async def enter(self) -> None:
+        self.entered.set()
+        await self.allow.wait()
+
+
 class BasicShapedBackendConnection:
     """Small host-timestamped, loss-unobservable backend connection fake."""
 
@@ -73,21 +86,33 @@ class BasicShapedBackendConnection:
         self._stream_claimed = False
         self._terminal_enqueued = False
         self.closed = False
+        self.read_gate = FixtureLifecycleGate()
+        self.event_gate = FixtureLifecycleGate()
+        self.consumer_exit_gate = FixtureLifecycleGate()
+        self.close_gate = FixtureLifecycleGate()
+        self.consumer_calls = 0
+        self.close_calls = 0
 
     def events(self) -> AsyncIterator[BackendEvent]:
         if self._stream_claimed:
             raise EventStreamAlreadyConsumedError
         self._stream_claimed = True
+        self.consumer_calls += 1
         return self._iterate_events()
 
     async def _iterate_events(self) -> AsyncIterator[BackendEvent]:
-        while True:
-            event = await self._events.get()
-            if isinstance(event, _EndOfStream):
-                return
-            yield event
-            if isinstance(event, Disconnected):
-                return
+        try:
+            while True:
+                await self.read_gate.enter()
+                event = await self._events.get()
+                await self.event_gate.enter()
+                if isinstance(event, _EndOfStream):
+                    return
+                yield event
+                if isinstance(event, Disconnected):
+                    return
+        finally:
+            await self.consumer_exit_gate.enter()
 
     async def emit_rx(
         self,
@@ -132,8 +157,10 @@ class BasicShapedBackendConnection:
         await self._events.put(_END_OF_STREAM)
 
     async def close(self) -> None:
+        self.close_calls += 1
         if self.closed:
             return
+        await self.close_gate.enter()
         self.closed = True
         if not self._terminal_enqueued:
             self._terminal_enqueued = True
@@ -143,8 +170,12 @@ class BasicShapedBackendConnection:
 class BasicShapedBackend:
     def __init__(self, connection: BasicShapedBackendConnection | None = None) -> None:
         self.connection = connection or BasicShapedBackendConnection()
+        self.open_gate = FixtureLifecycleGate()
+        self.open_calls = 0
 
     async def open(self) -> BasicShapedBackendConnection:
+        self.open_calls += 1
+        await self.open_gate.enter()
         return self.connection
 
 
@@ -250,8 +281,12 @@ class EnhancedShapedBackendConnection(BasicShapedBackendConnection):
 class EnhancedShapedBackend:
     def __init__(self, connection: EnhancedShapedBackendConnection | None = None) -> None:
         self.connection = connection or EnhancedShapedBackendConnection()
+        self.open_gate = FixtureLifecycleGate()
+        self.open_calls = 0
 
     async def open(self) -> EnhancedShapedBackendConnection:
+        self.open_calls += 1
+        await self.open_gate.enter()
         return self.connection
 
 
