@@ -9,7 +9,7 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 - **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is not complete.
 - **Committed software baseline**: Features 001–004 are committed and accepted.
-  Feature 005 is included in `Implement observation runtime lifecycle` on `main`,
+  Feature 005 is committed as `2824c0dc3ecc63684f573b3b0a55c621e18e069f` on `main`,
   following feature-004 commit `6d10cf7`.
 - **Completed slice**: `005-observation-runtime` — observation-only Device Core
   runtime for Profile activation, in-memory durable-session association, and
@@ -40,9 +40,9 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 ## Repository Baseline
 
-The feature-005 commit on `main` is identified by the subject
-`Implement observation runtime lifecycle`; its parent is feature-004 commit
-`6d10cf72014c46d7eeb5481b26857222ee40b7fd`. Git records the feature-005 hash.
+The feature-005 commit on `main` is
+`2824c0dc3ecc63684f573b3b0a55c621e18e069f` (`Implement observation runtime lifecycle`);
+its parent is feature-004 commit `6d10cf72014c46d7eeb5481b26857222ee40b7fd`.
 The committed baseline includes reproducible agent tooling and these software milestones:
 
 | Feature | Committed software scope | Commit |
@@ -51,7 +51,7 @@ The committed baseline includes reproducible agent tooling and these software mi
 | [002](../specs/002-basic-serial-adapter/spec.md) | Explicit-device receive-only Basic adapter, configure-before-open, joined read/close lifecycle | `e2cd2cf` |
 | [003](../specs/003-durable-evidence-journal/spec.md) | SQLite schema-v1 durable append/reopen, bounded retention/references/fixed-snapshot retrieval | `15890e59` |
 | [004](../specs/004-dut-profile-policy/spec.md) | Strict bounded observation-only TOML-v1 Profile resolution, immutable values and pure Basic translation | `6d10cf7` |
-| [005](../specs/005-observation-runtime/spec.md) | Observation-only run ownership, in-memory Profile/session association and serialized attach/status/detach | `Implement observation runtime lifecycle` |
+| [005](../specs/005-observation-runtime/spec.md) | Observation-only run ownership, in-memory Profile/session association and serialized attach/status/detach | `2824c0dc3ecc63684f573b3b0a55c621e18e069f` |
 
 Feature 005 is software-complete and included in the commit identified above.
 It adds `core/src/dutchmate_core/runtime.py` and
