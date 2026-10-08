@@ -9,12 +9,12 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["core"]
+members = ["core", "apps/service"]
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers", "-ra"]
 asyncio_mode = "strict"
-testpaths = ["core/tests"]
+testpaths = ["core/tests", "apps/service/tests"]
 
 [tool.ruff]
 line-length = 88
@@ -38,14 +38,14 @@ typer.msg = "CLI framework concerns belong outside dutchmate_core."
 "core/tests/**/*.py" = ["TID251"]
 
 [tool.mypy]
-files = ["core/src", "core/tests"]
-mypy_path = ["core/src"]
+files = ["core/src", "core/tests", "apps/service/src", "apps/service/tests"]
+mypy_path = ["core/src", "apps/service/src"]
 python_version = "3.14"
 strict = true
 
 [tool.importlinter]
 include_external_packages = true
-root_package = "dutchmate_core"
+root_packages = ["dutchmate_core", "dutchmate_service"]
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on test frameworks"
@@ -75,3 +75,16 @@ source_modules = [
   "dutchmate_core.profile",
 ]
 forbidden_modules = ["dutchmate_core.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "Core does not depend on service delivery"
+type = "forbidden"
+source_modules = ["dutchmate_core"]
+forbidden_modules = ["dutchmate_service"]
+
+[[tool.importlinter.contracts]]
+name = "Service does not directly import hardware or deferred clients"
+type = "forbidden"
+source_modules = ["dutchmate_service"]
+forbidden_modules = ["serial", "subprocess", "mcp", "typer", "requests", "httpx"]
+allow_indirect_imports = true

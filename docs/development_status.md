@@ -2,189 +2,174 @@
 
 This is the single authority for current progress, active phase, blockers,
 milestone, and next work. It is subordinate to
-`docs/project_context_core.md` and active focused implementation specifications.
+[Core](project_context_core.md) and active focused implementation specifications.
 Completed-slice evidence is kept in [development history](development_history.md).
 
 ## Resume Here
 
-- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is not complete.
-- **Committed software baseline**: Features 001–004 are committed and accepted.
-  Feature 005 is committed as `2824c0dc3ecc63684f573b3b0a55c621e18e069f` on `main`,
-  following feature-004 commit `6d10cf7`.
-- **Completed slice**: `005-observation-runtime` — observation-only Device Core
-  runtime for Profile activation, in-memory durable-session association, and
-  attach/status/detach. Implementation and review through T025 are delivered;
-  T026/T027/T028 are complete. Final pre-commit review found no new defect;
-  the software-complete change set is committed under the explicit human instruction.
-- **Fresh pre-commit evidence**: Ruff clean; mypy 40 files clean; all three import
-  contracts kept (31 files/77 dependencies); pytest 924 passed with zero failures/
-  errors/skips; diff/whitespace checks clean before and after documentation edits.
-  The suite includes 349 feature cases, 565 completed regressions and ten fixtures.
-- **Next action**: Await explicit selection and specification of the next coherent
-  Phase 1 slice. Do not infer or start it automatically.
-- **Planning progress**: All T001–T028 markers are now checked. T028 reconciles
-  the previously completed T026 marker against its existing evidence, while
-  preserving T026's original two-file-only execution record and all deferrals.
-- **Scope guard**: One observation run, one RX path, immutable resolved Profile,
-  fresh journal/session per attach, in-memory association only, unchanged schema-v1,
-  ordered joined cleanup, conservative uncertainty blocking, and no auto reconnect.
-  Service/CLI/Monitor/TX/Control/handoff/Enhanced/MCP/AI/hardware work stays deferred.
+- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is incomplete.
+- **Committed baseline**: Features 001–005 are committed and accepted on `main`.
+  Feature 005: `2824c0dc3ecc63684f573b3b0a55c621e18e069f`
+  (`Implement observation runtime lifecycle`).
+  HEAD: `ed11051015a4e56f81a4737bc55dad322f82f622`
+  (`Record feature 005 commit`).
+- **Active slice**: `006-local-observation-service` — minimal authenticated local
+  FastAPI service for observation-only attach/status/detach. All T001–T030 are
+  checked. Feature 006 is software-complete and ready for final review and commit;
+  it remains uncommitted and human acceptance is pending. Feature 005 remains complete.
+- **Delivered software**: Installable service package, private bootstrap/auth,
+  exact security gate, persistent runtime, owned HTTP mutations, controlled
+  IPv4/IPv6 listener/signals and joined startup/shutdown.
+- **Fresh T030 gate**: 1485 passed, zero failures/errors/skips; Ruff clean;
+  mypy 51 files clean; five import contracts kept/zero broken (49 files/125
+  dependencies); diff checks clean before/after docs. Final diff review found no
+  new defect. Initial sandbox socket denials resolved by permitted guarded rerun.
+- **T028**: Current scope, baseline, evidence and limits reconciled in status/history.
+  Documentation checks only; no software tests or Graphify update rerun.
+- **T029**: Structural trigger met; exactly one code-only incremental Graphify
+  update succeeded: 2,891 nodes/8,348 edges/123 communities; zero LLM tokens.
+  Generated output remains ignored; source/configuration unchanged.
+- **Next action**: Stop after T030. Await explicit instruction for final pre-commit
+  review and commit only. No staging, commit, push, next-slice work or physical-
+  hardware access is authorized by T030.
+- **Invariants**: One runtime/run/RX path; immutable resolved Profile; fresh journal/
+  session per attach; in-memory association; unchanged schema-v1; joined cleanup;
+  conservative uncertainty blocking; no automatic reconnect/discovery/fallback.
+- **Limits**: No unresolved feature-006 product decision. Initial service support
+  is Linux/macOS POSIX; native validation ran on macOS only. Windows service support
+  is deferred; Linux/Windows native and physical-hardware acceptance are unexecuted.
+  The existing feature-003 JournalFailure context-manager limitation remains outside
+  features 005/006. CLI and all broader workflows remain deferred.
 - **Hardware**: No physical device has been accessed, modified or validated.
-  Fake/temporary-journal and Enhanced-shaped results prove software contracts only;
-  opt-in platform/electrical acceptance remains separately authorized and unexecuted.
-- **Open issues**: No unresolved feature-005 product decision. The existing
-  feature-003 `JournalFailure` context-manager limitation remains unfixed and
-  outside feature 005. No failed required check or unresolved feature-005 blocker
-  remains; physical-hardware acceptance is not implied.
-  Python 3.14 remains the declared baseline.
+  Simulated Enhanced-shaped results establish software neutrality only.
 
 ## Repository Baseline
 
-The feature-005 commit on `main` is
-`2824c0dc3ecc63684f573b3b0a55c621e18e069f` (`Implement observation runtime lifecycle`);
-its parent is feature-004 commit `6d10cf72014c46d7eeb5481b26857222ee40b7fd`.
-The committed baseline includes reproducible agent tooling and these software milestones:
-
 | Feature | Committed software scope | Commit |
 |---|---|---|
-| [001](../specs/001-rx-continuous-evidence/spec.md) | Normalized backend boundary, authoritative continuous exact-byte RX, evidence ordering and provenance | `a13522c` |
-| [002](../specs/002-basic-serial-adapter/spec.md) | Explicit-device receive-only Basic adapter, configure-before-open, joined read/close lifecycle | `e2cd2cf` |
-| [003](../specs/003-durable-evidence-journal/spec.md) | SQLite schema-v1 durable append/reopen, bounded retention/references/fixed-snapshot retrieval | `15890e59` |
-| [004](../specs/004-dut-profile-policy/spec.md) | Strict bounded observation-only TOML-v1 Profile resolution, immutable values and pure Basic translation | `6d10cf7` |
-| [005](../specs/005-observation-runtime/spec.md) | Observation-only run ownership, in-memory Profile/session association and serialized attach/status/detach | `2824c0dc3ecc63684f573b3b0a55c621e18e069f` |
+| [001](../specs/001-rx-continuous-evidence/spec.md) | Normalized backend boundary, continuous exact-byte RX, evidence ordering/provenance | `a13522c` |
+| [002](../specs/002-basic-serial-adapter/spec.md) | Explicit-device receive-only Basic adapter, configure-before-open, joined read/close | `e2cd2cf` |
+| [003](../specs/003-durable-evidence-journal/spec.md) | SQLite schema-v1 durable append/reopen, bounded retention/references/retrieval | `15890e59` |
+| [004](../specs/004-dut-profile-policy/spec.md) | Strict bounded observation-only TOML-v1 Profile resolution, immutable values and Basic translation | `6d10cf72014c46d7eeb5481b26857222ee40b7fd` |
+| [005](../specs/005-observation-runtime/spec.md) | Backend-neutral observation runtime, in-memory Profile/session association, serialized attach/status/detach | `2824c0dc3ecc63684f573b3b0a55c621e18e069f` |
 
-Feature 005 is software-complete and included in the commit identified above.
-It adds `core/src/dutchmate_core/runtime.py` and
-`core/src/dutchmate_core/adapters/observation_runtime.py`, explicitly additive
-Acquisition snapshot/join support, tests/fixture gates, planning artifacts and
-runtime coverage in existing import contracts.
-Package exports, dependencies/lockfile, schema-v1 and existing evidence/Backend
-execution contracts remain unchanged; architecture contracts were strengthened
-without new exemptions. The uv workspace remains Python 3.14 with
-`dutchmate-core`, pySerial 3.5 and the locked development toolchain.
+Feature 005 is software-complete and committed after final pre-commit review.
+Its hardware-free baseline gate recorded 924 passes and three kept import
+contracts. Its runtime/composition, additive Acquisition snapshot/join and existing
+evidence/Profile/backend contracts remain unchanged by feature 006. Feature-005
+Graphify maintenance completed in its own T027; feature-006 T029 has now completed
+its separate structural assessment and single code-only incremental update.
 
-## Active Feature: Observation Runtime
+Feature 006 currently adds uncommitted `apps/service/` and its planning artifacts,
+plus intended root `pyproject.toml`/`uv.lock` and status/history changes.
+No feature-006 commit, final acceptance, push or subsequent Phase 1 slice is recorded.
 
-The governing artifacts are [specification](../specs/005-observation-runtime/spec.md),
-[plan](../specs/005-observation-runtime/plan.md),
-[internal contract](../specs/005-observation-runtime/contracts/observation-runtime.md),
-[quickstart](../specs/005-observation-runtime/quickstart.md), and
-[task definitions](../specs/005-observation-runtime/tasks.md).
-Their completion metadata is reconciled by T028; all 28 implementation tasks
-are complete. Current project progress remains recorded here.
+## Active Feature: Local Observation Service
 
-Delivered software behavior:
+Governing artifacts:
+[specification](../specs/006-local-observation-service/spec.md),
+[plan](../specs/006-local-observation-service/plan.md),
+[contract](../specs/006-local-observation-service/contracts/local-observation-service.md),
+[data model](../specs/006-local-observation-service/data-model.md),
+[research](../specs/006-local-observation-service/research.md),
+[quickstart](../specs/006-local-observation-service/quickstart.md) and
+[tasks](../specs/006-local-observation-service/tasks.md).
 
-- A backend-neutral, owning-loop/thread-bound runtime with serialized
-  attach/status/detach and exactly one accepted observation generation.
-- The Basic/SQLite edge checks context, resolves the explicit bounded Profile,
-  then prepares a fresh journal and unopened backend only after runtime admission.
-  Runtime busy rejection performs no preparation; an outer busy edge call may
-  still read the explicit Profile as defined by the contract.
-- Acquisition remains the sole backend opener/continuous RX consumer. Runtime
-  projects normalized primary failure, close failure, trigger, committed
-  provenance and release certainty separately, using the additive join barrier.
-- One owner handles explicit stop, cancellation and autonomous termination.
-  Actual Acquisition startup/consumer/close work is joined before recorder close
-  and terminal settlement. Repeated cancellation cannot abandon cleanup;
-  unconfirmed physical or recorder release permanently blocks that instance's reuse.
-- Immediate terminal Acquisition cannot publish active capture. Observed
-  disconnect wins terminal cause independently of primary/cleanup failures;
-  historical status and old-generation results remain isolated from a fresh run.
-- Profile/session association is in memory only. Cancelled/failed journals are
-  retained; explicit subsequent attach uses a fresh destination/session. Existing
-  sequence, retention, expiry, pagination and provenance-envelope semantics persist.
-- Both normalized fixture shapes exercise the same shared lifecycle/readback
-  assertions, including device-domain timestamps, observer-scoped loss, origin
-  resets and explicit missing-RX rejection. This adds no Enhanced production support.
-- T011 corrected normalized rejection transport; T024 corrected preparation
-  failure transport while retaining read-only facts and validation. Full review
-  found no other feature-005 scope/contract defect.
+### Delivered scope
 
-| Work | Recorded completion |
-|---|---|
-| T001–T005 | Foundations and additive Acquisition/runtime values |
-| T006–T011 | Normal lifecycle, Basic composition, durable readback and US1 review |
-| T012–T018 | Request/cancellation, preparation/failure cleanup, certainty and US2 review |
-| T019–T023 | Fixture gates, autonomous termination, backend neutrality and US3 review |
-| T024 | Full FR-001–030/contract/diff review and bounded preparation-error correction |
-| T025 | All quickstart-focused scenarios and pre-final scope commands |
-| T026 | Development status/history reconciliation; prior completion now checked in tasks |
-| T027 | Trigger satisfied; one code-only incremental Graphify update completed |
-| T028 | Fresh full software gate and final diff/completion review passed |
+- Installable `dutchmate-service` uv workspace package on Python >=3.14,<3.15.
+  FastAPI 0.142.2/Uvicorn 0.54.0 and required transitives are locked. T026 removed
+  unused test-only httpx/httpcore/certifi; all 22 pre-existing locked versions remain
+  unchanged. Five import contracts preserve the three Core boundaries and add two
+  service boundaries, with no weakened Core contract or new exemption.
+- Controlled synchronous `run_service(ServiceConfig(port, host="127.0.0.1"))`,
+  one process/worker, no reload/proxy overrides/import-time resources. One selected
+  numeric loopback socket: default IPv4 or explicit `::1` with IPV6_V6ONLY.
+  No DNS, wildcard binding, alternate port/family fallback or device discovery.
+- Fixed effective-UID/passwd-home private bootstrap directory, descriptor-relative
+  no-follow ownership/link/mode checks, stable nonblocking per-UID flock independent
+  of port, bounded cleanup marker and 256-bit process-lifetime Bearer credential.
+  The whole incarnation stays dirty until cleanup is confirmed. Stale false/
+  malformed/incompatible state blocks restart; no PID stealing or automatic recovery.
+- Exactly `POST /v1/observation/attach`, `GET /v1/observation/status` and
+  `POST /v1/observation/detach`. Attach requires explicit absolute bounded Profile
+  and fresh journal paths. Closed bounded JSON projects actual runtime facts without
+  task/resource handles, backend-identity branches or evidence delivery.
+- Security precedes body/Profile/resource work: selected-family loopback peer,
+  exact single Host authority, rejection of every Origin/Sec-Fetch header, exact
+  single Bearer authorization, then query/upgrade/path/method/body validation.
+  Credentials are header-only; no URL/cookie/body/environment transport or dev bypass.
+  Docs/redirects/debug/input diagnostics and native framework telemetry are disabled.
+  h11 may reject malformed HTTP before ASGI with fixed input-free text/plain 400.
+- One persistent runtime is constructed in async lifespan on its owning loop/thread.
+  Basic/SQLite remain at the existing Core composition edge. A busy edge call may
+  resolve its bounded explicit Profile before runtime admission, but cannot prepare
+  a journal/backend. Schema-v1, immutable Profile/run values, sequence/retention/
+  retrieval and primary/cleanup/trigger/provenance/certainty distinctions persist.
+- At most eight strongly owned pending mutation tasks, registered before yielding.
+  Observed pre-admission cancellation/disconnection submits nothing; after admission,
+  delivery loss does not cancel the owned operation or synthesize runtime cancellation.
+  Completed results/errors are consumed and removed, with no queue/history/replay.
+- Startup stop is latched; repeated signals/cancellation never force abandonment.
+  Shutdown closes admission, drains HTTP, joins registered operations, detaches/joins
+  runtime, captures final immutable status on its loop, checks ownership/physical/
+  recorder cleanup, invalidates credential/closes socket, publishes a truthful marker
+  and releases the guard. Partial startup unwinds acquired resources only. Pending
+  work retains loop/guard; settled uncertainty retains false and blocks restart.
+  Publication failure reports teardown_incomplete without a rollback/durability claim.
 
-All feature-005 implementation and validation above is software-only.
-The feature is software-complete and committed following final pre-commit review.
-Phase 1 remains incomplete; no subsequent slice has been selected or started.
-Per-task RED/GREEN evidence and earlier milestone details remain in development
-history rather than a competing chronological status narrative.
+### Progress and validation evidence
 
-## Validation Evidence
-
-The final pre-commit gate is fresh evidence; earlier rows retain their checkpoint
-meaning. No software tests were rerun during T026/T027:
-
-| Checkpoint | Recorded result | Evidence boundary |
+| Feature-006 checkpoint | Recorded result | Evidence boundary |
 |---|---|---|
-| T024 focused/full software validation | 349 feature cases; 924 default-suite cases; zero failures/errors/skips | Most recent full software gate; does not complete T028 |
-| T024 correction regressions | Six RED failures/eight passes became 14 GREEN; existing normalization case also passed | Preparation exception transport and read-only facts |
-| T025 focused scenarios | All 21 pytest commands passed; canonical groups 105/214/30; feature focus 349, completed regressions 565 and T019 fixtures ten | Selected software-only runs; no unrestricted full-suite invocation |
-| T025 architecture/scope | Five commands passed; Ruff clean, mypy 40 files clean, three import contracts kept (31 files/77 dependencies), schema-v1 and empty SQLite/model/Backend diff | Pre-final architecture/scope checks; final-gate block deliberately omitted |
-| T026 documentation | Verified branch/HEAD/commit references, two-file scope, links, whitespace and Resume Here length | No software tests, Graphify update or hardware validation rerun |
-| T027 Graphify | Version 0.9.48; one changed-code-only incremental update; 2,435 nodes, 6,370 edges, 117 communities; zero input/output LLM tokens | 38 code sources; no semantic extraction; generated outputs/backups ignored |
-| T028 final gate | Ruff clean; mypy 40 files clean; three import contracts kept (31 files/77 dependencies); 924 passed, zero failures/errors/skips; clean diff checks before/after docs | Fresh hardware-free default-suite run; 349 feature cases, 565 completed regressions and ten fixture cases |
-| Final pre-commit review/gate | No new defect; Ruff clean; mypy 40 files clean; three import contracts kept (31 files/77 dependencies); 924 passed, zero failures/errors/skips; unstaged/staged whitespace checks clean | Full feature review and fresh hardware-free gate before the explicitly authorized commit; generated output excluded |
+| T001–T025 | Bootstrap, US1 security/status, US2 lifecycle/request ownership and US3 process/shutdown delivered; detailed RED/GREEN records in history | Fake backends, temporary journals/state and native loopback software tests |
+| T026, 2026-10-07 | Full gate: 1485 passed, zero failures/errors/skips; Ruff clean, mypy 51 files clean, five import contracts kept/zero broken (49 files/125 dependencies), diff clean; wheel/sdist build and outside-cwd imports successful | Full contract/diff review corrected ambient telemetry leakage with RED → GREEN regression and removed unused test dependencies |
+| T027, 2026-10-08 | All 14 unique focused quickstart commands passed, zero failures/errors/skips; union 1485 distinct cases; scope/targeted Ruff/mypy/import/diff checks clean | Overlapping selections; final full-gate block not executed; all 56 source/config hashes unchanged |
+| T028, 2026-10-08 | Status/history, baseline, limits and task bookkeeping reconciled; documentation/baseline/link/whitespace checks recorded in history | Documentation only; no fresh software gate, Graphify or hardware acceptance |
+| T029, 2026-10-08 | Graphify 0.9.48 structural trigger met; one incremental update of 13 changed code sources succeeded: 2,891 nodes/8,348 edges/123 communities; zero LLM tokens | Existing documentation graph preserved; outputs/backups ignored; no source/test/config change or software gate rerun |
+| T030, 2026-10-08 | Fresh full gate: 1485 passed, zero failures/errors/skips; Ruff clean; mypy 51 files clean; five import contracts kept/zero broken (49 files/125 dependencies); whitespace checks clean before/after docs; final intended diff review found no new defect | Initial sandbox run had 34 loopback permission failures/1451 passes; permitted hardware-guarded rerun passed all cases, including native macOS IPv4/IPv6; no source/test/config correction |
+| Final pre-commit review, 2026-10-08 | No new defect; fresh 1485 passes, zero failures/errors/skips; Ruff clean; mypy 51 files clean; five import contracts kept/zero broken (49 files/125 dependencies); diff checks clean | Complete intended feature review; source/test/config unchanged from T030; native macOS software validation only |
 
-No physical-hardware test was executed or passed. Hardware cases remain unexecuted,
-not counted as successful software validation. T028 makes a software-only
-readiness claim, not an electrical/platform, Enhanced-hardware or complete Phase 1 claim.
+The fresh T030 full-suite breakdown is 924 Core, 90 bootstrap, 226 HTTP, 38 process,
+111 projection and 96 runtime cases. Native macOS IPv4/IPv6 process tests ran
+without platform/IPv6 skips. Counts do not establish other-platform or hardware
+acceptance. T001–T030 and structural maintenance are complete. Feature 006 is
+software-complete and ready for separately authorized final review and commit.
+Its committed baseline reference remains features 001–005 until an actual commit.
 
 ## Blockers, Limitations and Deferred Work
 
-- There is no unresolved product decision for the accepted feature-005 scope.
-  All 28 tasks, final pre-commit review and the required software gate are complete.
-  The feature is committed; selection/specification of the next slice requires
-  explicit human instruction.
+- No unresolved feature-006 product decision or newly demonstrated software defect
+  remains. Final software validation passed; feature 006 is uncommitted with
+  human acceptance and separately authorized final pre-commit review pending.
+- Linux/macOS POSIX is the initial service contract. Native Linux acceptance has
+  not run; Windows service startup is explicitly unsupported before bootstrap.
+  Windows service implementation is deferred; native Windows validation and all
+  physical-hardware cases remain unexecuted. Portable Core support is unchanged.
 - The existing frozen/slotted feature-003 `JournalFailure` can be masked by
   `TypeError` when a generator context manager restores `__traceback__` on
-  Python 3.14. It was reproduced during T010 and remains outside the feature-005
-  correction. The distinct feature-005 preparation-error defect is fixed by T024.
-- Runtime activation and observation policy enforcement now exist. Profile
-  discovery/default paths, writing, migration, overlay/reload and numerical
-  persistence defaults remain deferred; inputs and destinations stay explicit.
-  Serial hardware discovery, automatic device selection and fallback remain absent.
-- Service/HTTP/authentication/browser-origin rejection, CLI, process-wide
-  ownership/deployment, Monitor/follow, TX/Interact/console, semantic Control,
-  annotations/derived views and broader retrieval workflows are not implemented.
-- Automatic reconnect, native-USB topology, release/reacquire/handoff,
-  external-program execution, durable full-Profile identity, session catalogue/
-  naming/sealing/resumption/rotation/deletion and cleanup retry attestations remain
-  deferred. No lifecycle timeout or forced worker abandonment is introduced;
-  pending status remains inspectable, and uncertain cleanup blocks reuse.
-- Enhanced production protocol/firmware/USB/framing/GPIO/event behavior, MCP
-  and AI integration remain deferred. The Enhanced-shaped fixture is a software
-  neutrality test, not a hardware or Profile-selection implementation.
-- Safe-open DTR/RTS electrical state/glitch behavior, OS/driver disconnect
-  classification, non-standard baud, RX load and physical cancellation/close
-  behavior remain separately authorized hardware acceptance cases.
+  Python 3.14. Reproduced during feature-005 T010; outside features 005/006.
+- HTTP evidence retrieval/streaming, CLI, Monitor/follow, TX/Interact/console,
+  semantic Control, annotations/derived views and broader retrieval workflows
+  remain deferred. Existing Core journal retrieval is available internally.
+- Profile discovery/default paths, writing/migration/overlay/reload; durable Profile
+  identity/schema changes; session catalogue/naming/sealing/resumption/rotation/
+  deletion; reconnect/native-USB matching; release/reacquire/handoff; cleanup retry/
+  operator recovery tooling; external-program execution remain deferred.
+  No lifecycle timeout or forced abandonment is introduced.
+- Enhanced production protocol/firmware/USB/framing/GPIO/events, MCP and AI remain
+  deferred. The Enhanced-shaped fixture proves software contract neutrality only.
+- Safe-open DTR/RTS electrical/glitch behavior, OS/driver disconnect classification,
+  non-standard baud, RX load and physical cancellation/close behavior need separately
+  authorized hardware acceptance. No physical hardware was accessed or validated.
 - SQLite rollback-journal process-crash recovery is software-tested. Arbitrary
   power loss, lying flush hardware, media/filesystem recovery and live-file copying
   remain outside accepted guarantees.
 
-## Planning and Evidence References
+## References
 
-Product semantics remain in [Core](project_context_core.md); reasoning is in
-[Rationale](project_context_rationale.md). Agent workflow and tooling remain in
-[AGENTS.md](../AGENTS.md) and [agent tooling](agent_tooling.md). Completed feature specifications
-are linked in the baseline table. Detailed completed-slice evidence, including
-earlier Graphify runs, remains in [development history](development_history.md).
-T027's assessment found the two new runtime/composition modules, additive
-Acquisition snapshot/join interfaces and expanded dependency-contract coverage
-satisfy the structural trigger. Exactly one incremental update used Graphify's
-existing updater with the changed code paths only; the CLI default's full-corpus
-rescan was not used. Existing documentation graph content was preserved without
-semantic refresh. Graphify reported one zero-node source (`pyproject.toml`) and
-deterministically renamed 34 community labels by their hubs; no retry or LLM
-labeling was run. Graphify explain verified runtime, composition, snapshot and
-join symbols; `.gitignore` keeps all outputs/backups ignored and no graph file is
-tracked. Detailed command/results remain in development history.
+Product semantics: [Core](project_context_core.md).
+Non-normative reasoning: [Rationale](project_context_rationale.md).
+Agent workflow/tooling: [AGENTS.md](../AGENTS.md), [agent tooling](agent_tooling.md).
+Detailed per-task validation and prior Graphify evidence:
+[development history](development_history.md).

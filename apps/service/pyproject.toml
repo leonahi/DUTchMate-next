@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dutchmate-service"
+version = "0.0.0"
+description = "Local observation delivery for DUTchMate"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "dutchmate-core",
+    "fastapi>=0.142.2,<0.143",
+    "uvicorn>=0.54.0,<0.55",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dutchmate_service"]
+
+[tool.uv.sources]
+dutchmate-core = { workspace = true }

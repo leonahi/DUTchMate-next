@@ -3,6 +3,1591 @@
 Completed slice records are kept newest first. Current status and next work live
 only in `docs/development_status.md`.
 
+## 2026-10-08 — Feature 006 Final Pre-Commit Review and Validation
+
+Performed the explicitly authorized final pre-commit review against Core, active
+feature006 FR-001–030/spec/plan/contract/data model, all30 completed tasks and
+current status. Reviewed the complete intended tracked/untracked inventory and
+confirmed source/test/configuration identical to the completed T030 baseline.
+No new genuine feature006 defect or correction was required.
+
+Fresh commands through rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache
+uv run: Ruff clean; mypy51 source files clean; Import Linter five contracts kept/
+zero broken,49 files/125 dependencies. Full guarded pytest with permitted local
+loopback access:1485 passed in16.96 seconds, zero failures/errors/skips. JUnit:
+/private/tmp/dutchmate006-precommit-full.xml. Native validation macOS only; Linux/
+Windows native and all physical/electrical acceptance remain unexecuted. No
+physical hardware accessed or validated.
+
+Core/completed001–005 remain unchanged, including schema-v1, Profile-v1 and005
+lifecycle/cancellation/cleanup. All22 baseline locked versions preserved. Reviewed
+authenticated three-route delivery, persistent owning-loop runtime, bounded owned
+mutations, selected loopback family, private per-UID bootstrap and joined truthful
+cleanup. No deferred workflow/client/Enhanced behavior, insecure bypass, secret
+logging, extra reader or backend-identity branch found.
+
+Intended feature set is25 files:four existing modifications plus21 new service/
+specification files. Source/test/configuration hashes, scope searches, task markers
+and tracked/untracked whitespace verified. Generated Graphify output remains ignored;
+no additional update, unrelated/runtime/credential artifact or hardware acceptance
+claim. Commit subject authorized: Implement local observation service. Actual commit
+identity and completed baseline reconciliation are recorded after successful commit.
+
+## 2026-10-08 — Feature 006 T030 Fresh Final Software Gate and Diff Review
+
+Executed only T030 using verification-before-completion. Read active spec/plan/
+contracts/tasks and current status, inspected tracked/untracked intended changes,
+and verified parent/child test hardware/account guards before running the full gate.
+Systematic debugging of the initial failures confirmed the sandbox's local socket
+restriction; no production/test correction was needed.
+
+All Python commands used rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache
+uv run. Actual fresh gate results:
+
+| Check | Result |
+|---|---|
+| ruff check . | All checks passed |
+| mypy . | No issues in51 source files |
+| lint-imports | Five contracts kept/zero broken;49 files/125 dependencies |
+| pytest --junitxml=/private/tmp/dutchmate006-t030-full.xml |1485 passed, zero failures/errors/skips;15.77 seconds |
+| git diff --check | Clean before documentation and again after recording results |
+
+The initial sandboxed full run recorded34 failures/1451 passes in7.71 seconds.
+Every failure was test_service_process socket allocation with PermissionError:
+[Errno1] Operation not permitted; no other failure/error/skip. Preserved separate
+JUnit /private/tmp/dutchmate006-t030-sandbox.xml. Automatic approval permitted the
+same full guarded suite with local socket access; that rerun passed all cases.
+No bypass, test weakening, added skip or code change resolved the environment limit.
+
+Final JUnit verifies924 Core,90 bootstrap,226 HTTP,38 process,111 projection and96
+runtime passes. Native macOS IPv4 and IPv6 process cases actually ran; no platform/
+IPv6 skips counted as passes. Fake transports/temporary journals and isolated
+account state were used throughout; no physical device accessed or validated.
+Linux/Windows native acceptance and all physical/electrical acceptance remain
+unexecuted; Windows service implementation is deferred by the accepted contract.
+
+Final intended diff review found no new feature006 scope/contract defect. Reviewed
+service source, security/logging/telemetry, bounded projection/input, persistent
+owning-loop runtime, registered request lifetime, signal/startup/shutdown cleanup,
+stale/duplicate ownership, package/import configuration and lockfile. Basic/SQLite
+remain at the existing edge; primary/cleanup/trigger/certainty remain distinct.
+Core and completed001–005 source/specifications are identical to committed HEAD.
+No evidence/Profile schema changes, extra reader, reconnect/discovery, backend-
+identity branching or deferred workflow/client/Enhanced behavior was introduced.
+
+Intended inventory:25 files, comprising four tracked modifications (status/history,
+root pyproject.toml/uv.lock) and21 new files (five service source, six test/guard,
+two service config and eight feature artifacts). No unrelated/generated/runtime/
+credential files. All22 baseline locked versions preserved; unused httpx/httpcore/
+certifi and telemetry SDK remain absent. Service dependencies are intentional.
+Root/core architecture constraints remain intact; existing exemptions not weakened.
+Generated Graphify output/backups remain ignored; no second update was run.
+
+All146 repository files were unchanged throughout the gate/review before final
+documentation bookkeeping. Updated status/history and minimal spec/plan/quickstart/
+task completion metadata only; all30 tasks now checked. Verified source/test/config
+hashes, local links, task markers, baseline/HEAD, Resume Here length, tracked/
+untracked whitespace and intended inventory after docs. Feature006 is software-
+complete and ready for separately authorized final review and commit, remaining
+uncommitted and unaccepted by the human. Phase1 remains incomplete. No staging,
+commit, push, next-slice work, physical-hardware action or hardware acceptance claim.
+Stopped after T030.
+
+## 2026-10-08 — Feature 006 T029 Code-Only Incremental Graphify Update
+
+Executed only T029. Read docs/agent_tooling.md and local Graphify skill/update
+reference. Actual feature006 adds the service workspace/package and bootstrap,
+HTTP security/projection, lifespan/composition and controlled server modules,
+plus service dependency-contract coverage. These module additions and delivery
+boundaries meet the structural trigger. Shared Core interfaces and completed
+001–005 source/contracts remain unchanged; this is not a planning-only update.
+
+Verified installed Graphify0.9.48 and existing interpreter/graph/manifest. Read-only
+AST incremental preflight:146 files/~224416 words,66 code/80 documents,13 changed
+code sources, no deletions or sensitive exclusions. No pending change queue could
+expand the bounded input. Selected only the12 service package/source/test files
+and root pyproject.toml; no documents dispatched for extraction.
+
+Exactly one invocation used the existing installed updater:
+graphify.watch._rebuild_code(Path('.'), changed_paths=changed_code,
+force=False, block_on_lock=True). This preserves the existing graph and avoids
+the plain CLI update's full code/Markdown rescan. No semantic extraction, API/LLM
+calls, extra labeling command, second update or software test run.
+
+Update succeeded, exit0:2891 nodes/8348 edges/123 communities, from2435/6370/117.
+Report records zero input/output LLM tokens. Non-fatal diagnostics: root
+pyproject.toml produced zero nodes and remains unstamped;36 community labels were
+refreshed deterministically from their hubs. No retry or LLM relabeling followed.
+Graphify backed up four curated outputs and regenerated JSON/HTML/report/manifest/
+labels/signatures under ignored graphify-out/. No generated output was staged.
+
+Read-only query confirms service security/composition, Core runtime and Basic edge
+symbols; its1200-token budget truncates broader traversal, so targeted explain
+run_service confirms server.py:L125 and extracted create_app/bind/server calls.
+Manifest checks verify all12 service sources and unchanged semantic hashes for70
+previous Markdown sources. A read-only incremental check reports only the known
+zero-node root pyproject.toml remaining; no second update. graph.json was never
+read directly. Existing ignore rules cover outputs/labels/signatures/backups, with
+no tracked generated graph files. All146 repository files were unchanged by the
+update before documentation bookkeeping.
+
+Recorded evidence here, updated current status and synchronized minimal spec/plan/
+quickstart/task metadata. T001–T029 checked; T030 remains unchecked. Verified
+source/test/configuration hashes, task markers, documentation links, Resume Here
+length and git diff --check. No production/test/dependency/contract/schema change,
+Spec Kit, final full gate, commit, push, next slice or physical-hardware action.
+Feature006 remains uncommitted; final validation/acceptance pending. Native/hardware
+limits and prior software evidence retain their earlier meanings. Stopped T029.
+
+## 2026-10-08 — Feature 006 T028 Development Status/History Reconciliation
+
+Executed only T028. Replaced accumulated task-checkpoint narration in current
+status with the actual service scope, baseline, progress, evidence and limitations.
+Detailed completed records below remain intact and newest first. Reconciled task
+bookkeeping and spec/plan/quickstart checkpoint metadata without changing contracts.
+
+Verified main HEAD `ed11051015a4e56f81a4737bc55dad322f82f622` (Record feature 005
+commit), and actual accepted feature-005 implementation commit
+`2824c0dc3ecc63684f573b3b0a55c621e18e069f` (Implement observation runtime lifecycle).
+Features001–005 remain committed/accepted; feature006 remains uncommitted, with
+T001–T028 checked and T029–T030 unchecked. No final acceptance claim is made.
+
+Current scope records the installable service, fixed per-UID private bootstrap/
+credential, deterministic HTTP security, three lifecycle endpoints, one owning-loop
+runtime, eight strongly owned pending mutations, controlled numeric loopback server/
+signals and ordered joined cleanup. Basic/SQLite stay at the existing edge; no
+Core/Profile/schema revision or backend-identity branching. Preserved conservative
+uncertainty blocking, retained failed/cancelled journals and all workflow deferrals.
+
+Distinguished the recorded T026 full1485-pass software gate from T027's14 unique
+focused commands (1485 distinct cases across overlapping selections). Removed stale
+current dependency claims: test-only httpx/httpcore/certifi were removed in T026;
+all22 baseline versions remain unchanged. Current import coverage is five contracts,
+with three unchanged Core boundaries. Earlier feature-005 Graphify maintenance is
+explicitly historical; feature-006 structural assessment remains unexecuted here.
+
+Native process/IPv6 evidence is macOS only. Windows service implementation is
+deferred; Linux/Windows native and physical/electrical acceptance are unexecuted. The
+existing feature-003 JournalFailure/context-manager limitation remains outside
+features005/006. No unresolved feature-006 product decision is recorded.
+
+Documentation verification: checked relative file links, task counts and completion
+metadata, Resume Here length (under40 lines), baseline/commit references, unchanged
+Core/completed001–005 diff and all73 snapshotted non-documentation file hashes;
+git diff --check clean. Six documentation/checkpoint files changed this turn.
+No software tests/static gate/build rerun for this documentation-only task. Prior
+validation results above are recorded evidence, not fresh runs. No Spec Kit,
+Graphify update, commit, push, next slice or physical-hardware action. Stopped T028.
+
+## 2026-10-08 — Feature 006 T027 Focused Quickstart/Scope Validation GREEN
+
+Executed only T027 using verification-before-completion. Extracted every focused
+pytest command before the quickstart's final full-gate section; ran all14 unique
+commands, covering repeated runtime-file commands once. Scope searches and focused
+static/import checks also ran. No failure or source/test/config correction needed.
+
+Commands through rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache;
+JUnit /private/tmp/dutchmate006-t027-<ID>.xml. All zero failures/errors/skips:
+
+| ID | Focused pytest arguments | Passed |
+|---|---|---|
+|01| apps/service/tests/test_service_runtime.py -k test_t021 --tb=short |31|
+|02| core/tests/contract/test_acquisition_lifecycle.py core/tests/unit/test_runtime_model.py core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |349|
+|03| apps/service/tests/test_service_bootstrap.py --tb=short |90|
+|04| apps/service/tests/test_service_http.py -k 'not t011' --tb=no |182|
+|05| core/tests apps/service/tests/test_service_bootstrap.py --tb=short |1014|
+|06| apps/service/tests/test_service_http.py apps/service/tests/test_service_projection.py -k 'not t011' --tb=short |293|
+|07| apps/service/tests/test_service_http.py -k t011 --tb=short |44|
+|08| apps/service/tests/test_service_http.py --tb=short |226|
+|09| apps/service/tests/test_service_runtime.py --tb=short |96|
+|10| core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |244|
+|11| apps/service/tests/test_service_runtime.py -k test_t015 --tb=short |24|
+|12| apps/service/tests/test_service_runtime.py -k test_t017 --tb=short |six|
+|13| apps/service/tests/test_service_process.py --tb=short |38|
+|14| apps/service/tests/test_service_bootstrap.py apps/service/tests/test_service_runtime.py --tb=short |186|
+
+XML union by classname/name covers1485 distinct cases; overlapping counts are not
+added. This is focused-command evidence, not a fresh default-suite/full-gate run.
+The final full-gate block was deliberately not executed and remains T030.
+
+Additional actual checks:
+
+- uv run ruff check apps/service pyproject.toml:clean.
+- uv run mypy .:51 files clean; uv run lint-imports:five kept/zero broken,
+  49 files/125 dependencies. No contract/exemption change.
+- Both exact quickstart scope searches return no matches (expected exit1);
+  Core/source/package baseline diff and tracked graph output empty.
+- Parsed committed/current lockfiles:22 baseline versions preserved; removed
+  httpx/httpcore/certifi remain absent. No dependency change this turn.
+- git diff --check and final checkpoint/task-marker/hash/whitespace audits clean.
+
+All56 source/config hashes unchanged, including every hardware/bootstrap guard
+and all production/test modules. Native macOS IPv6 loopback ran; zero platform/
+IPv6 skips were counted as passes. Other-platform and physical-hardware acceptance
+remain unexecuted. No physical device accessed, modified or validated.
+Updated six checkpoint/status/history files only; formal T028 scope/baseline/limits
+reconciliation remains separate and unexecuted. T027 checked, T028–T030 unchecked.
+No T028 work, Spec Kit rerun, Graphify update (T029 pending), commit, push or next
+Phase1 slice started. Stopped after T027.
+
+## 2026-10-07 — Feature 006 T026 Complete Diff Review and Privacy Correction GREEN
+
+Executed only T026. Reviewed governing Core §§13–19, active006 FR-001–030,
+spec/plan/data model/contract and completed001–005 contracts against all intended
+tracked/untracked changes. Source, test guards, dependencies/lockfile, installable
+package, import boundaries and generated/runtime artifact inventory inspected.
+
+| Requirement group | Review result |
+|---|---|
+| FR-001–008 | One persistent owning-loop runtime/worker; numeric selected family only; fixed per-UID safe bootstrap, bounded marker/private token; no import resources/override/fork/daemon manager |
+| FR-009–014 | Exact raw Host/Origin/Sec-Fetch/Bearer ordering, query/Upgrade/path/method/body bounds before Profile/preparation; explicit fresh inputs; no test auth bypass |
+| FR-015–020 | Existing Basic/SQLite edge, normalized closed projections, actual primary/cleanup facts, eight strongly owned operations with delivery-only cancellation and no history |
+| FR-021–025 | Admission close, registered joins, runtime detach/immutable settlement, truthful uncertainty, cancellation-resistant cleanup and reverse partial-startup unwind; marker/fsync facts intact |
+| FR-026 | One demonstrated framework telemetry diagnostic leak corrected below |
+| FR-027–030 | Core/schema-v1/Profile/runtime/neutrality intact, physical guards preserved, import contracts unweakened and full software gate GREEN |
+| Scope/package/artifacts | No CLI/retrieval/streaming/TX/Control/reconnect/handoff/catalogue/Enhanced/MCP/AI; only intended files, no credentials/journals/generated graph; unused dependency removed |
+
+Privacy defect: installed FastAPI0.142.2 defaults inherit configured ambient
+OpenTelemetry providers. Its native exception logger emitted a synthetic private
+delivery error independently of the disabled Uvicorn loggers. An actual API ambient
+provider-slot regression was observed RED with the input-bearing exception, then
+GREEN after explicit tracing/metrics/logs/operation_spans/auto_configure=False in
+app composition. Public FastAPI configuration only; no OTel SDK/exporter added.
+Qualified the contract/research under the existing FR-026 input-log prohibition;
+no Core rule/public wire contract or product decision changed.
+
+Initial test probing patched only the API's re-exported getter and mistakenly saw
+the internal no-op provider; an incomplete abstract logger also failed test setup.
+Corrected the fixture to install the actual provider slot and implement the full
+logger API before accepting RED evidence. The final regression is an actual
+captured emission, not a configuration-string assertion or mock-only proof.
+
+Dependency review: no Python test imports or uses httpx. Ran uv remove --dev httpx
+--offline; uv updated pyproject.toml/uv.lock and removed httpx0.28.1/httpcore1.0.9/
+certifi2026.7.22. No unrelated upgrade; all22 committed baseline versions preserved,
+FastAPI/Uvicorn and their required transitives unchanged. Client/library bans kept.
+Historical T002 installation records remain; active plan/testing inventory updated.
+
+Fresh verification through rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_http.py -k test_t026 --tb=short:
+  one correct RED → one GREEN; telemetry-red.xml/telemetry-green.xml under
+  /private/tmp/dutchmate006-t026-*.
+- uv run ruff check .:clean; uv run mypy .:51 files clean; uv run lint-imports:
+  five kept/zero broken,49 files/125 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t026-full.xml:
+  1485 passed, zero failures/errors/skips (924 Core/90 bootstrap/226 HTTP/38 process/
+  111 projection/96 runtime). Native loopback permitted with hardware tripwires.
+- uv build --package dutchmate-service --out-dir /private/tmp/dutchmate006-t026-wheel
+  --offline:sdist and wheel built successfully. Installed service/Core imports from
+  /private/tmp succeed; no product working-directory assumption introduced.
+- Core/source/package/001–005 artifact diff empty; forbidden service reader/
+  hardware/identity searches no matches; no graph output tracked.
+- git diff --check and final source/config/task/whitespace audits clean.
+
+Changed app.py, one HTTP regression, pyproject.toml/uv.lock and eight review/
+checkpoint/contract/status/history/research documents.52 other prior source/config
+hashes unchanged. No other conformance defect found; all earlier tests remain GREEN.
+T026 checked, T027–T030 unchecked; final acceptance remains pending. No T027 workflow,
+Spec Kit rerun, Graphify update (T029 pending), commit, push or physical-hardware
+access/validation. Native software evidence macOS only. Stopped after T026.
+
+## 2026-10-07 — Feature 006 T025 US3 and Completed Regressions GREEN
+
+Executed only T025 using verification-before-completion. Ran both US3 quickstart
+commands and every completed-feature/Core regression selection named in the guide,
+with hardware guards unchanged. No failure, production/test/configuration change
+or correction needed; full feature review remains the separately authorized T026.
+
+Fresh commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache;
+JUnit /private/tmp/dutchmate006-t025-<id>.xml, all zero failures/errors/skips:
+
+| ID | uv run command | Result |
+|---|---|---|
+| us3-process | pytest apps/service/tests/test_service_process.py --tb=short |38 passed |
+| us3-runtime | pytest apps/service/tests/test_service_bootstrap.py apps/service/tests/test_service_runtime.py --tb=short |186 passed |
+| core-bootstrap | pytest core/tests apps/service/tests/test_service_bootstrap.py --tb=short |1014 passed (924 Core/90 bootstrap) |
+| core-005 | pytest core/tests/contract/test_acquisition_lifecycle.py core/tests/unit/test_runtime_model.py core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |349 passed |
+| core-lifecycle | pytest core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |244 passed |
+
+Selections overlap; counts are not added as unique cases. Complete001–005 Core
+behavior remains GREEN, including normalized backend neutrality, exact RX/evidence,
+Basic ownership/open/close, schema-v1 durable retrieval/retention, immutable Profile
+semantics and005 lifecycle/failure/certainty. US3 verifies guarded duplicate/stale
+owners, numeric IPv4/IPv6-only/no-fallback, h11 privacy, startup stop latching,
+request/cleanup cancellation ownership and honest publication/physical facts.
+
+Additional checks:
+
+- uv run ruff check apps/service pyproject.toml and uv run ruff check .:clean.
+- uv run mypy .:51 files clean; uv run lint-imports:five kept/zero broken,
+  49 files/125 dependencies. No boundary weakened or exemption added.
+- Both quickstart rg scope searches return no matches (expected exit1).
+  git diff ed11051 -- core/src core/pyproject.toml and tracked graph output empty.
+- Parsed committed/current uv.lock:all22 baseline locked versions unchanged.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t025-full.xml:
+  1484 passed, zero failures/errors/skips, including all earlier regressions.
+- git diff --check and final checkpoint whitespace/task-marker/hash audits clean.
+
+All56 source/config hashes unchanged. Native process tests ran on macOS with
+IPv6 available and zero skips; no unsupported-platform/IPv6 skip counted as a pass.
+Linux/Windows service and electrical/hardware acceptance remain unexecuted.
+Helper processes use temporary state/loopback sockets and independent physical
+serial/discovery tripwires. No real DUT accessed, modified or validated.
+Updated six checkpoint/status/history files and qualified the quickstart's old
+1013 Core/bootstrap count as historical (current1014). T025 checked; T026–T030
+unchecked. No T026 review, Spec Kit rerun, Graphify update (T029 pending), commit,
+push or subsequent slice started. Stopped after T025.
+
+## 2026-10-07 — Feature 006 T024 Failure/Publication/Process Exercise GREEN
+
+Executed only T024 with test-driven-development and verification-before-completion.
+Ran existing injected partial-startup/shutdown/cleanup cases and all real isolated
+process cases. Added one parameterized function/nine OS publication cases to
+test_service_runtime.py; no production, dependency/configuration or contract change.
+
+The matrix targets false marker, credential and true marker at file fsync,
+replacement and directory fsync. It retains actual private files, writes, atomic
+replacement and bootstrap; only the selected failing operation is injected.
+True-marker cases attach through actual Runtime/fake Basic/temporary SQLite and
+prove final recorder/backend close once, no remaining read, credentials absent,
+socket closed and account guard still held before replacement or fsync. Earlier
+startup faults prove resources genuinely absent/closed without inventing a runtime.
+Observed prior-marker preservation and restart eligibility/blocking remain explicit.
+
+Successful true replacement followed by failed directory fsync leaves visible
+true only after actual cleanup. The call raises teardown_incomplete and records
+no successful confirmation; no rollback or durable-success claim. Other true
+publication faults leave false and block restart. False after-replace publication
+failure retains conservative blocking state; completed credential-failure unwind
+may confirm empty startup resources and preserves the original bootstrap failure.
+No production defect found; no correction needed. An initial probe expectation
+incorrectly required a runtime for credential-stage failures; corrected it to
+verify actual absence. It was a test setup issue, not production failure.
+
+Fresh commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t024 --tb=short
+  --junitxml=/private/tmp/dutchmate006-t024-publication.xml:nine GREEN,87 deselected.
+- Temporarily suppressing the launcher's marker-publication failure flag produces
+  three intended RED failures for true file-fsync/replace/directory-fsync; restored
+  production passes all nine. XML publication-mutation-red.xml; exact server bytes
+  restored, with no permanent production mutation or weakened assertion.
+- uv run pytest apps/service/tests/test_service_bootstrap.py
+  apps/service/tests/test_service_runtime.py apps/service/tests/test_service_process.py
+  --tb=short --junitxml=/private/tmp/dutchmate006-t024-failures-process.xml:
+  224 GREEN (90 bootstrap/96 runtime/38 process), zero failures/errors/skips.
+- uv run ruff check .:clean; uv run mypy .:51 files clean; uv run lint-imports:
+  five kept/zero broken,49 files/125 dependencies; git diff --check clean.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t024-full.xml:
+  1484 passed, zero failures/errors/skips.924 Core/90 bootstrap/225 HTTP/38 process/
+  111 projection/96 runtime; earlier1475 remain GREEN. Native process execution
+  uses only temporary state/loopback sockets and independent hardware tripwires.
+
+All55 other prior source/config hashes unchanged. Removing T024 test/import
+additions reconstructs the exact prior runtime source hash. Updated seven
+checkpoint/status/history/research documents; T024 checked, T025–T030 unchecked,
+Resume Here bounded. No T025 selections, Spec Kit rerun, Graphify update (T029
+pending), commit, push or physical-hardware access/validation. Native macOS software
+evidence only; unsupported-platform/other-platform/hardware acceptance not implied.
+Stopped after T024.
+
+## 2026-10-07 — Feature 006 T023 Joined Shutdown/Bootstrap Cleanup GREEN
+
+Executed only T023 using test-driven-development, systematic-debugging and
+verification-before-completion. Implemented the ordered pipeline in app.py,
+server.py and bootstrap.py; no Core/package/dependency/001–005 contract change.
+Final service acceptance and the separately authorized T024 exercise remain pending.
+
+Admission closes before HTTP drain. Strongly owned shielded lifecycle tasks join
+every registered operation, including attach not yet inside Core, before calling
+runtime.detach on the owning loop. Repeated waiter cancellation cannot cancel
+those tasks; hung startup/close retains the loop and account guard without timeout.
+Final immutable RuntimeStatus crosses to bootstrap, with actual reason/primary/
+cleanup/certainty facts preserved; no runtime/task/resource handle or cross-loop
+status call. Stopping status projects inspectable facts while mutations remain503.
+
+Confirm true only after owner_settled AND physical_release_confirmed AND
+recorder_close_confirmed plus successful credential invalidation/socket cleanup.
+Failed state with all cleanup confirmed is eligible; settled uncertainty remains
+false/teardown_incomplete and blocks restart. Partial startup unwinds acquired
+resources, confirms only this invocation's successfully published false marker,
+and never rewrites a rejected pre-existing marker. Marker replacement/fsync facts
+remain honest without rollback claims. No extra backend/journal close, reconnect,
+cleanup retry, forced abandonment, takeover or deferred product behavior.
+
+Initial eight app shutdown failures reproduced freshly before code. The pipeline
+makes all31 T021 cases GREEN. A startup-lifespan stop initially revealed Uvicorn's
+listener list is initialized only after startup; installed source confirmed the
+listener-free drain needs an empty initialized list. Corrected within T023.
+Two genuine cleanup defects were covered narrowly: credential release retried a
+failed unlink, and HTTP-drain failure could still publish a clean marker after
+successful Core cleanup. Sticky invalidation and a failed-drain flag correct them.
+Each regression was observed RED → GREEN; stopping-status suppression was also
+mutation-checked RED → GREEN. Original T021 assertions were not weakened.
+
+Fresh commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k
+  'test_t021_lifespan_shutdown or test_t021_shutdown_joins or test_t021_shutdown_keeps'
+  --tb=no --junitxml=/private/tmp/dutchmate006-t023-before-red.xml:eight RED;
+  same selection after implementation:eight GREEN (/private/tmp/dutchmate006-t023-app.xml).
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t021:
+  30 GREEN/one startup-stop failure, then all31 GREEN after the empty-list correction;
+  full runtime file85 GREEN before the two new runtime regressions.
+- uv run pytest apps/service/tests/test_service_bootstrap.py:90 GREEN including
+  new no-retry regression; focused before-fix failure/after-fix GREEN recorded in
+  /private/tmp/dutchmate006-t023-invalidation-red.xml and bootstrap.xml.
+- uv run pytest apps/service/tests/test_service_process.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t023-process.xml:38 GREEN, zero errors/skips.
+  Includes native loopback IPv4/IPv6, token clean restart and startup signal latch.
+- Focused status/HTTP-drain mutation/failure runs:one intended RED each → GREEN;
+  XMLs /private/tmp/dutchmate006-t023-status* and http-drain-*.
+- uv run ruff check .:clean; uv run mypy .:51 files clean; uv run lint-imports:
+  five kept/zero broken,49 files/125 dependencies; git diff --check clean.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t023-full.xml:
+  first1474 GREEN, then fresh1475 GREEN after the failed-HTTP-drain correction,
+  zero failures/errors/skips. Final breakdown:924 Core,90 bootstrap,225 HTTP,
+  38 process,111 projection and87 runtime. No watchdog needed; the T022 block resolves.
+
+Changed three service production modules and two focused test files only, plus
+seven checkpoint/status/history/research documents.51 other prior source/config
+hashes unchanged; Core/package/dependencies/lockfile and earlier HTTP/process/
+projection test files unchanged. Task23 checked; T024–T030 unchecked. Resume Here
+remains bounded. No T024 exercise, Spec Kit rerun, Graphify update (T029 pending),
+commit, push or physical-hardware access/validation. Native software evidence is
+macOS only; Linux/Windows service and electrical acceptance unexecuted. Stopped T023.
+
+## 2026-10-07 — Feature 006 T022 Controlled Listener/Signals Delivered
+
+Executed only T022 using test-driven-development, systematic-debugging for exposed
+helper failures, and verification-before-completion. Added server.py; app.py gains
+only a private monotonic stop latch, admission checks and conservative settlement
+handoff. No registry/runtime join, physical/recorder certainty inspection or true
+marker publication was implemented. T023 remains required for joined shutdown.
+
+Verified installed Uvicorn0.54.0 Config/Server/LifespanOn and Python3.14 Runner
+source. One controlled worker/main-thread asyncio loop uses h11/lifespan-on,
+numeric IPv4/default or explicit V6ONLY IPv6, no reload/WS/proxy trust/access logs.
+No import-time app/runtime/listener/bootstrap or external launch overrides.
+The launcher owns coalesced SIGINT/SIGTERM handlers before directories/lock through
+guard disposal; no force_exit or signal replay. A checked lifespan retains actual
+Uvicorn startup/protocol/drain machinery and rejects later TCP readiness after a
+startup stop. All three Uvicorn input loggers disabled with propagationFalse.
+Known unsettled work keeps the loop/guard alive. Settled interim shutdown retains
+false marker/reports teardown_incomplete; no complete service acceptance claim.
+
+Fresh RED before production: process34 expected missing-server failures/one safety
+pass, JUnit /private/tmp/dutchmate006-t022-before-red.xml. Two dormant test-helper
+defects surfaced once the missing module existed: os.mkdir's mode= keyword was
+not forwarded; a signal.signal mock failed to reflect installed handlers through
+getsignal, allowing Runner to substitute its cancellation handler. Reproduced
+with input-free diagnostics, corrected only those external adapter probes and added
+focused regressions. Six new cases cover fresh bootstrap/context/stop admission/
+signal-probe behavior. Bootstrap-keyword mutation:one intended RED then GREEN;
+stop-latch mutation:two RED then GREEN; signal probe:one RED then GREEN. No test
+acceptance assertion weakened. Security/route/body validation still precedes service
+admission and Profile/preparation; an initial extra body-before-stop expectation
+was corrected to that governing order before final verification.
+
+Commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_process.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t022-process.xml:37 passed/one expected T023
+  failure at clean marker publication, zero errors/skips. Actual isolated loopback
+  IPv4/IPv6-only, unavailable IPv6/occupied-port no fallback, guard exclusion/stale
+  safety, h11 fixed400 privacy and twelve startup signal cases verified. Sandbox
+  escalation authorized loopback tests only; every helper blocks physical access.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py
+  apps/service/tests/test_service_projection.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t022-base.xml:1124 passed.
+- uv run pytest apps/service/tests/test_service_http.py
+  apps/service/tests/test_service_runtime.py -k 'not test_t021' --tb=short
+  --junitxml=/private/tmp/dutchmate006-t022-existing-delivery.xml:279 passed,
+  31 deselected. Includes all original276 delivery/runtime cases and three new
+  HTTP/signal regressions; original924 Core/89 bootstrap/111 projection remain GREEN.
+- uv run pytest apps/service/tests/test_service_runtime.py -k
+  'test_t021_lifespan_shutdown or test_t021_shutdown_joins or test_t021_shutdown_keeps'
+  --tb=no --junitxml=/private/tmp/dutchmate006-t022-app-pending.xml:
+  eight expected app join/detach RED failures,77 deselected, zero errors/skips.
+- Six new focused cases GREEN; mutation/probe XMLs under /private/tmp/dutchmate006-t022-*.
+- uv run ruff check .:clean; uv run mypy .:51 files clean; uv run lint-imports:
+  five kept/zero broken,49 files/125 dependencies; git diff --check clean.
+
+Full required pytest was attempted, not omitted or claimed GREEN. The isolated
+test-tool supervisor ran `python -m pytest -vv --tb=short` with1472 collected;
+after the signal probe correction it blocked at
+test_t021_launcher_closes_admission_before_draining_existing_http_delivery, where
+the active run has not been joined. A30-second watchdog killed only that isolated
+hardware-blocked test process group and exited124. Log:
+/private/tmp/dutchmate006-t022-full.log. No completed summary/JUnit result; remaining
+launcher shutdown/failure cases unexecuted, not passed. An earlier attempt exposed
+the signal mock defect and then blocked at the following active uncertainty case.
+This is test supervision, not a production lifecycle timeout/forced abandonment.
+
+Changed source/tests:server.py, app.py, test_service_http.py, test_service_process.py
+and the signal probe in test_service_runtime.py.51 other prior source/config hashes
+unchanged; Core/package/dependencies/lockfile unchanged. Reconciled seven checkpoint
+documents including actual dependency API research. T022 checked, T023–T030
+unchecked; no T023 implementation. Graphify assessment/update remains T029.
+No Spec Kit rerun, commit, push, physical-hardware access or hardware validation.
+Native loopback/bootstrap evidence is macOS software evidence only. Stopped T022.
+
+## 2026-10-07 — Feature 006 T021 Shutdown/Startup Contracts RED
+
+Executed only T021 using test-driven-development and verification-before-completion.
+Added ten functions/31 cases to apps/service/tests/test_service_runtime.py; no
+production, previous test behavior, dependency/configuration or contract change.
+
+Eight cases execute actual authenticated guarded ASGI lifespan with one real
+owning-loop ObservationRuntime, existing fake Basic and temporary SQLite. They
+expose missing automatic detach (one active-run/four cleanup-gate failures) and
+premature shutdown completion (one queued attach/two startup-gate failures).
+Assertions require final evidence before recorder close, registered work joined
+before detach, no attach_cancelled substitution, hung work kept pending through
+repeated lifecycle cancellation and the original unconfirmed ownership guard.
+The test-only fallback releases fake gates and joins real Core cleanup AFTER
+the failing assertions; it never cancels a service operation or attests cleanup.
+
+Twenty-three cases target the planned public run_service and are RED for absent
+dutchmate_service.server. Their downstream launcher assertions are unexecuted.
+The harness preserves real bootstrap/app/Core/Uvicorn lifecycle, replaces only
+network operations, and delivers to installed signal callbacks without sending
+signals to pytest. It checks admission before draining held HTTP delivery,
+coalesced SIGINT/SIGTERM without force_exit, active/already-settled uncertainty
+without cleanup retry/reset, failed-but-confirmed runtime cleanup, credential/
+socket/marker cleanup errors, partial startup reverse unwinding and guard retention.
+Startup stop is injected at directory/lock/marker/socket/token/lifespan. Immutable
+settled snapshots permit bootstrap assertions after loop exit without cross-loop
+runtime.status calls. No physical transport or actual TCP bind is used by T021.
+
+Fresh commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t021 --tb=short
+  --junitxml=/private/tmp/dutchmate006-t021-red.xml:31 expected failures,53 deselected.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py
+  apps/service/tests/test_service_http.py apps/service/tests/test_service_projection.py
+  --tb=short --junitxml=/private/tmp/dutchmate006-t021-earlier-base.xml:1347 passed.
+- uv run pytest apps/service/tests/test_service_runtime.py -k 'not test_t021'
+  --tb=short --junitxml=/private/tmp/dutchmate006-t021-earlier-runtime.xml:
+  53 passed,31 deselected. No global task-name selector drops older Core cases.
+- uv run pytest --tb=no --junitxml=/private/tmp/dutchmate006-t021-full.xml:
+  65 expected failures/1401 passes, zero errors/skips. XML audit:34 unchanged T020
+  missing-launcher failures and31 T021 failures; no unrelated failing case.
+- uv run ruff check .:clean; uv run mypy .:50 files clean; uv run lint-imports:
+  five kept/zero broken,43 files/114 dependencies; git diff --check clean.
+- Source-hash audit:54 other source/config files unchanged. Removing only T021
+  additions/imports reconstructs the exact SHA-256 of the prior runtime test file.
+
+Corrected a misplaced new test block and local helper typing/import details before
+final RED verification; no production fix or new product decision. Updated six
+checkpoint documents; T021 checked, T022–T030 unchecked. App RED gates leave later
+join/cancellation assertions unexecuted; launcher/hardware/software acceptance is
+not claimed. Native execution remains macOS only. No T022 or later implementation,
+Spec Kit rerun, Graphify update, commit, push or physical-hardware access/validation.
+Stopped after T021.
+
+## 2026-10-07 — Feature 006 T020 Isolated Process Contracts RED
+
+Executed only T020 using test-driven-development and verification-before-completion.
+Added apps/service/tests/test_service_process.py:35 cases, including34 contracts
+against the planned public run_service entry point and one subprocess safety probe.
+No production, existing test, dependency/configuration or completed contract change.
+
+The tests cover controlled single-worker Uvicorn/h11/asyncio/lifespan settings,
+unsupported external launch overrides, no import resources/post-lock fork/DNS/proxy
+trust, default numeric IPv4 and explicit IPv6-only listener, unavailable IPv6 and
+occupied-port rejection without fallback, per-UID exclusion across ports, stable
+lock inode, stale/malformed/idle-crashed owners and no cleanup inference from death.
+Credential scenarios use private file reads only: cached process token, safe modes,
+no live rotation, removal and fresh eligible-incarnation rotation. Real h11 cases
+expect its fixed input-free400 text/plain response, not invented application JSON;
+supplied secrets/paths/body and pre-ASGI warnings cannot leak into supported logs.
+Repeated SIGINT/SIGTERM are injected at directory/lock/marker/socket/token/lifespan
+boundaries to assert latched stop, no later readiness and no force_exit.
+
+The executable test helper substitutes only the isolated passwd account home and
+observes actual bootstrap/runtime/Uvicorn/socket boundaries. It independently blocks
+physical serial factories/discovery, Profile/run preparation, real-account bootstrap,
+DNS and fork; parent pytest monkeypatches are not assumed to cross process boundaries.
+Only temporary state/loopback sockets are permitted; harness timeout/kill applies
+only to its own hardware-blocked children and is not production abandonment policy.
+No actual credential enters argv/env/URL/audit output. Fixture tokens are synthetic.
+
+Fresh commands via rtk proxy/env UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_process.py --tb=no
+  --junitxml=/private/tmp/dutchmate006-t020-red.xml:34 expected failures/one pass.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py
+  apps/service/tests/test_service_http.py apps/service/tests/test_service_projection.py
+  apps/service/tests/test_service_runtime.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t020-earlier.xml:1400 passed.
+- uv run pytest --tb=no --junitxml=/private/tmp/dutchmate006-t020-full.xml:
+  34 expected failures/1401 passes, zero errors/skips. XML audit confirms every
+  failure is ModuleNotFoundError for dutchmate_service.server, not a setup error.
+- uv run ruff check .:clean; uv run mypy .:50 source files clean;
+  uv run lint-imports:five kept/zero broken,43 files/114 dependencies.
+- git diff --check and final untracked whitespace/task-marker/hash checks clean.
+
+The first helper-only probe unnecessarily allocated a port and hit sandbox bind
+denial; it now uses a fixed unused configuration value without opening a socket.
+Corrected new helper typing/lint issues; no production defect or correction.
+The safety probe runs successfully in a child, but all34 launcher tests stop at
+the missing module: actual process/listener/h11/IPv6/startup acceptance remains
+unexecuted, not passed or skipped. Native execution is macOS only.
+All54 prior source/config hashes unchanged. Reconciled six checkpoint documents;
+T020 checked, T021–T030 unchecked. No T021 or later behavior, Spec Kit rerun,
+Graphify update, commit, push or physical-hardware access/validation. Stopped T020.
+
+## 2026-10-07 — Feature 006 T019 US2 Quickstart and Feature-005 Regressions GREEN
+
+Executed only T019 using verification-before-completion. Ran all unique US2
+quickstart pytest commands plus the complete005 focused regression selection.
+The repeated runtime-file command in the guide was covered by one fresh invocation;
+subsets are intentionally overlapping and their counts are not added as distinct
+tests. No production/test/config change or failure correction was needed.
+
+Commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache; all pytest selections have
+zero failures/errors/skips and JUnit /private/tmp/dutchmate006-t019-<id>.xml:
+
+| ID | uv run command | Result |
+|---|---|---|
+| http-t011 | pytest apps/service/tests/test_service_http.py -k t011 --tb=short |44 passed,179 deselected |
+| http | pytest apps/service/tests/test_service_http.py --tb=short |223 passed |
+| runtime | pytest apps/service/tests/test_service_runtime.py --tb=short |53 passed |
+| core-us2 | pytest core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |244 passed |
+| failure | pytest apps/service/tests/test_service_runtime.py -k test_t015 --tb=short |24 passed,29 deselected |
+| binary | pytest apps/service/tests/test_service_runtime.py -k test_t017 --tb=short |six passed,47 deselected |
+| core-005 | pytest core/tests/contract/test_acquisition_lifecycle.py core/tests/unit/test_runtime_model.py core/tests/contract/test_observation_runtime.py core/tests/contract/test_observation_composition.py core/tests/integration/test_observation_runtime.py --tb=short |349 passed |
+
+The scenarios verify normal lifecycle/status mapping, busy Profile-read-only
+semantics, capacity before Profile I/O, admitted task ownership independent of
+delivery, cancellation/failure/certainty separation, kept journals, exact ambient
+binary bytes, final evidence-before-recorder-close and existing bounded readback.
+Identical applicable normalized-fixture assertions preserve reported clock domains,
+scoped loss, capabilities and opaque provenance. No HTTP retrieval or production
+Enhanced behavior is implied; fixture results prove software neutrality only.
+
+Additional fresh checks:
+
+- uv run ruff check apps/service pyproject.toml and uv run ruff check .: clean.
+- uv run mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- Quickstart rg searches for Core delivery imports and forbidden service hardware/
+  private Acquisition decoding/backend identity matches: no matches (expected exit1).
+- git diff ed11051 -- core/src core/pyproject.toml: empty.
+- git ls-files graphify-out: empty; no generated graph output tracked.
+- Reviewed pyproject.toml/uv.lock diff: intended service workspace/test dependencies
+  and two added import boundaries only; no new dependency changes in this task.
+  Parsed committed/current lockfiles: all22 baseline package versions unchanged;
+  additions are service/FastAPI/Uvicorn/httpx and required transitives.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t019-full.xml:
+  1400 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and53 lifetime/failure/integration cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+All54 source/config hashes unchanged, including every production/test/guard module,
+dependencies, lockfile and architecture contracts. Reconciled task/spec/plan/quickstart
+and status/history checkpoint metadata; T019 checked, T020–T030 unchecked. Corrected
+the quickstart's historical T014 runtime-file count to distinguish23 then/53 now.
+US2 software checkpoint is verified, not complete service/process/listener/shutdown
+or hardware acceptance. No T020 process tests, sockets or launcher code added; no
+Spec Kit rerun, Graphify update (T029 assessment pending), commit, push or physical-
+hardware access/validation. Native bootstrap remains macOS-only; no actual h11/
+listener/process/other-platform/hardware acceptance. Stopped after T019.
+
+## 2026-10-07 — Feature 006 T018 Scoped Consumer/Architecture Review, No Correction
+
+Executed only T018 using source inspection, focused searches and
+verification-before-completion. Reviewed current service source/runtime tests
+against Core §17.4/service boundaries, active006 spec/plan/contract and completed
+003–005 contracts. No demonstrated defect or governing conflict found; no production,
+test, dependency/configuration or completed contract change required.
+
+Context: one real runtime is constructed in guarded async lifespan, bound to its
+serving loop/thread. Async status/mutation routes call the Core guard before
+Profile/preparation; service operation tasks/callbacks execute on that loop. No
+service threadpool dispatch, sync runtime endpoint or rebinding. Existing foreign-
+loop/thread regressions prove rejection leaves resources/ownership untouched.
+
+Ownership/handles: service invokes only the existing Basic composition edge and
+runtime.detach; it opens no DUT backend/stream itself. HTTP receive/disconnect
+observation is delivery traffic, not another physical reader. Bootstrap os.open/
+read/close handles only private account files/lock. Status returns explicit closed
+immutable fields, not tasks, backends, serial handles or recorders. Test-only runtime
+spies/fake serial fields/weak task probes are not public service handles; journal
+reopen is confined to test readback after confirmed terminal cleanup.
+
+Snapshot/neutrality: http.py consumes AcquisitionSnapshot directly, separates actual
+primary failure, close_failed, trigger, committed provenance and release certainty,
+and never inspects legacy Acquisition.failure/_consumer_task/_close_task/_generation.
+Normalized loss variants and generic provenance rendering are not backend identity
+decoding. Basic naming appears only at the accepted composition edge/tests; shared
+delivery has no backend-kind branch or host-only time/loss/capability assumption.
+Both existing normalized shapes run identical applicable lifecycle/status tests,
+preserving their reported facts; no Enhanced production behavior introduced.
+
+Compatibility: git diff ed11051 -- core/tests core/src core/pyproject.toml and
+specs/003-durable-evidence-journal specs/004-dut-profile-policy
+specs/005-observation-runtime is empty. Existing schema-v1/sequence/retention/
+retrieval, explicit immutable Profile-v1, in-memory association/fresh destinations,
+005 lifecycle/cancellation/cleanup and no automatic reconnect remain authoritative.
+No forbidden service source search matches for threadpool/physical factory/events/
+legacy-private Acquisition access/backend identity equality. Other search matches
+were inspected as bootstrap descriptors, normalized facts or test-only dependencies.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  53 passed (/private/tmp/dutchmate006-t018-runtime.xml).
+- uv run pytest apps/service/tests/test_service_http.py -k 'foreign or wrong_context'
+  --tb=short: six passed,217 deselected (/private/tmp/dutchmate006-t018-context.xml).
+- uv run ruff check .: clean; mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t018-full.xml:
+  1400 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and53 lifetime/failure/integration cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+All54 existing source/config hashes unchanged. Updated only task/spec/plan/quickstart
+checkpoint metadata and development status/history; T018 checked, T019–T030 unchecked.
+No T019 work, Spec Kit rerun, Graphify update (known localized consumer review;
+feature structural assessment remains T029), commit, push or physical-hardware action/
+validation. Native bootstrap remains macOS-only software testing; no actual
+listener/h11/process/other-platform/hardware or complete service acceptance.
+Stopped after T018 with no correction required.
+
+## 2026-10-07 — Feature 006 T017 HTTP Binary Capture/Readback and Neutrality GREEN
+
+Executed only T017 with focused regression/mutation verification and
+verification-before-completion. Added two parameterized functions/six cases plus
+test-only durable commit/readback helpers in test_service_runtime.py. Actual
+FastAPI/ASGI security/bootstrap/runtime/Acquisition and temporary SQLite remain
+in use. No production code, completed Core contract or existing backend fixture
+implementation was changed. No actual listener, h11 or physical serial used.
+
+Two Basic cases use the completed attach_basic_observation edge and real Basic
+adapter with the existing strict serial dependency. Its scripted read gates are
+configured before open/first read. All256 byte values plus NUL/invalid UTF-8 and
+ambient chunks commit between requests; one case loses attach response delivery
+after active publication. Subsequent status does not change the run or require a
+reader, and detach preserves immutable Profile/run/session/provenance facts.
+Journal-assigned sequences0..4, exact payloads, one active read, one close and
+final segment commit before recorder close are independently asserted.
+
+Four normalized cases parameterize the same test over existing Basic/Enhanced-
+shaped fixture factories and detach/autonomous-disconnect endings. Test preparation
+creates the real journal before fixture construction/open, resolves the unchanged
+Basic Profile and invokes actual runtime.attach. It supplies a generic opaque
+schema37 provenance envelope with bool/null/int/NUL-Unicode fields, preserving
+reported capabilities/timestamp domains/loss unchanged. No shared backend identity
+branch or production Enhanced Profile selection/behavior is added. HTTP status
+while attaching has known session but no fabricated descriptor/committed provenance;
+busy preparation is rejected without a second journal/fixture. Active/terminal
+facts, raw domain/timestamp values, cause/stop intent, stable repeated status/detach,
+one reader/open/close and no reconnect have identical applicable assertions.
+
+After confirmed terminal cleanup, tests call the existing real journal.open API,
+captured before fixture no-reopen guards. That capture is used only by test readback,
+never service composition. Two-record pages preserve fixed snapshot bounds,
+continuation/truncation semantics and exact committed records/payload/provenance;
+no retention gap is fabricated. No HTTP retrieval/stream/Monitor surface added.
+
+All six cases passed against existing production; no genuine defect found.
+Three temporary process-local mutations independently prove the assertions: RX
+payload transformation causes six intended failures; forcing host/nanosecond clock
+facts causes two Enhanced-shaped failures/two Basic controls pass; forcing loss
+unobservable causes the same two failures/two controls pass. No production file
+edited by diagnostics, authentication bypass or physical action.
+
+Commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t017 --tb=short:
+  six passed,47 deselected (/private/tmp/dutchmate006-t017-focused.xml).
+- Diagnostic /private/tmp/dutchmate_t017_mutations.py bytes/domain/loss:
+  six/two/two intended failures, zero errors/skips; JUnit
+  /private/tmp/dutchmate006-t017-mutation-*.xml.
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  53 passed (/private/tmp/dutchmate006-t017-runtime.xml).
+- uv run ruff check .: clean; mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t017-full.xml:
+  1400 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and53 lifetime/failure/integration cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash/AST checks clean.
+
+Original runtime test/function/class ASTs unchanged;53 other source/config hashes
+unchanged, including all production, existing Core fixtures, other tests/guards,
+dependencies, lockfile and architecture contracts. Reconciled task/spec/plan/quickstart
+and status/history metadata; T017 checked, T018–T030 unchecked. No T018 review or
+correction, Spec Kit rerun, Graphify update (T029 assessment pending), commit, push
+or physical-hardware access/validation. Native bootstrap remains macOS-only;
+software Enhanced-shaped neutrality is not Enhanced hardware/production support.
+Controlled process/listener/shutdown and complete service acceptance remain later
+work. Stopped after T017.
+
+## 2026-10-07 — Feature 006 T016 Integration Review, No Correction Required
+
+Executed only T016 using verification-before-completion. Reviewed T015's failure/
+lifetime outcomes and mutation evidence against the active service spec/plan/
+contract, Core service boundary and feature-005 failure/certainty matrix. Inspected
+app.py ownership/normalization and http.py snapshot/issue/status projection.
+No demonstrated service wrapper/failure/projection defect or governing contract
+conflict was found. T015's EIO injector and diagnostic-hook problems were test/tool
+corrections, not evidence of a production defect; neither requires further changes.
+
+The current service projects actual primary_failure_kind, close_failed, trigger,
+committed provenance and cleanup certainty independently. Failed RuntimeStatus
+remains200; normalized rejections preserve categories without raw input/cause.
+Owned operations survive delivery loss, retain no completed history and leave Core
+cause/stop/cleanup semantics authoritative. Failed-create/open/append/close artifacts
+remain retained without reopen/retry or invented cleanup confirmation. No service
+correction, Core/schema/Profile/Acquisition revision or additional test was warranted.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t015 --tb=short:
+  24 passed,23 deselected, zero errors/skips
+  (/private/tmp/dutchmate006-t016-focused.xml).
+- uv run ruff check .: clean; mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t016-full.xml:
+  1394 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and47 lifetime/failure cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+All54 existing source/config hashes unchanged, including all production, tests,
+guards, dependencies, lockfile and architecture contracts. Updated only task/spec/
+plan/quickstart checkpoint metadata and development status/history; T016 checked,
+T017–T030 unchecked. No Spec Kit rerun, Graphify update (documentation-only step;
+feature structural assessment remains T029), commit, push, hardware access/validation
+or T017 work. Native bootstrap remains macOS-only software testing; no actual
+listener/h11/process/other-platform/hardware or complete service acceptance.
+Stopped after T016 with no production/test change required.
+
+## 2026-10-07 — Feature 006 T015 Failure/Lifetime Regressions GREEN
+
+Executed only T015 using focused regression/TDD verification and systematic-debugging
+for the initial disconnect fixture. Added six parameterized functions/24 cases plus
+test-only journal hooks/stable-terminal assertions to test_service_runtime.py.
+No production code, underlying Core behavior or T016 correction was changed.
+Real private bootstrap/auth/ASGI/runtime/Profile/Basic/SQLite remain in use, with
+temporary files and the existing strict fake serial dependency. Physical/discovery
+and real-account bootstrap guards remain active; no permissive security path.
+
+Preparation matrix covers an unknown failed-create artifact without inventing a
+session or recorder certainty, existing destination unchanged, and constructor
+failure after real create with successful/failed recorder close. Failed-open cases
+preserve unconfirmed physical release independently of recorder closure/close_failed.
+Initial append failures retain known descriptor without fabricated committed
+provenance; backend/recorder cleanup combinations remain ordered and independent.
+
+Active/final matrix covers RX recording failure, transport failure, transport primary
+followed by failed final append, clean autonomous disconnect, disconnect followed by
+append plus both cleanup failures, and failed final append during explicit detach.
+Disconnect retains terminal cause precedence despite primary/cleanup failure;
+earlier transport primary survives subsequent recording failure. Actual journal
+assigned sequences/committed boundaries remain honest, with no fabricated final
+record. Close-only combinations have no primary acquisition failure even though
+legacy Acquisition may encode transport failure. Failed journals/session identities
+remain; raw file images, status and detach repeat unchanged without second cleanup,
+reopen or automatic reconnect. Uncertain cleanup blocks a new fresh destination.
+
+Three repeated HTTP cancellations during gated failed open/initial append preserve
+Core stop intent none and eventual startup failure independently of lost delivery.
+Only HTTP tasks are cancelled; test gates release/join Core work before fixture
+cleanup. Backend/recorder close attempts are counted once; no extra physical reader
+or service evidence API. Journal faults occur at the real adapter boundary and
+post-close failure still supplies no positive recorder certainty.
+
+Initial run:22 passes/two failures caused by using errno.EIO as fake device loss.
+The existing Basic adapter classifies ENODEV/ENXIO as device loss; EIO is transport
+failure. Inspected that code/contract and corrected the injector to ENODEV, retaining
+the intended disconnect assertions. Fresh focused matrix then passed all24. No
+genuine production defect found. Existing implementation already satisfied the
+new regressions, so no artificial product failure or T016 work was introduced.
+
+Three temporary process-local delivery-projector mutations verify independent
+assertions without editing production files: close_failed relabelled as primary
+transport (two intended failures/two controls pass); failed-open physical release
+and admissibility optimistically true (two intended failures); disconnect cause
+relabelled acquisition_failure after append/cleanup faults (one intended failure/
+one control pass). Initial diagnostic plugin used the wrong pytest hook phase;
+corrected before recording mutation evidence. Setup errors are not counted as RED.
+Fresh normal runs have no diagnostic mutation/plugin active.
+
+Commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py -k test_t015 --tb=short:
+  24 passed,23 deselected (/private/tmp/dutchmate006-t015-focused.xml).
+- Diagnostic mutation script /private/tmp/dutchmate_t015_mutations.py primary,
+  certainty and cause: respectively two/two/one intended assertion failures,
+  zero errors/skips; JUnit /private/tmp/dutchmate006-t015-mutation-*.xml.
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  47 passed (/private/tmp/dutchmate006-t015-runtime.xml).
+- uv run ruff check .: clean; mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t015-full.xml:
+  1394 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and47 lifetime/failure cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash/AST checks clean.
+
+All original runtime test/function/class ASTs unchanged;53 other prior source/config
+hashes unchanged, including every production module, other tests/guards, Core,
+dependencies, lockfile and architecture contracts. Reconciled task/spec/plan/quickstart
+and status/history metadata; T015 checked, T016–T030 unchecked. No Spec Kit rerun,
+Graphify update (T029 assessment pending), commit, push or physical-hardware action/
+validation. Native bootstrap remains macOS-only; no listener/h11/process/other-platform/
+hardware or full service acceptance. Stopped after T015; T016 not executed.
+
+## 2026-10-07 — Feature 006 T014 Bounded Operation Ownership GREEN
+
+Executed only T014 using TDD, systematic-debugging for exception retention and
+verification-before-completion. Fresh original lifetime baseline:12 expected
+ownership failures/nine passes before production work
+(/private/tmp/dutchmate006-t014-red.xml). No T015 failure behavior was implemented.
+
+Updated app.py with a private set of at most eight pending service operation tasks.
+After existing security/body checks, pending caller cancellation submits nothing;
+ready/capacity checks, task creation/strong registration and completion callback
+installation are atomic before yielding or Profile I/O. Already done entries are
+pruned before capacity decisions. Each task immediately invokes the existing Basic
+edge or runtime.detach when scheduled. No queue, replay, public job or second RX path.
+
+HTTP delivery waits on shielded work and a separate receive/disconnect observer.
+Delivery cancellation/disconnect/send failure never cancels the registered task or
+signals005 attach_cancelled. Even work not yet inside Core remains owned. Only the
+delivery observer and outer shield future are cancelled during delivery cleanup;
+service tasks retain no direct cancellation path. Completion consumes outcomes,
+removes entries and releases task/input/result references. Core stop intent,
+primary/cleanup/certainty and all underlying contracts remain authoritative.
+
+First implementation:20 lifetime passes/one failure;223 HTTP tests passed. The
+lost-response exception case retained a completed task and triggered a loop report.
+Temporary diagnostics inspected reference types only (no credential/input values),
+identifying a loop exception context referencing the task. Inspected the installed
+Python3.14 asyncio.shield implementation: cancelling its outer future installs
+_log_on_exception on inner work, which reports a later exception despite registry
+consumption. No logger bypass, private callback mutation or weakened assertion used.
+Normalized Core results/errors inside the owned task to closed bounded HTTP responses
+before shielding; late normalized failures no longer raise into shield. The original
+exception consumption/weak-reference test then passed; all21 originals unchanged.
+
+Added one parameterized regression/two cases in test_service_runtime.py: an
+observed disconnect while attach/detach is registered but still before Core invocation
+must finish delivery with zero response/preparation and leave the owned operation
+pending/uncancelled. Releasing the test gate then settles it normally with unchanged
+stop intent. Temporarily disabling disconnect observation produced two expected
+failures; restored code made both GREEN
+(/private/tmp/dutchmate006-t014-disconnect-red.xml). No direct service-task cancellation.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  23 passed, zero failures/errors/skips (/private/tmp/dutchmate006-t014-green.xml).
+- uv run pytest apps/service/tests/test_service_http.py --tb=short:223 passed
+  (/private/tmp/dutchmate006-t014-http.xml); full final run reverified after correction.
+- uv run ruff check .: clean; mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/114 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t014-full.xml:
+  1370 passed, zero failures/errors/skips:924 completed Core regressions,
+  89 bootstrap,223 HTTP,111 projection/input and23 lifetime cases.
+- git diff --check and final untracked whitespace/task-marker/source-hash/AST checks clean.
+
+Only app.py and the new two-case runtime regression change executable code. All
+original runtime test/function/class ASTs remain unchanged;52 other source/config
+hashes unchanged, including all Core, HTTP helpers/tests, bootstrap/guards,
+dependencies, lockfile and architecture contracts. Reconciled task/spec/plan/quickstart
+and status/history metadata; T014 checked, T015–T030 unchecked. No Spec Kit rerun,
+Graphify update (T029 assessment pending), commit, push or physical-hardware
+access/validation. Native bootstrap is macOS-only software testing; no controlled
+listener/h11/process/other-platform/hardware acceptance or full feature acceptance.
+Startup/shutdown joining remains T022/T023. Stopped after T014.
+
+## 2026-10-07 — Feature 006 T013 Normal HTTP Lifecycle Wiring GREEN
+
+Executed only T013 using TDD, systematic-debugging for the failed-open assertion,
+and verification-before-completion. Fresh T011 baseline:33 missing-route failures/
+11 validation passes before production work (/private/tmp/dutchmate006-t013-red.xml).
+Added only normal async POST attach/detach handlers in service app.py. Existing
+HTTP validators read bounded replayed body; no FastAPI input-echo model or resource
+probe. Core loop/thread guard precedes Profile/preparation; one persistent runtime
+calls existing attach_basic_observation/runtime.detach and projects each returned
+immutable status, including failed/terminal facts, directly as200. Existing response
+helpers preserve Profile/runtime/wrapper rejection categories without raw inputs.
+Outer auth/Host/Origin gate and docs/redirect/debug settings remain intact.
+
+Basic/SQLite construction stays at the completed composition edge, with bounded
+Profile read before busy admission and no journal/backend preparation when rejected.
+No new adapter/factory/evidence API, backend branch, extra RX reader, Core/schema/
+Profile/Acquisition change, request registry/shielding, server or shutdown work.
+
+First focused run had45 passes/one failure: the T011 failed-open fixture assumed
+attach_admissible true after a simulated open exception. Feature-005 contract §7
+failure table explicitly says Backend.open failure leaves physical release
+unconfirmed; Acquisition sets that fact false before open, and shared runtime
+projects it unchanged. HTTP also projected correctly. Corrected the test's false
+assumption, asserting physical=false, recorder=true, owner settled, primary transport
+failure, close_failed=false and admissibility=false. No production inference or
+uncertainty reset added. Existing retained-journal and subsequent status checks pass.
+
+Reconciled two T009 historical absent-endpoint tests as enabled-route authentication
+tripwires: missing Bearer returns401 before receive/body/Profile/preparation. T013's
+new surface supersedes their old404 checkpoint. Other HTTP test/function/class ASTs
+are unchanged except the failed-open regression above;52 other prior source/config
+hashes unchanged, including HTTP helpers, all Core/T012 tests, dependencies and
+architecture contracts. Only app.py and test_service_http.py changed in executable code.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_http.py --tb=short:223 passed,
+  zero errors/skips (/private/tmp/dutchmate006-t013-http-green.xml).
+  All44 T011 cases now GREEN, after the33 RED baseline; two migrated auth cases GREEN.
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  12 expected T014-scope failures/nine passes
+  (/private/tmp/dutchmate006-t013-lifetime-red.xml).
+- uv run ruff check .: clean; mypy .:49 files clean.
+- uv run lint-imports: five kept/zero broken,43 files/113 dependencies; no weakening.
+- uv run pytest --tb=no --junitxml=/private/tmp/dutchmate006-t013-full.xml:
+  12 expected T014-scope failures/1356 passes, zero errors/skips (1368 cases).
+  All924 completed Core regressions,89 bootstrap,223 HTTP and111 projection cases pass.
+- git diff --check and final new-file whitespace/task-marker/source-hash/AST checks clean.
+
+Remaining failures are exactly T012's pending-cancel attach/detach pair, registration/
+strong ownership pair, startup/close delivery-cancellation four cases, mixed/attach
+capacity pair, and completed-reference consumption pair. Normal direct-await wiring
+exposes two previously masked pending-cancel failures; those pending requests can
+invoke Core. Four active-publication delivery cases and sibling-error isolation now
+pass. Twelve ownership assertions deliberately remain RED rather than implementing
+T014 early. No complete service/cancellation/capacity/shutdown acceptance claimed.
+
+Reconciled task/spec/plan/quickstart/status/history metadata; T013 checked,
+T014–T030 unchecked. No Spec Kit rerun, Graphify update (T029 assessment pending),
+commit, push or physical-hardware access/validation. Native bootstrap is macOS-only
+software testing; peers are simulated, no listener/h11/other-platform/hardware
+acceptance. Stopped after T013.
+
+## 2026-10-07 — Feature 006 T012 Request Lifetime/Registry Contracts RED
+
+Executed only T012 using the existing TDD/verification workflow. Added
+apps/service/tests/test_service_runtime.py: eight parameterized functions/21 cases.
+Real controlled app, private isolated bootstrap/credentials, serving-loop runtime
+and T011's Profile/SQLite/Basic fixture remain in use. No production delivery/
+registry implementation or authentication/process-ownership bypass was added.
+All53 previous source/config hashes unchanged, including earlier tests/guards,
+Core, service production, dependencies, lockfile and import contracts.
+
+Pre-registration cancellation while receiving, disconnect before body completion
+and pending cancellation at final-body delivery assert zero Core submission/
+Profile/preparation on both mutations. Registration tests queue HTTP cancellation
+before a newly created child task's first execution, then require an independently
+owned Core call even before entering the real runtime. A weakly held future/task
+cycle avoids an Event or test task supplying a false strong owner; GC assertions
+require the service to retain admitted work after delivery disappears.
+
+Real journal startup/close gates cover attach/detach delivery cancellation and
+repeated cancellation without synthesizing attach_cancelled or altering explicit
+detach intent. Active response publication covers cancellation, signalled disconnect
+and header/body send failure without rollback or stopping capture; no exact wire-
+disconnect observation order is invented. Capacity tests hold eight attach-only
+or mixed mutations before Core execution; require ninth503 before Profile I/O and
+reuse a completed slot. One operation error cannot cancel a held sibling.
+
+Twelve repeated lost deliveries in each result/error case assert independent
+invocation without replay/deduplication, no unhandled task exceptions and collection
+of completed task/result/error references. Weak-referenceable returned status values
+preserve every validated immutable Core field, separating service result retention
+from Core's legitimate last-status snapshot. Probes retain no strong service tasks,
+paths or returned values. Gates only control external progress; they implement no
+registry/lifecycle policy. Teardown releases gates/joins observed calls and restores
+patches before test-only runtime cleanup; client simulation never directly cancels
+service operation tasks. Test watchdogs are not product lifecycle timeouts.
+
+Initial static checks identified fixture re-export/import ordering and optional
+reference narrowing; corrected within the new test file. Header publication gates
+now pause only successful200 responses so absent-route failures are deterministic,
+not timeout artifacts. An initial broad 'not t012' baseline selector omitted122
+older Core cases sharing that task identifier; explicit baseline files were rerun
+and all1303 passed. No production defect was fixed or product contract changed.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_runtime.py --tb=short:
+  15 expected failures/six passes (/private/tmp/dutchmate006-t012-red.xml).
+  JUnit inspection confirms every failure is HTTP404 before mutation submission;
+  no fixture/setup or timeout failure counted as expected RED.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py
+  apps/service/tests/test_service_projection.py apps/service/tests/test_service_http.py
+  -k 'not t011' --tb=short:1303 passed,44 deselected, zero errors/skips
+  (/private/tmp/dutchmate006-t012-earlier-green.xml).
+- uv run ruff check . and new-file ruff format --check: clean.
+- uv run mypy .:49 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/112 dependencies.
+- uv run pytest --tb=no --junitxml=/private/tmp/dutchmate006-t012-full.xml:
+  48 expected failures/1320 passes, zero errors/skips (1368 cases).
+  T011 retains33 missing-route failures/11 passes; T012 adds15 failures/six passes.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+Deeper lifetime/registry assertions remain acceptance expectations blocked by
+missing route wiring; no software/service/ownership acceptance claimed. Reconciled
+task/spec/plan/quickstart and status/history metadata. T012 checked; T013–T030 unchecked.
+No Spec Kit rerun, Graphify update (T029 assessment pending), commit, push, physical-
+hardware access or validation. Native bootstrap remains macOS-only software testing;
+no real listener/h11/other-platform/hardware acceptance. Stopped after T012.
+
+## 2026-10-07 — Feature 006 T011 HTTP Lifecycle/Mapping Contracts RED
+
+Executed only T011 with the existing test-driven-development and verification
+workflow. Added14 parameterized functions/44 cases to
+apps/service/tests/test_service_http.py. No production route/registry/lifecycle
+implementation was added. Controlled app and credential checks use the existing
+real private bootstrap on an isolated account home; one real runtime is recorded
+on its loop/thread. Physical serial/discovery and real-account guards remain.
+
+The explicit T011 fixture permits real temporary Profile/SQLite/Basic composition;
+other HTTP tests retain all previous Profile/preparation tripwires. It loads the
+existing strict fake serial dependency by repository-relative file location without
+adding an undeclared import path. Real adapter initialization is injected only with
+that dependency. Journal creation/close stay real and reopen is a tripwire. Normal
+requests remain connected after their body. Test-only fallback runtime.detach joins
+resources even when a RED assertion prevents HTTP detach; uncertain cleanup retains
+the false marker instead of claiming cleanup. No additional physical reader.
+
+Coverage includes both simulated peer families; normal attach/status/detach and
+inactive/repeated detach; captured Profile without reread; exact Basic selector/
+UART values; retained failed journals and fresh run/session/
+destination on later attach; no overwrite/reopen. Real Core-seeded busy and failed
+close states test409 and bounded65,537-byte Profile read before busy rejection,
+with preparation/destination-probe tripwires. All11 Profile categories are first
+verified against the real resolver, then asserted as HTTP422 without admission.
+Real foreign loops on the same/another thread exercise attach/detach500 before
+Profile/preparation. Mapping-only cases supply valid immutable Core statuses for
+all six states (including failed/immediate clean terminal) and normalized edge
+failures, verifying200 is not an active-capture assertion. Actual app path/method,
+query and missing-path checks prohibit aliases/defaults/discovery/resource work.
+
+Initial verification identified test-harness errors: a journal create spy accepted
+an unsupported session_id keyword, and inserted code displaced two original T009
+assertions. Both were corrected before the final RED evidence. All original test
+function/class ASTs/assertions are unchanged except the preparation fixture's
+explicit T011 opt-in;52 other source/config hashes unchanged, including all Core,
+service production, dependencies, lockfile and architecture contracts. No product defect
+or governing contract change was found; required HTTP wiring remains unimplemented.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_http.py -k t011 --tb=no:
+  33 expected failures/11 passes,179 deselected
+  (/private/tmp/dutchmate006-t011-red.xml). Every failure is absent-route404,
+  verified from JUnit results; no setup-error or unrelated failure counted as RED.
+- uv run pytest -k 'not t011' --tb=short:1303 passed,44 deselected,
+  zero errors/skips (/private/tmp/dutchmate006-t011-earlier-green.xml).
+- uv run ruff check .: all checks passed; HTTP test formatting verified.
+- uv run mypy .:48 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/112 dependencies.
+- uv run pytest --tb=no --junitxml=/private/tmp/dutchmate006-t011-full.xml:
+  33 expected T011 failures/1314 passes, zero errors/skips (1347 cases).
+  Earlier1303 remain GREEN;11 new validation checks already pass. Gate is RED as
+  required by this test-only task, not complete feature/service acceptance.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+Reconciled task/spec/plan/quickstart and current status/history checkpoint metadata.
+T011 checked; T012–T030 unchecked. Quickstart keeps completed US1 selections
+separate from T011 RED cases. Historical T009 absent-endpoint assertions require
+reconciliation when T013 adds routes. No Spec Kit rerun, Graphify update (T029
+assessment pending), commit, push, physical-hardware access or validation.
+Only native macOS bootstrap and simulated peers were exercised; no listener,
+h11, other-platform or hardware acceptance. Stopped after T011; no T012 file/tests.
+
+## 2026-10-07 — Feature 006 T010 US1 Verification and Logging Review GREEN
+
+Executed only T010 using verification-before-completion. Reviewed active spec,
+plan/contract/quickstart, current committed baseline ed11051 and app.py/http.py.
+No demonstrated service security/projection defect; no production/test changes
+or new RED cycle required. All53 existing source/config hashes unchanged.
+
+Reviewed supported inactive ASGI delivery: no logging/print/exception-stringifying
+calls in either module, debug/docs/OpenAPI/redirects disabled, outer security before
+routing/body/resource work, normalized Runtime/Profile/routing/projection errors,
+and fixed post-response delivery exception raised outside the original handler.
+Inspected installed FastAPI0.142.2/Starlette1.7.0 middleware: debug tracebacks are
+disabled; status exceptions are normalized inside the async endpoint and routing
+errors have the app's closed handler. Existing log-capture cases assert no credential,
+header/body/URL/path/raw-exception echo. Credential cache and bounded generic
+projection remain unchanged. No permissive testing path or resource preparation.
+
+Controlled Uvicorn launcher configuration (access/error/general loggers disabled,
+propagation disabled) and malformed pre-ASGI h11 diagnostics remain T020/T022.
+No listener/server exists yet; their logging behavior is not validated or accepted
+by this US1 checkpoint. No general logging framework/configuration added.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_http.py --tb=no:179 passed
+  (/private/tmp/dutchmate006-t010-http.xml).
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py --tb=short:
+  1013 passed (/private/tmp/dutchmate006-t010-baseline.xml).
+- uv run pytest apps/service/tests/test_service_http.py
+  apps/service/tests/test_service_projection.py --tb=short:290 passed
+  (/private/tmp/dutchmate006-t010-us1.xml).
+- uv run ruff check apps/service pyproject.toml and uv run ruff check .: clean.
+- uv run mypy .:48 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/112 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t010-full.xml:
+  1303 passed, zero failures/errors/skips:924 completed regressions,89 bootstrap,
+  179 HTTP/composition and111 projection/input cases.
+- Quickstart scope searches: no Core delivery imports, forbidden service hardware/
+  private-acquisition/backend-identity matches, Core source/package diff or tracked
+  graph output. No matches are expected, not command failures.
+- git diff --check and final untracked whitespace/task-marker/source-hash checks clean.
+
+Reconciled task/spec/plan/quickstart and status/history checkpoint metadata only,
+including the stale task-count paragraph. T010 checked; T011–T030 unchecked.
+No Spec Kit rerun, Graphify update (structural assessment remains T029), commit,
+push, physical-hardware access or validation. Native bootstrap ran on macOS only;
+Linux/Windows/listener/h11/hardware acceptance remains unexecuted. US1 is not full
+service acceptance. Stopped after T010; no T011 tests or behavior added.
+
+## 2026-10-07 — Feature 006 T009 Inactive Async App Composition GREEN
+
+Executed only T009 using test-driven-development and verification-before-completion.
+Added23 composition cases to apps/service/tests/test_service_http.py. All23 were
+expected RED for absent dutchmate_service.app before production work, then GREEN:
+/private/tmp/dutchmate006-t009-red.xml and dutchmate006-t009-green.xml.
+Real isolated PrivateBootstrap/credential checks remain intact; no auth substitute.
+
+New apps/service/src/dutchmate_service/app.py constructs one ObservationRuntime
+only in async lifespan after a prepared private single-use launch context. Missing,
+unprepared, mismatched and reused contexts reject before construction; the context
+belongs to its original process. Factory/import has no bootstrap/runtime/listener
+resource effects. One inactive runtime persists across requests on its serving
+loop/thread. Async GET status projects existing immutable facts with normalized
+context failure mapping; real foreign-loop/same-thread and foreign-thread calls
+return500 runtime/wrong_execution_context without rebinding or state changes.
+The outer pure ASGI gate covers every HTTP path; docs/OpenAPI/redirects/debug are
+disabled, and FastAPI routing errors use fixed closed response helpers.
+
+No attach/detach route, operation registry, resource preparation, controlled server/
+socket/signal handling or joined service shutdown was added. App lifespan leaves
+bootstrap credential/marker/guard untouched; the real isolated test owner performs
+cleanup. Tests retain Profile/journal/backend/hardware tripwires.50 other existing
+source/config hashes are unchanged, including all Core/bootstrap/http.py/guards/
+dependencies/architecture contracts. No product contract or schema revision.
+Focused tests found no production defect; targeted mypy identified the ASGI test
+harness's Awaitable-versus-Coroutine annotation, corrected with an async task wrapper.
+
+Fresh final gate through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run ruff check .: all checks passed.
+- uv run mypy .:48 source files clean.
+- uv run lint-imports: five kept/zero broken,43 files/112 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t009-full.xml:
+  1303 passed, zero failures/errors/skips:924 completed001–005 regressions,
+  89 bootstrap,179 HTTP/security/composition and111 projection/input cases.
+- git diff --check and final untracked-file whitespace/metadata/scope checks clean.
+
+Reconciled task/spec/plan/quickstart and current status/history metadata only;
+T009 checked, T010–T030 remain unchecked. No Spec Kit rerun, Graphify update
+(structural assessment remains T029), commit, push or physical-hardware action/
+validation. Native bootstrap tests ran on macOS; Linux/Windows/listener/h11/hardware
+acceptance is not claimed. Stopped after T009; T010 was not executed.
+
+## 2026-10-07 — Feature 006 T008 Pure HTTP Gate/Helpers GREEN
+
+Executed only T008 using test-driven-development, systematic debugging for the
+observed peer/mapping failures, and verification-before-completion. Fresh original
+T006/T007 selection recorded259 expected RED cases, all absent HTTP module, before
+production work (/private/tmp/dutchmate006-t008-red.xml).
+
+Implemented only apps/service/src/dutchmate_service/http.py: pure ASGI peer and
+exact raw Host/Origin/Sec-Fetch/Bearer checks in contract order; cached credential
+getter/constant-time comparison; no proxy trust, URI credentials, additional routes
+or Upgrade bypass. Security precedes receiving/parsing body and downstream work.
+Request validation enforces media, strict UTF-8/JSON/unique keys/types/absolute
+path bytes and zero-body rules, without Profile/file/resource access. HTTP body
+capture/replay is finite request delivery buffering, not a UART reader or job queue.
+Observed delivery disconnect stops delivery without scheduling resource work.
+
+Closed status projection uses immutable Profile/RuntimeStatus/Acquisition facts,
+direct primary/close projection, normalized domain/loss variants, and opaque generic
+provenance snapshots without backend registry/identity branch, private dump or
+legacy inference. Scalar-by-scalar UTF-8 JSON retains at most1MiB+1 bytes and fails
+overflow before a partial successful response. Error categories are whitelisted;
+typed Runtime/Profile rejection mapping preserves existing codes without detail/
+traceback/input logging. Every application response gains no-store caching policy.
+No app, lifespan, runtime/Acquisition instance, routes executing lifecycle, service
+operation registry, listener/server, timeout, process manager or hardware created.
+
+First focused run:258 passed/one failed. Existing peer regression showed Python3.14
+classifies ::ffff:127.0.0.1 as IPv6 loopback; explicit ipv4_mapped rejection restored
+peer-first403 rather than reaching Host400. Static raw_path narrowing also corrected.
+Review added six focused typed-downstream Runtime/Profile rejection regressions:
+all six RED against generic500, then GREEN after using normalized rejection helper.
+Two body replay regressions were verified with a temporary replay-removal mutation
+(two RED) and restored production code (two GREEN), proving single/chunked bodies
+and later disconnect reach the downstream boundary without loss.
+
+Original T006 function/class ASTs and all original assertions are unchanged; only
+two T008 regression functions/eight cases and their required imports were added.
+All T007 tests and49 other prior source/config hashes remain unchanged, including
+Core/bootstrap/guards/dependencies/lockfile/architecture. No Core contract revision.
+
+Fresh final gate through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run ruff check .: all checks passed.
+- uv run mypy .:47 source files clean.
+- uv run lint-imports: five kept/zero broken,40 files/104 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t008-full.xml:
+  1280 passed, zero failures/errors/skips:924 completed regressions,89 bootstrap,
+  156 security/mapping/replay and111 projection/input cases. All original259 are GREEN.
+- git diff --check: clean before/after metadata; final new-file whitespace/link/
+  task-marker/scope checks pass.
+
+The earlier1278-pass full gate was broadened only for the two new replay checks;
+the fresh final run includes both. Reconciled task/spec/plan/quickstart and current
+status/history; checked T008 only, T009–T030 remain unchecked. No Spec Kit rerun,
+Graphify update (structural assessment remains T029), dependency change, commit,
+push or physical-hardware access/validation. Software helper checks do not claim
+complete FastAPI/service/process/listener/platform/hardware acceptance. Stopped after T008.
+
+## 2026-10-07 — Feature 006 T007 Projection/Input Contracts RED
+
+Executed only T007 using the existing test-driven-development/verification workflow.
+Added apps/service/tests/test_service_projection.py with23 parameterized functions,
+111 final cases against planned pure internal status_response(status, service_state)
+and async validate_request(scope, receive) helpers. No production http.py, app,
+runtime/Acquisition instance, listener or validator/projector substitute was created.
+
+Tests use actual immutable Core values and a normalized opaque provenance object
+with an unexposed private object. Literal closed expected JSON checks include
+all RuntimeStatus keys/nulls/states, exact Profile fields/policy/limits, sorted
+reported capabilities, host/device clock descriptors and observer-scoped versus
+unobservable loss. Unknown backend kinds/schema37 and generic scalar fields round
+trip without registry/identity branching/stringification or private-handle dumps.
+Descriptor knowledge does not fabricate committed connection/segment IDs;
+terminal provenance stays historical. Primary failure/close failure/trigger and
+ordered cleanup facts remain independent;200 failed status cannot imply admissibility.
+Unicode/control data round trips; literal1MiB bounds reject overflow without truncating
+or mutating Core status. Exact response-bound tests calibrate only unspecified
+serializer whitespace overhead, not the independently fixed bound or schema.
+
+Raw ASGI body tests cover exactly16384 bytes, byte16385 with a receive tripwire,
+oversized indivisible frames without another receive, strict UTF-8/JSON/media,
+duplicate/extra keys, nonfinite values/type coercion, invalid Unicode surrogate
+paths, absolute/no-NUL1..4096 UTF-8 byte paths, byte4097 rejection, no expansion/
+stripping/probing, and status/detach zero-body rules. Error envelopes remain fixed
+categories without input/traceback echo. Existing account/physical-hardware guards
+and new pure-helper Profile/resource/path-I/O tripwires remain active.
+These are helper/raw-ASGI contracts, not HTTP listener/process/hardware acceptance.
+
+Initial110 expected RED cases were all missing dutchmate_service.http. Final review
+uses acquiring snapshots for active status rather than impossible lifecycle fixtures,
+applies closed-key checks to every status shape, and adds two surrogate-path cases.
+Final result111 expected RED failures, all the missing HTTP module; no collection
+errors/skips or assertion weakening to make unbuilt helpers pass.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_projection.py --tb=no --no-summary
+  --junitxml=/private/tmp/dutchmate006-t007-red.xml:111 expected failures.
+- uv run pytest apps/service/tests/test_service_http.py --tb=no --no-summary
+  --junitxml=/private/tmp/dutchmate006-t007-t006-red.xml:148 unchanged expected failures.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t007-earlier-green.xml:1013 passed,
+  zero failures/errors/skips, including89 bootstrap cases.
+- uv run pytest --tb=no --no-summary
+  --junitxml=/private/tmp/dutchmate006-t007-full.xml:259 expected failures/1013 passes,
+  zero errors/skips. All failures are in the two RED service test files and caused
+  by missing dutchmate_service.http; the full default gate is intentionally RED.
+- Ruff clean; mypy46 files clean; five import contracts kept/zero broken,
+  37 files/90 dependencies. Diff/new-file whitespace and documentation audits clean.
+
+All49 prior source/config hashes remain identical, including T006/bootstrap tests,
+Core, dependency lock and architecture settings. Only the new projection test and
+completion metadata/status/history change this turn. Checked T007 only; T008–T030
+remain unchecked. Normative contracts/schema/Profile/runtime/deferrals unchanged.
+No T008 implementation, dependency installation, Spec Kit rerun, Graphify update,
+physical-hardware access/validation, commit or push. Stopped after T007.
+
+## 2026-10-07 — Feature 006 T006 Security Contracts RED
+
+Executed only T006 using test-driven-development and verification-before-completion.
+Added apps/service/tests/test_service_http.py:20 parameterized contract functions,
+148 cases against the intended internal SecurityGate(app, config, credential getter)
+ASGI boundary. No production http/app/server, runtime or gate substitute was created.
+
+Tests use actual isolated private bootstrap/credential files and raw ASGI messages;
+the downstream boundary probe contains no security policy. Existing tripwires block
+physical serial/discovery and real account bootstrap. New tripwires block receive/
+body consumption, downstream calls, Profile resolution, journal create/open and
+Basic construction/open before security rejection. Literal outcomes come from the
+active contract, not implementation helpers.
+
+Coverage: exact/duplicate/malformed Host and header-name casing; IPv4/IPv6 peers,
+selected family/other IPv4 loopback and no proxy trust; every Origin/Sec-Fetch
+presence including empty/null/duplicates; authenticated no-Origin eligibility;
+exact single Bearer syntax and compare_digest seam; gate priority across all
+routes/methods; no query/cookie/body/environment credential transport; exact raw
+paths/no encoded/absolute aliases; authenticated Upgrade/HEAD/OPTIONS/docs/redirect
+rejection; process-cached credential and memory invalidation; credential/input-free
+responses/logs and normalized unexpected downstream failure. This is raw ASGI
+gate validation, not actual FastAPI/Uvicorn/h11/process/listener acceptance.
+
+Initial146 RED cases all failed for absent dutchmate_service.http. Corrected only
+a local test-helper typing/style issue, then added two allowed IPv4 loopback peer
+cases. Final focused result:148 expected RED failures, zero errors/skips, all
+ModuleNotFoundError for the same missing HTTP module. No assertion was weakened
+to emulate a gate or make RED cases pass.
+
+Fresh commands through rtk proxy/uv with
+UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run pytest apps/service/tests/test_service_http.py --tb=no --no-summary
+  --junitxml=/private/tmp/dutchmate006-t006-red.xml:148 expected failures.
+- uv run pytest core/tests apps/service/tests/test_service_bootstrap.py --tb=short
+  --junitxml=/private/tmp/dutchmate006-t006-earlier-green.xml:1013 passed,
+  zero failures/errors/skips, including89 unchanged bootstrap cases.
+- uv run pytest --tb=no --no-summary
+  --junitxml=/private/tmp/dutchmate006-t006-full.xml:148 expected failures and
+  1013 passed, zero errors/skips; all failures belong to test_service_http.py
+  and the missing gate module. Full default gate is intentionally RED, not passing.
+- uv run ruff check .: clean; uv run mypy .:45 files clean;
+  uv run lint-imports: five kept/zero broken,37 files/90 dependencies.
+- git diff --check and new-file whitespace/document audits: clean.
+
+Hash audit preserves all48 existing source/config files, including Core, bootstrap,
+existing tests/guards, dependencies/uv.lock and architecture settings. Only the new
+test file and completion metadata/status/history change during this turn.
+Checked only T006; T007–T030 remain unchecked. No normative scope/schema/Profile/
+runtime change, Spec Kit rerun, Graphify update, dependency installation, HTTP gate
+implementation, physical-hardware access/validation, commit or push. Stopped after T006.
+
+## 2026-10-07 — Feature 006 T001–T005 Bootstrap Foundation GREEN
+
+Executed only the explicitly authorized first five tasks. T001 verified main/HEAD
+ed11051015a4e56f81a4737bc55dad322f82f622 and completed005 code2824c0d; reviewed
+governing lifecycle/service contracts and existing planned working-tree changes.
+The exact quickstart five-file005 baseline selection passed349 tests before any
+dependency/package work, with existing physical-hardware sentinels active.
+
+T002 added only installable apps/service metadata/import package, scoped Ruff
+configuration, isolated test account-home/real-account tripwires and physical serial/
+discovery guards. uv added workspace dutchmate-core, FastAPI0.142.2/Uvicorn0.54.0
+and root test-only httpx0.28.1, constrained to their verified minor lines and locked.
+Actual imports/signatures/Python3.14.3 and MIT/BSD metadata checked; service/Core
+imported from /private/tmp through uv without working-directory assumptions.
+All22 existing package versions are unchanged;16 required packages added including
+service/transitives. An initial sandbox DNS failure was resolved by the authorized
+network-enabled uv retry; no unresolved infrastructure failure remains.
+Root test/mypy paths now cover service. Three existing import contracts are
+unchanged; two added boundaries forbid Core→service and direct service hardware/
+subprocess/deferred-client imports. No ignore_imports or product TID251 bypass.
+
+Applied test-driven-development: T003 added87 meaningful configuration/filesystem/
+guard/token/marker/failure contracts. Initial run:87 RED failures, all missing
+dutchmate_service.bootstrap; JUnit at /private/tmp/dutchmate006-bootstrap-red.xml.
+T004 implements only the private bootstrap module: explicit immutable config,
+read-only normalized exception category with ordinary transport, passwd-UID path,
+validated no-follow directory-relative fds, stable non-inheritable nonblocking
+lock, bounded strict marker/credential reads, safe atomic private publication,
+token ownership/removal and explicit cleanup facts. No runtime, listener or HTTP.
+All87 original cases went GREEN without changed assertions.
+
+Review/systematic debugging found two bounded bootstrap defects. Failed lock
+creation was mistaken for optional file absence and leaked AssertionError;
+failed publication unlinked its temporary name without checking replacement
+identity. Two focused tests reproduced both RED before fixes, then all89 went
+GREEN. Creation failure now remains normalized; cleanup preserves a replacement
+file. Tests also prove publication-before-fsync failure can leave an owned token/
+true marker visible without claiming rollback, cleanup uncertainty stays false,
+stale/unsafe files are not repaired, and normal exception transport is preserved.
+
+T005 used verification-before-completion and ran the full gate through rtk proxy/uv
+with UV_CACHE_DIR=/private/tmp/dutchmate-feature006-uv-cache:
+
+- uv run ruff check .: all checks passed.
+- uv run mypy .: no issues in44 source files.
+- uv run lint-imports: five kept/zero broken;37 files/90 dependencies.
+- uv run pytest --tb=short --junitxml=/private/tmp/dutchmate006-t005-full.xml:
+  1013 passed, zero failures/errors/skips (924 existing plus89 bootstrap).
+- git diff --check: clean before/after completion documentation; untracked source/
+  planning whitespace and final paths reviewed.
+
+Core code/tests,003 schema-v1,004 Profile-v1,005 lifecycle/cancellation/cleanup,
+product rules and hardware policy unchanged. Reconciled task/spec/plan/quickstart/
+research metadata and development status/history; only T001–T005 are checked.
+T006 and all later tasks remain unbuilt. No Spec Kit rerun, Graphify update
+(final structural assessment remains T029), HTTP gates/routes/server/runtime
+composition, physical hardware access/validation, commit or push. Native bootstrap
+software tests ran on macOS; Linux/Windows/service/hardware acceptance is not claimed.
+Stopped after T005.
+
+## 2026-10-07 — Feature 006 Local Observation Service Specified, Planned and Tasked
+
+Executed only the explicitly authorized lean specify → plan → tasks workflow.
+Repository Spec Kit1.0.12 uses sequential directories; the next prefix was006,
+creating specs/006-local-observation-service. No extension hooks are configured.
+Managed template resolution/setup scripts created the feature/plan/tasks context;
+their BRANCH labels identify that context, while actual Git remains main.
+The ignored .specify/feature.json selects006; no scaffold/integration file changed.
+Verified baseline ed11051 records accepted feature005 implementation
+2824c0dc3ecc63684f573b3b0a55c621e18e069f.
+
+Generated eight focused artifacts: spec, quality checklist, plan, research, data
+model, local HTTP/bootstrap contract, quickstart and tasks. Core and completed
+001–005 contracts govern. Scope is exactly observation-only attach/status/detach,
+one persistent runtime and local process/security delivery; no evidence retrieval,
+streaming, CLI or workflow behavior. All30 tasks remain unchecked.
+
+Settled Linux/macOS POSIX bootstrap with fixed per-UID stable-inode OS lock,
+private process-lifetime256-bit Bearer token and bounded entire-incarnation
+cleanup marker separate from journal schema-v1. Duplicate processes reject on
+any port; stale uncertainty blocks startup without PID stealing or automatic
+recovery. IPv4 numeric default/explicit IPv6-only listener, exact Host, rejection
+of every Origin/Sec-Fetch header, authenticated absent-Origin requests and security
+ordering before body/Profile/resources are explicit. Supported logs never echo
+credentials or supplied inputs; only three versioned routes are planned.
+
+HTTP request delivery cannot cancel strongly owned service operations or synthesize
+feature005 attach_cancelled. Shutdown closes admission, joins registered tasks
+including not-yet-invoked attach, then detaches/joins runtime. Physical/recorder
+uncertainty remains authoritative; no timeout or forced abandonment. Status
+projects generic immutable normalized facts without task/resource handles.
+Basic/SQLite remains at the existing edge;003 schema-v1/004 Profile-v1/005
+lifecycle are unchanged. Windows service support and external operator recovery
+are explicit limitations, not accepted hardware/platform behavior.
+
+Two read-only research reviews required by the planning skill and primary
+FastAPI/Python/ASGI/Uvicorn sources informed the design. Review corrected four
+planning gaps: startup stop remains latched, true-marker replacement followed by
+failed fsync does not falsely claim rollback/durability, trusted root ancestors
+are distinct from account-private directories, and new direct service import
+bans allow legitimate indirect Basic/framework dependencies while existing Core
+contracts remain intact. Corresponding regression tasks are explicit.
+
+Document audit passed: eight artifacts,30 sequential requirements/seven outcomes,
+30 sequential unchecked tasks (US1 five/US2 nine/US3 six, foundation/final ten),
+six parallel test markers in three pairs, valid relative links/balanced fences,
+no unresolved markers/template placeholders/whitespace faults, and31 Resume Here
+lines. Git diff checking and final path review confirm documentation-only changes.
+No Ruff/mypy/Import Linter/pytest implementation gate was run; planning validation
+is not software acceptance. No dependency installation/lockfile change, production
+or test code, Graphify update, extra Spec Kit stage, commit, push, device discovery
+or physical-hardware action/validation. Stopped after planning.
+
 ## 2026-10-06 — Feature 005 Final Pre-Commit Review and Commit
 
 Reviewed the complete feature-005 change set against Core, FR-001–030, the
