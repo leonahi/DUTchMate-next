@@ -5,7 +5,8 @@
 **Status**: T001–T030 delivered; all30 tasks checked. T030 fresh full gate:1485
 passes, zero failures/errors/skips; Ruff/mypy51 files/five import contracts/diff
 clean. Final intended diff review found no new defect; no source/test/config change.
-Feature006 is software-complete, uncommitted and ready for final review and commit.
+Feature006 is software-complete and committed after clean final review/fresh gate
+as b4c5730b2a5e593c10c06ad9e8f24c39e06f794b (Implement local observation service).
 T029 structural trigger met;
 one code-only incremental Graphify update succeeded, generated output ignored.
 T028 reconciles current
@@ -325,3 +326,7 @@ revision. No source/test/config corrections, second Graphify update or hardware
 action. All30 tasks complete; feature006 software-complete, uncommitted and ready
 for separately authorized final review and commit. Stopped T030 without staging,
 commit, push or next-slice work.
+Subsequent explicitly authorized final pre-commit review/fresh gate passed without
+a new defect. Full intended set committed as b4c5730b2a5e593c10c06ad9e8f24c39e06f794b
+(Implement local observation service); actual baseline reconciled afterward with
+documentation-only changes. No push, new slice, hardware acceptance or source change.

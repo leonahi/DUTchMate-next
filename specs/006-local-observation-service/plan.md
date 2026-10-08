@@ -8,7 +8,8 @@ Setup scripts label the resolved feature context as BRANCH; Git remains main.
 
 Current completion: T001–T030 delivered; fresh final gate1485 passes, zero failures/
 errors/skips, static/import/diff checks clean. Feature006 is software-complete,
-uncommitted and ready for separately authorized final review and commit. Earlier
+committed after clean final review/fresh gate as b4c5730b2a5e593c10c06ad9e8f24c39e06f794b
+(Implement local observation service). Earlier
 checkpoint counts and scope boundaries below retain their historical meaning.
 
 Add one local FastAPI delivery application around existing ObservationRuntime,
@@ -148,6 +149,9 @@ zero failures/errors/skips; Ruff/mypy51 files/five import contracts/diff clean.
 Initial sandbox loopback denials resolved by permitted guarded full rerun; no
 source/test/config correction or new contract/scope defect. All30 tasks complete;
 ready for final review and commit, with no staging/commit/push/hardware action.
+Subsequent explicitly authorized final pre-commit review/fresh gate passed with no
+new defect; full intended set committed as b4c5730b2a5e593c10c06ad9e8f24c39e06f794b.
+Documentation-only baseline reconciliation followed; no push/new slice/hardware action.
 
 ## Technical Context
 

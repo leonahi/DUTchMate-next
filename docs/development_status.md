@@ -8,30 +8,33 @@ Completed-slice evidence is kept in [development history](development_history.md
 ## Resume Here
 
 - **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is incomplete.
-- **Committed baseline**: Features 001–005 are committed and accepted on `main`.
+- **Committed baseline**: Features 001–006 are committed on `main`.
+  Feature 006: `b4c5730b2a5e593c10c06ad9e8f24c39e06f794b`
+  (`Implement local observation service`), after clean final review/software gate.
+  Features 001–005 remain accepted.
   Feature 005: `2824c0dc3ecc63684f573b3b0a55c621e18e069f`
   (`Implement observation runtime lifecycle`).
-  HEAD: `ed11051015a4e56f81a4737bc55dad322f82f622`
-  (`Record feature 005 commit`).
-- **Active slice**: `006-local-observation-service` — minimal authenticated local
+  The prior baseline was `ed11051015a4e56f81a4737bc55dad322f82f622`.
+- **Latest completed slice**: `006-local-observation-service` — authenticated local
   FastAPI service for observation-only attach/status/detach. All T001–T030 are
-  checked. Feature 006 is software-complete and ready for final review and commit;
-  it remains uncommitted and human acceptance is pending. Feature 005 remains complete.
+  checked. Feature 006 is software-complete and committed after final review.
+  Feature 005 remains complete; no next slice has been selected or started.
 - **Delivered software**: Installable service package, private bootstrap/auth,
   exact security gate, persistent runtime, owned HTTP mutations, controlled
   IPv4/IPv6 listener/signals and joined startup/shutdown.
-- **Fresh T030 gate**: 1485 passed, zero failures/errors/skips; Ruff clean;
+- **Final pre-commit gate**: 1485 passed, zero failures/errors/skips; Ruff clean;
   mypy 51 files clean; five import contracts kept/zero broken (49 files/125
   dependencies); diff checks clean before/after docs. Final diff review found no
-  new defect. Initial sandbox socket denials resolved by permitted guarded rerun.
+  new defect; staged diff/stat and cached whitespace checks clean. T030's earlier
+  sandbox socket denials were resolved by a permitted guarded rerun.
 - **T028**: Current scope, baseline, evidence and limits reconciled in status/history.
   Documentation checks only; no software tests or Graphify update rerun.
 - **T029**: Structural trigger met; exactly one code-only incremental Graphify
   update succeeded: 2,891 nodes/8,348 edges/123 communities; zero LLM tokens.
   Generated output remains ignored; source/configuration unchanged.
-- **Next action**: Stop after T030. Await explicit instruction for final pre-commit
-  review and commit only. No staging, commit, push, next-slice work or physical-
-  hardware access is authorized by T030.
+- **Next action**: Await explicit instruction to determine the next coherent Phase 1
+  slice from the governing documents and completed features 001–006. Do not run
+  Spec Kit or implement the next slice automatically.
 - **Invariants**: One runtime/run/RX path; immutable resolved Profile; fresh journal/
   session per attach; in-memory association; unchanged schema-v1; joined cleanup;
   conservative uncertainty blocking; no automatic reconnect/discovery/fallback.
@@ -52,6 +55,7 @@ Completed-slice evidence is kept in [development history](development_history.md
 | [003](../specs/003-durable-evidence-journal/spec.md) | SQLite schema-v1 durable append/reopen, bounded retention/references/retrieval | `15890e59` |
 | [004](../specs/004-dut-profile-policy/spec.md) | Strict bounded observation-only TOML-v1 Profile resolution, immutable values and Basic translation | `6d10cf72014c46d7eeb5481b26857222ee40b7fd` |
 | [005](../specs/005-observation-runtime/spec.md) | Backend-neutral observation runtime, in-memory Profile/session association, serialized attach/status/detach | `2824c0dc3ecc63684f573b3b0a55c621e18e069f` |
+| [006](../specs/006-local-observation-service/spec.md) | Authenticated local observation service, persistent runtime, private per-UID bootstrap and joined shutdown | `b4c5730b2a5e593c10c06ad9e8f24c39e06f794b` |
 
 Feature 005 is software-complete and committed after final pre-commit review.
 Its hardware-free baseline gate recorded 924 passes and three kept import
@@ -60,11 +64,15 @@ evidence/Profile/backend contracts remain unchanged by feature 006. Feature-005
 Graphify maintenance completed in its own T027; feature-006 T029 has now completed
 its separate structural assessment and single code-only incremental update.
 
-Feature 006 currently adds uncommitted `apps/service/` and its planning artifacts,
-plus intended root `pyproject.toml`/`uv.lock` and status/history changes.
-No feature-006 commit, final acceptance, push or subsequent Phase 1 slice is recorded.
+Feature 006 is committed as `b4c5730b2a5e593c10c06ad9e8f24c39e06f794b`
+(`Implement local observation service`). Its complete 25-file set includes
+`apps/service/`, feature artifacts, root `pyproject.toml`/`uv.lock` and status/history.
+Final review and fresh software gate passed; staged output contained no unrelated,
+generated, runtime, credential or Graphify files. This documentation reconciliation
+records the actual implementation hash after commit. Nothing was pushed, and no
+subsequent Phase 1 slice or hardware acceptance was started.
 
-## Active Feature: Local Observation Service
+## Completed Feature: Local Observation Service
 
 Governing artifacts:
 [specification](../specs/006-local-observation-service/spec.md),
@@ -134,14 +142,14 @@ The fresh T030 full-suite breakdown is 924 Core, 90 bootstrap, 226 HTTP, 38 proc
 111 projection and 96 runtime cases. Native macOS IPv4/IPv6 process tests ran
 without platform/IPv6 skips. Counts do not establish other-platform or hardware
 acceptance. T001–T030 and structural maintenance are complete. Feature 006 is
-software-complete and ready for separately authorized final review and commit.
-Its committed baseline reference remains features 001–005 until an actual commit.
+software-complete and committed following the separately authorized final review.
+Its implementation baseline is the actual feature-006 commit in the table above.
 
 ## Blockers, Limitations and Deferred Work
 
 - No unresolved feature-006 product decision or newly demonstrated software defect
-  remains. Final software validation passed; feature 006 is uncommitted with
-  human acceptance and separately authorized final pre-commit review pending.
+  remains. Final software validation/review passed and feature 006 is committed.
+  Phase 1 and platform/physical-hardware acceptance remain incomplete.
 - Linux/macOS POSIX is the initial service contract. Native Linux acceptance has
   not run; Windows service startup is explicitly unsupported before bootstrap.
   Windows service implementation is deferred; native Windows validation and all

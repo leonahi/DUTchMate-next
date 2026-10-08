@@ -12,9 +12,10 @@ checks. T029 structural trigger met; one code-only incremental Graphify update
 succeeded, outputs ignored. T030 fresh full gate:1485 passes, zero failures/errors/
 skips; Ruff/mypy51 files/five import contracts/diff checks clean. Final intended
 diff review found no new defect; no source/test/config correction.
-Feature006 is software-complete, uncommitted and ready for separately authorized
-final review and commit. Human acceptance and hardware/platform acceptance remain
-separate. Unused test HTTP client dependencies removed.
+Feature006 is software-complete and committed after clean final review/fresh gate
+as b4c5730b2a5e593c10c06ad9e8f24c39e06f794b (Implement local observation service).
+Native validation macOS only; Linux/Windows native and physical-hardware acceptance
+remain unexecuted. Unused test HTTP client dependencies removed.
 **Input**: Minimal authenticated local Device Core Service for observation-only attach/status/detach.
 
 Core governs, especially §§5.2, 13, 14, 15.1, 16.1–16.4, 17.2–17.4, 18, 19 and
