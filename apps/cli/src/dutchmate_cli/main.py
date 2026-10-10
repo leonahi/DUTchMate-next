@@ -1,0 +1,184 @@
+"""Pure observation command grammar and a fixed-diagnostic console boundary."""
+
+import asyncio
+import errno
+import sys
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import Annotated, cast
+
+import typer
+
+from dutchmate_cli import client, context
+
+app = typer.Typer(
+    invoke_without_command=True,
+    no_args_is_help=False,
+    add_completion=False,
+    suggest_commands=False,
+    rich_markup_mode=None,
+    pretty_exceptions_enable=False,
+    pretty_exceptions_show_locals=False,
+    context_settings={"color": False},
+    help=(
+        "Request observation from one already-running DUTchMate service. Exit 0 means a complete "
+        "validated report was delivered, including failed runtime states. "
+        "Request loss ends client waiting only; it does not cancel service work."
+    ),
+)
+
+
+@dataclass(slots=True)
+class _Invocation:
+    options: context.InvocationOptions = field(default_factory=context.InvocationOptions)
+    delivery: client.DeliveryState = field(default_factory=client.DeliveryState)
+
+
+@app.callback()
+def root(
+    ctx: typer.Context,
+    host: Annotated[str, typer.Option("--host", help="127.0.0.1 or ::1.")] = "127.0.0.1",
+    port: Annotated[int | None, typer.Option(
+        "--port", help="Required service port (1..65535) for commands.", show_default=False,
+    )] = None,
+) -> None:
+    options = context.InvocationOptions(host=host, port=port)
+    if isinstance(ctx.obj, _Invocation):
+        ctx.obj.options = options
+    else:
+        ctx.obj = _Invocation(options=options)
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help(), color=False)
+
+
+def _write(record: bytes, *, error: bool) -> None:
+    stream = sys.stderr if error else sys.stdout
+    try:
+        if stream.buffer.write(record) != len(record):
+            raise context.CliFailure(context.CliFailureKind.OUTPUT_FAILED)
+        stream.flush()
+        return
+    except BrokenPipeError:
+        # Closing marks the failed stream closed even if its final flush also
+        # raises EPIPE. CPython then skips its shutdown flush, preserving our
+        # fixed diagnostic/exit instead of an unraisable message and exit120.
+        try:
+            stream.close()
+        except Exception:
+            pass
+    except Exception:
+        pass
+    raise context.CliFailure(context.CliFailureKind.OUTPUT_FAILED)
+
+
+@app.command()
+def status(ctx: typer.Context) -> int:
+    """Deliver the service's complete status JSON; exit 0 means report delivery."""
+    invocation = cast(_Invocation, ctx.obj)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange(
+        endpoint=endpoint, command="status", credential=credential,
+        delivery=invocation.delivery,
+    ))
+    _write(record, error=code != 0)
+    return code
+
+
+@app.command()
+def attach(
+    ctx: typer.Context,
+    profile: Annotated[str, typer.Option(
+        "--profile", help="Explicit absolute Profile path; passed to the service.",
+    )],
+    journal: Annotated[str, typer.Option(
+        "--journal", help="Explicit absolute journal path; passed to the service.",
+    )],
+) -> int:
+    """Request observation attach; exit 0 means report delivery, including failed states."""
+    invocation = cast(_Invocation, ctx.obj)
+    endpoint = invocation.options.target()
+    paths = context.AttachPaths(profile_path=profile, journal_path=journal)
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange(
+        endpoint=endpoint, command="attach", paths=paths, credential=credential,
+        delivery=invocation.delivery,
+    ))
+    _write(record, error=code != 0)
+    return code
+
+
+@app.command()
+def detach(ctx: typer.Context) -> int:
+    """Request observation detach; exit 0 means report delivery, not confirmed cleanup."""
+    invocation = cast(_Invocation, ctx.obj)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange(
+        endpoint=endpoint, command="detach", credential=credential,
+        delivery=invocation.delivery,
+    ))
+    _write(record, error=code != 0)
+    return code
+
+
+def _failure(kind: context.CliFailureKind, delivery: client.DeliveryState) -> int:
+    code, record = client.local_failure(kind, delivery)
+    try:
+        _write(record, error=True)
+    except (KeyboardInterrupt, typer.Abort):
+        return 130
+    except Exception:
+        # Unusable stderr permits exit-only failure. Never print a fallback
+        # exception, repeat the write or send a service cleanup request.
+        return 1
+    return code
+
+
+def main(args: Sequence[str] | None = None) -> int:
+    """Installed entry and direct wrapper; every invocation owns its receipt phase."""
+    invocation = _Invocation()
+    previous_hook = sys.excepthook
+    try:
+        result = app(
+            args=args, prog_name="dutchmate", standalone_mode=False,
+            obj=invocation,
+        )
+        if result is None:
+            return 0
+        if type(result) is int:
+            if result != 130:
+                return result
+            kind = context.CliFailureKind.INTERRUPTED
+        else:
+            kind = context.CliFailureKind.INTERNAL_FAILURE
+    except context.CliFailure as error:
+        kind = error.kind
+    except typer.TyperException as error:
+        kind = (
+            context.CliFailureKind.INVALID_ARGUMENTS if error.exit_code == 2
+            else context.CliFailureKind.INTERNAL_FAILURE
+        )
+    except (KeyboardInterrupt, typer.Abort):
+        kind = context.CliFailureKind.INTERRUPTED
+    except SystemExit as error:
+        if error.code == 0:
+            return 0
+        if error.code == 130:
+            kind = context.CliFailureKind.INTERRUPTED
+        elif (
+            error.code == 1
+            and isinstance(error.__context__, OSError)
+            and error.__context__.errno == errno.EPIPE
+        ):
+            # Pinned Typer translates help's EPIPE into SystemExit(1). Inspect
+            # only the OS category; never render its text, cause or locals.
+            kind = context.CliFailureKind.OUTPUT_FAILED
+        else:
+            kind = context.CliFailureKind.INTERNAL_FAILURE
+    except Exception:
+        kind = context.CliFailureKind.INTERNAL_FAILURE
+    finally:
+        # Typer installs its global hook even when its exception is caught.
+        sys.excepthook = previous_hook
+    return _failure(kind, invocation.delivery)

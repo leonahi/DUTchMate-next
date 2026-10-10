@@ -9,12 +9,12 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["core", "apps/service"]
+members = ["core", "apps/service", "apps/cli"]
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers", "-ra"]
 asyncio_mode = "strict"
-testpaths = ["core/tests", "apps/service/tests"]
+testpaths = ["core/tests", "apps/service/tests", "apps/cli/tests"]
 
 [tool.ruff]
 line-length = 88
@@ -38,14 +38,24 @@ typer.msg = "CLI framework concerns belong outside dutchmate_core."
 "core/tests/**/*.py" = ["TID251"]
 
 [tool.mypy]
-files = ["core/src", "core/tests", "apps/service/src", "apps/service/tests"]
-mypy_path = ["core/src", "apps/service/src"]
+files = [
+  "core/src", "core/tests",
+  "apps/service/src", "apps/service/tests",
+  "apps/cli/src", "apps/cli/tests",
+]
+# Keep existing test imports while distinguishing the two unpackaged conftests.
+explicit_package_bases = true
+mypy_path = [
+  "core/src", "core",
+  "apps/service/src", "apps/service/tests",
+  "apps/cli/src",
+]
 python_version = "3.14"
 strict = true
 
 [tool.importlinter]
 include_external_packages = true
-root_packages = ["dutchmate_core", "dutchmate_service"]
+root_packages = ["dutchmate_core", "dutchmate_service", "dutchmate_cli"]
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on test frameworks"
@@ -77,14 +87,27 @@ source_modules = [
 forbidden_modules = ["dutchmate_core.adapters"]
 
 [[tool.importlinter.contracts]]
-name = "Core does not depend on service delivery"
+name = "Core does not depend on service or CLI delivery"
 type = "forbidden"
 source_modules = ["dutchmate_core"]
-forbidden_modules = ["dutchmate_service"]
+forbidden_modules = ["dutchmate_service", "dutchmate_cli"]
 
 [[tool.importlinter.contracts]]
 name = "Service does not directly import hardware or deferred clients"
 type = "forbidden"
 source_modules = ["dutchmate_service"]
-forbidden_modules = ["serial", "subprocess", "mcp", "typer", "requests", "httpx"]
+forbidden_modules = ["serial", "subprocess", "mcp", "typer", "requests", "httpx", "dutchmate_cli"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "CLI does not depend on Core or service implementation"
+type = "forbidden"
+source_modules = ["dutchmate_cli"]
+forbidden_modules = ["dutchmate_core", "dutchmate_service"]
+
+[[tool.importlinter.contracts]]
+name = "CLI does not directly import hardware, storage, servers or deferred adapters"
+type = "forbidden"
+source_modules = ["dutchmate_cli"]
+forbidden_modules = ["serial", "sqlite3", "fastapi", "uvicorn", "mcp", "subprocess"]
 allow_indirect_imports = true

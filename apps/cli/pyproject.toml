@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dutchmate-cli"
+version = "0.0.0"
+description = "Observation client delivery for DUTchMate"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "httpx>=0.28.1,<0.29",
+    "typer>=0.27.3,<0.28",
+]
+
+[project.scripts]
+dutchmate = "dutchmate_cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dutchmate_cli"]
