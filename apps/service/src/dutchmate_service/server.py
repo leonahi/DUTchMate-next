@@ -206,6 +206,10 @@ def run_service(config: ServiceConfig) -> None:
                     "recorder_close_confirmed": runtime_absent or (final is not None and final.recorder_close_confirmed),
                 }
                 cleanup_failed |= not all(facts.values())
+                cleanup_failed |= not (
+                    runtime_absent
+                    or (context is not None and context.final_evidence_read_cleanup_confirmed)
+                )
                 cleanup_failed |= server is not None and server.cleanup_failed
                 try:
                     owner.invalidate_credential()

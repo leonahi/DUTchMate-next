@@ -42,6 +42,8 @@ _ROUTES = {
     b"/v1/observation/attach": "POST",
     b"/v1/observation/status": "GET",
     b"/v1/observation/detach": "POST",
+    b"/v1/evidence/record": "POST",
+    b"/v1/evidence/page": "POST",
 }
 _BEARER = re.compile(rb"Bearer [0-9a-f]{64}")
 _TOKEN = re.compile(r"[0-9a-f]{64}")
@@ -539,6 +541,11 @@ class SecurityGate:
             error = self._security_error(scope)
             if error is not None:
                 await error(scope, receive, safe_send)
+                return
+            if scope["raw_path"] in {b"/v1/evidence/record", b"/v1/evidence/page"}:
+                # Retrieval checks readiness before bounded body validation. The
+                # existing observation validation/replay path stays unchanged.
+                await self._app(scope, receive, safe_send)
                 return
             captured = bytearray()
 

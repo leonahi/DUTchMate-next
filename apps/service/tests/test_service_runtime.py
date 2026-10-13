@@ -2798,3 +2798,95 @@ async def test_t012_lost_delivery_results_and_exceptions_are_consumed_without_ta
                 assert c.reads == [] and c.destinations == []
     finally:
         loop.set_exception_handler(previous)
+
+
+@pytest.mark.parametrize("fault", ["none", "close", "partial_open", "unexpected_open"])
+def test_008_t018_read_cleanup_is_required_for_clean_marker_with_capture_facts_unchanged(
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    t011_composition: _T011Composition,
+    fault: str,
+) -> None:
+    from dutchmate_core.adapters import terminal_evidence
+    from dutchmate_core.evidence_access import EvidenceSourceOpenFailure
+
+    c = t011_composition
+    launch = _T021Launch(account_home, c)
+    original_open = terminal_evidence.open_terminal_reader
+
+    class CloseFault:
+        def __init__(self, reader: Any) -> None:
+            self.reader = reader
+            self.session_id = reader.session_id
+            self.policy = reader.policy
+
+        async def resolve_record(self, reference: Any) -> Any:
+            return await self.reader.resolve_record(reference)
+
+        async def retrieve(self, request: Any) -> Any:
+            return await self.reader.retrieve(request)
+
+        async def close(self) -> None:
+            await self.reader.close()
+            raise JournalFailure(JournalOperation.CLOSE, JournalFailureKind.IO_FAILURE)
+
+    async def opener(target: Any) -> Any:
+        reader = await original_open(target)
+        if fault == "close":
+            return CloseFault(reader)
+        if fault in {"partial_open", "unexpected_open"}:
+            # Native resources are cleaned to avoid harness leaks; the owner has
+            # either an explicit uncertain acknowledgment or no acknowledgment.
+            await reader.close()
+            if fault == "partial_open":
+                raise EvidenceSourceOpenFailure(
+                    JournalFailure(
+                        JournalOperation.OPEN, JournalFailureKind.IO_FAILURE
+                    ),
+                    False,
+                )
+            raise RuntimeError("test-only unexpected opener fault")
+        return reader
+
+    monkeypatch.setattr(observation_runtime, "open_terminal_reader", opener)
+
+    async def terminal_read_then_stop(http: Any, service: _T011Service) -> None:
+        del http
+        _t011_view(
+            await service.request(
+                _ATTACH, "POST", _t011_body(c.profile_path, c.journal_path)
+            ),
+            "active",
+        )
+        terminal = await service.runtime.detach()
+        assert terminal.session_id is not None
+        assert terminal.owner_settled and terminal.physical_release_confirmed
+        assert terminal.recorder_close_confirmed and terminal.attach_admissible
+        request = EvidenceRetrievalRequest(terminal.session_id, 10, 16384)
+        if fault == "none":
+            report = await service.runtime.read_page(request)
+            assert report.run_id == terminal.run_id
+        else:
+            expected = RuntimeError if fault == "unexpected_open" else JournalFailure
+            with pytest.raises(expected):
+                await service.runtime.read_page(request)
+        assert service.runtime.evidence_read_cleanup_confirmed is (fault == "none")
+        assert service.runtime.status() == terminal
+        launch.emit()
+
+    launch.scenario = terminal_read_then_stop
+    launch.install(monkeypatch)
+    if fault == "none":
+        _t021_server().run_service(ServiceConfig(8765))
+    else:
+        with pytest.raises(BootstrapFailure) as caught:
+            _t021_server().run_service(ServiceConfig(8765))
+        assert caught.value.kind is BootstrapFailureKind.TEARDOWN_INCOMPLETE
+    marker = json.loads((launch.root / "owner.json").read_bytes())
+    assert marker == {"version": 1, "cleanup_confirmed": fault == "none"}
+    assert ("marker.true" in launch.trace) is (fault == "none")
+    assert not (launch.root / "credential").exists()
+    assert all(sock.released for sock in launch.sockets)
+    final = launch.settled[id(launch.runtimes[0])]
+    assert final.owner_settled and final.physical_release_confirmed
+    assert final.recorder_close_confirmed and final.attach_admissible

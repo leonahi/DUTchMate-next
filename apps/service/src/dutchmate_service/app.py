@@ -10,6 +10,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from dutchmate_core.adapters.observation_runtime import attach_basic_observation
+from dutchmate_core.evidence import EvidenceRetrievalRequest
+from dutchmate_core.model import EvidenceReference
 from dutchmate_core.runtime import ObservationRuntime, RuntimeStatus
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException
@@ -22,8 +24,14 @@ from dutchmate_service.bootstrap import (
     PrivateBootstrap,
     ServiceConfig,
 )
+from dutchmate_service.evidence_http import (
+    evidence_rejection_response,
+    evidence_response,
+    validate_evidence_request,
+)
 from dutchmate_service.http import (
     SecurityGate,
+    _Disconnected,
     error_response,
     rejection_response,
     status_response,
@@ -44,6 +52,7 @@ class _LaunchContext:
         # Captured on the owning loop after joined cleanup, safe to inspect later.
         # No runtime/task/resource handle crosses the bootstrap handoff.
         self.final_status: RuntimeStatus | None = None
+        self.final_evidence_read_cleanup_confirmed = False
 
     def request_stop(self) -> None:
         self.stopping = True
@@ -79,6 +88,7 @@ def create_app(
     runtime: ObservationRuntime | None = None
     ready = False
     operations: set[asyncio.Task[Response]] = set()
+    reads: set[asyncio.Task[Response]] = set()
 
     def accepting() -> bool:
         return ready and _launch_context is not None and not _launch_context.stopping
@@ -145,6 +155,59 @@ def create_app(
             observer.cancel()
             await asyncio.gather(observer, return_exceptions=True)
 
+    def read_completed(task: asyncio.Task[Response]) -> None:
+        reads.discard(task)
+        if not task.cancelled():
+            task.exception()
+
+    async def invoke_read(
+        owner: ObservationRuntime, value: EvidenceReference | EvidenceRetrievalRequest
+    ) -> Response:
+        try:
+            report = (
+                await owner.read_record(value)
+                if isinstance(value, EvidenceReference)
+                else await owner.read_page(value)
+            )
+            return evidence_response(report)
+        except Exception as error:
+            # Normalize within the retained owner, including after client loss.
+            return evidence_rejection_response(error)
+
+    async def read_job(
+        request: Request,
+        owner: ObservationRuntime,
+        value: EvidenceReference | EvidenceRetrievalRequest,
+    ) -> Response:
+        caller = asyncio.current_task()
+        if caller is not None and caller.cancelling():
+            raise asyncio.CancelledError()
+        if not accepting():
+            return error_response(503, "service", "stopping")
+        for previous in tuple(reads):
+            if previous.done():
+                read_completed(previous)
+        if len(reads) >= 8:
+            return error_response(503, "service", "operation_capacity")
+        operation = asyncio.create_task(invoke_read(owner, value))
+        reads.add(operation)
+        operation.add_done_callback(read_completed)
+        # Separate registration is complete before Core admission or any await.
+        shielded = asyncio.shield(operation)
+        observer = asyncio.create_task(disconnected(request))
+        try:
+            done, _ = await asyncio.wait(
+                (shielded, observer), return_when=asyncio.FIRST_COMPLETED
+            )
+            if observer in done:
+                observer.result()
+                raise asyncio.CancelledError()
+            return shielded.result()
+        finally:
+            shielded.cancel()
+            observer.cancel()
+            await asyncio.gather(observer, return_exceptions=True)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         del app
@@ -164,11 +227,16 @@ def create_app(
             async def cleanup() -> None:
                 # Admission is closed before taking this finite snapshot. Tasks
                 # not yet inside Core must settle before the final detach.
-                await asyncio.gather(*tuple(operations), return_exceptions=True)
+                await asyncio.gather(
+                    *tuple(operations), *tuple(reads), return_exceptions=True
+                )
                 try:
                     await runtime.detach()
                 finally:
                     _launch_context.final_status = runtime.status()
+                    _launch_context.final_evidence_read_cleanup_confirmed = (
+                        runtime.evidence_read_cleanup_confirmed
+                    )
 
             await _settle_task(asyncio.create_task(cleanup()))
 
@@ -237,6 +305,23 @@ def create_app(
             return await mutation(request, runtime, None)
         except Exception as error:
             return rejection_response(error)
+
+    @app.post("/v1/evidence/record")
+    @app.post("/v1/evidence/page")
+    async def read_evidence(request: Request) -> Response:
+        if not accepting() or runtime is None:
+            return error_response(503, "service", "stopping")
+        try:
+            value = await validate_evidence_request(request.scope, request.receive)
+            if isinstance(value, Response):
+                return value
+            return await read_job(request, runtime, value)
+        except _Disconnected:
+            # Abort lost delivery as the existing disconnect observer does.
+            # Re-raising an Exception here lets framework middleware emit a 500.
+            raise asyncio.CancelledError() from None
+        except Exception as error:
+            return evidence_rejection_response(error)
 
     def credential() -> str | None:
         return None if _launch_context is None else _launch_context.bootstrap.credential

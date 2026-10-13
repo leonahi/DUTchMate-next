@@ -1,13 +1,19 @@
 """Explicit Profile/SQLite/Basic composition and owned preparation cleanup."""
 
+from functools import partial
 from pathlib import Path
 
 from dutchmate_core.adapters.basic_profile import to_basic_serial_open_request
 from dutchmate_core.adapters.basic_serial import BasicSerialBackend
 from dutchmate_core.adapters.sqlite_evidence import SqliteEvidenceJournal
+from dutchmate_core.adapters.terminal_evidence import (
+    capture_terminal_target,
+    open_terminal_reader,
+)
 from dutchmate_core.adapters.toml_profile import resolve_profile
 from dutchmate_core.backend import NormalizedBackendFailure
 from dutchmate_core.evidence import JournalFailure, JournalFailureKind, JournalOperation
+from dutchmate_core.evidence_access import PreparedEvidenceAccess
 from dutchmate_core.profile import ProfileFailure, ResolvedDutProfile
 from dutchmate_core.runtime import (
     ObservationRuntime,
@@ -54,12 +60,33 @@ async def attach_basic_observation(
                 ),
             )
         else:
+            # Identity capture is optional; it never invalidates live capture.
+            try:
+                target = capture_terminal_target(
+                    explicit_journal_path,
+                    session_id=journal.session_id,
+                    policy=journal.policy,
+                )
+            except Exception:
+                target = None
+            terminal_opener = (
+                None if target is None else partial(open_terminal_reader, target)
+            )
             try:
                 request = to_basic_serial_open_request(profile)
                 backend = BasicSerialBackend(
                     request.selector, request.configuration, request.line_intent
                 )
-                return PreparedObservationRun(recorder=journal, backend=backend)
+                return PreparedObservationRun(
+                    recorder=journal,
+                    backend=backend,
+                    evidence_access=PreparedEvidenceAccess(
+                        session_id=journal.session_id,
+                        policy=journal.policy,
+                        live_reader=journal,
+                        terminal_opener=terminal_opener,
+                    ),
+                )
             except Exception as error:
                 primary_issue = _issue(error, RuntimeIssueSource.PREPARATION)
 
@@ -73,6 +100,15 @@ async def attach_basic_observation(
                 session_id=journal.session_id,
                 recorder_close_confirmed=cleanup_issue is None,
                 cleanup_issue=cleanup_issue,
+                terminal_evidence_access=(
+                    None
+                    if terminal_opener is None
+                    else PreparedEvidenceAccess(
+                        session_id=journal.session_id,
+                        policy=journal.policy,
+                        terminal_opener=terminal_opener,
+                    )
+                ),
             )
         # Raise outside exception handlers so raw cause/context cannot cross
         # preparation. Kept artifacts are never probed, reopened, or deleted.

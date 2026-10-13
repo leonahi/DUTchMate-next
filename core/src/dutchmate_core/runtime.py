@@ -16,8 +16,21 @@ from dutchmate_core.acquisition import (
     AcquisitionTerminalTrigger,
 )
 from dutchmate_core.backend import Backend, BackendFailureKind
-from dutchmate_core.evidence import EvidenceRecorder, JournalFailure, JournalFailureKind
-from dutchmate_core.model import SessionId, SessionPolicy
+from dutchmate_core.evidence import (
+    EvidenceRecorder,
+    EvidenceRetrievalRequest,
+    JournalFailure,
+    JournalFailureKind,
+)
+from dutchmate_core.evidence_access import (
+    EvidenceReadPort,
+    EvidenceReadRejected,
+    EvidenceSourceOpenFailure,
+    OwnedEvidenceReadPort,
+    PreparedEvidenceAccess,
+    RunEvidencePage,
+)
+from dutchmate_core.model import EvidenceReference, SessionId, SessionPolicy
 from dutchmate_core.profile import ProfileFailureKind, ResolvedDutProfile
 
 
@@ -254,7 +267,13 @@ class RuntimeRejectedError(RuntimeError):
 
 
 _PREPARATION_FACT_FIELDS = frozenset(
-    {"primary_issue", "session_id", "recorder_close_confirmed", "cleanup_issue"}
+    {
+        "primary_issue",
+        "session_id",
+        "recorder_close_confirmed",
+        "cleanup_issue",
+        "terminal_evidence_access",
+    }
 )
 
 
@@ -266,6 +285,7 @@ class PreparationFailure(RuntimeError):
     session_id: SessionId | None = None
     recorder_close_confirmed: bool = False
     cleanup_issue: RuntimeIssue | None = None
+    terminal_evidence_access: PreparedEvidenceAccess | None = None
 
     def __setattr__(self, name: str, value: object) -> None:
         # Keep the normalized dataclass facts immutable (including their hash),
@@ -293,6 +313,14 @@ class PreparationFailure(RuntimeError):
                 raise ValueError("preparation cleanup issue must describe recorder")
             if self.recorder_close_confirmed:
                 raise ValueError("failed recorder close cannot confirm closure")
+        access = self.terminal_evidence_access
+        if access is not None and (
+            not isinstance(access, PreparedEvidenceAccess)
+            or access.session_id != self.session_id
+            or access.live_reader is not None
+            or access.terminal_opener is None
+        ):
+            raise ValueError("preparation terminal access must match the known session")
         RuntimeError.__init__(self, "preparation_failed")
 
 
@@ -314,6 +342,7 @@ class PreparedObservationRun:
 
     recorder: ObservationRecorder
     backend: Backend
+    evidence_access: PreparedEvidenceAccess | None = None
 
 
 def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | None:
@@ -341,9 +370,40 @@ type PrepareObservationRun = Callable[
 ]
 
 
+def _read_access_matches(
+    access: PreparedEvidenceAccess | None, session_id: SessionId, policy: SessionPolicy
+) -> bool:
+    if access is None:
+        return True
+    if not isinstance(access, PreparedEvidenceAccess):
+        return False
+    if access.session_id != session_id or access.policy != policy:
+        return False
+    try:
+        # Revalidate the live port's current facts/callables at transfer. The
+        # immutable access value can reference a mutable infrastructure adapter.
+        replace(access)
+    except Exception:
+        return False
+    return True
+
+
+@dataclass(slots=True)
+class _EvidenceAssociation:
+    run_id: RunId
+    session_id: SessionId | None = None
+    policy: SessionPolicy | None = None
+    live_reader: EvidenceReadPort | None = None
+    terminal_opener: Callable[[], Awaitable[OwnedEvidenceReadPort]] | None = None
+    live_reads_open: bool = False
+    terminal_reads_open: bool = False
+    reads: set[asyncio.Task[RunEvidencePage]] = field(default_factory=set)
+
+
 @dataclass(slots=True)
 class _ObservationGeneration:
     ready: asyncio.Future[RuntimeStatus]
+    evidence: _EvidenceAssociation
     stop: asyncio.Event = field(default_factory=asyncio.Event)
     acquisition: Acquisition | None = None
     owner: asyncio.Task[RuntimeStatus] | None = None
@@ -375,6 +435,15 @@ class ObservationRuntime:
         self._lock = asyncio.Lock()
         self._summary = RuntimeStatus()
         self._generation: _ObservationGeneration | None = None
+        self._evidence_association: _EvidenceAssociation | None = None
+        self._reads: set[asyncio.Task[RunEvidencePage]] = set()
+        self._evidence_read_cleanup_confirmed = True
+
+    @property
+    def evidence_read_cleanup_confirmed(self) -> bool:
+        """Incarnation-wide read certainty, independent of capture/attach facts."""
+        self._guard_context()
+        return self._evidence_read_cleanup_confirmed
 
     def _guard_context(self) -> None:
         if _running_loop() is not self._loop or get_ident() != self._thread_id:
@@ -421,6 +490,131 @@ class ObservationRuntime:
             + recorder_cleanup,
         )
 
+    async def read_record(self, reference: EvidenceReference) -> RunEvidencePage:
+        self._guard_context()
+        if not isinstance(reference, EvidenceReference):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        owner = self._admit_read(reference.session_id, reference)
+        return await self._wait_read(owner)
+
+    async def read_page(self, request: EvidenceRetrievalRequest) -> RunEvidencePage:
+        self._guard_context()
+        if not isinstance(request, EvidenceRetrievalRequest):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        reference = request.reference
+        session_id = (
+            reference if isinstance(reference, SessionId) else reference.session_id
+        )
+        owner = self._admit_read(session_id, request)
+        return await self._wait_read(owner)
+
+    def _admit_read(
+        self, session_id: SessionId, query: EvidenceReference | EvidenceRetrievalRequest
+    ) -> asyncio.Task[RunEvidencePage]:
+        # No await: validation, source capture and lease registration form one
+        # owner-loop admission point, independent of any caller's earlier work.
+        association = self._evidence_association
+        if association is None or association.session_id is None:
+            raise EvidenceReadRejected("no_associated_session")
+        if session_id != association.session_id:
+            raise EvidenceReadRejected("session_not_associated")
+        if not self._evidence_read_cleanup_confirmed:
+            raise EvidenceReadRejected("read_unavailable")
+        reader = association.live_reader if association.live_reads_open else None
+        opener = (
+            association.terminal_opener if association.terminal_reads_open else None
+        )
+        if reader is None and opener is None:
+            raise EvidenceReadRejected("read_unavailable")
+        if len(self._reads) >= 8:
+            raise EvidenceReadRejected("read_capacity")
+        work = (
+            self._own_read(association.run_id, session_id, reader, query)
+            if reader is not None
+            else self._own_terminal_read(association.run_id, session_id, opener, query)
+        )
+        owner = asyncio.create_task(
+            work,
+            name=f"dutchmate-evidence-{association.run_id.value}",
+        )
+        self._reads.add(owner)
+        association.reads.add(owner)
+        owner.add_done_callback(lambda task: self._read_settled(task, association))
+        return owner
+
+    async def _own_read(
+        self,
+        run_id: RunId,
+        session_id: SessionId,
+        reader: EvidenceReadPort,
+        query: EvidenceReference | EvidenceRetrievalRequest,
+    ) -> RunEvidencePage:
+        if isinstance(query, EvidenceReference):
+            page = await reader.resolve_record(query)
+        else:
+            page = await reader.retrieve(query)
+        return RunEvidencePage(run_id, session_id, page)
+
+    async def _own_terminal_read(
+        self,
+        run_id: RunId,
+        session_id: SessionId,
+        opener: Callable[[], Awaitable[OwnedEvidenceReadPort]] | None,
+        query: EvidenceReference | EvidenceRetrievalRequest,
+    ) -> RunEvidencePage:
+        assert opener is not None
+        try:
+            reader = await opener()
+        except EvidenceSourceOpenFailure as failure:
+            if not failure.reader_close_confirmed:
+                self._evidence_read_cleanup_confirmed = False
+            raise failure.primary from None
+        except BaseException:
+            # No normalized positive acknowledgment: seal before lease release.
+            self._evidence_read_cleanup_confirmed = False
+            raise
+        try:
+            report = await self._own_read(run_id, session_id, reader, query)
+        except BaseException:
+            try:
+                await reader.close()
+            except BaseException:
+                self._evidence_read_cleanup_confirmed = False
+            raise
+        try:
+            await reader.close()
+        except BaseException:
+            self._evidence_read_cleanup_confirmed = False
+            raise
+        return report
+
+    def _read_settled(
+        self, owner: asyncio.Task[RunEvidencePage], association: _EvidenceAssociation
+    ) -> None:
+        self._guard_context()
+        if not owner.cancelled():
+            owner.exception()
+        association.reads.discard(owner)
+        self._reads.discard(owner)
+
+    async def _wait_read(self, owner: asyncio.Task[RunEvidencePage]) -> RunEvidencePage:
+        try:
+            return await asyncio.shield(owner)
+        except asyncio.CancelledError:
+            # Caller loss never cancels the private read owner or submitted
+            # persistence work. Join despite repeated cancellation, then preserve
+            # the caller's cancellation rather than a secondary read failure.
+            while not owner.done():
+                try:
+                    await asyncio.shield(owner)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not owner.cancelled():
+                owner.exception()
+            raise
+
     async def attach(
         self, profile: ResolvedDutProfile, prepare: PrepareObservationRun
     ) -> RuntimeStatus:
@@ -435,8 +629,10 @@ class ObservationRuntime:
                     else RuntimeRejectedKind.BUSY
                 )
                 raise RuntimeRejectedError(kind)
-            generation = _ObservationGeneration(self._loop.create_future())
             run_id = RunId()
+            association = _EvidenceAssociation(run_id)
+            generation = _ObservationGeneration(self._loop.create_future(), association)
+            self._evidence_association = association
             self._summary = RuntimeStatus(
                 state=RuntimeState.ATTACHING,
                 run_id=run_id,
@@ -579,6 +775,17 @@ class ObservationRuntime:
                         if failure.cleanup_issue
                         else (),
                     )
+                    generation.evidence.session_id = failure.session_id
+                    generation.evidence.policy = profile.session_policy
+                    access = failure.terminal_evidence_access
+                    if (
+                        failure.session_id is not None
+                        and _read_access_matches(
+                            access, failure.session_id, profile.session_policy
+                        )
+                        and access is not None
+                    ):
+                        generation.evidence.terminal_opener = access.terminal_opener
             except Exception:
                 self._guard_context()
                 async with self._lock:
@@ -605,7 +812,12 @@ class ObservationRuntime:
                         prepared = candidate
                         session_id, policy = values
                         self._summary = replace(self._summary, session_id=session_id)
-                        if policy != profile.session_policy:
+                        association = generation.evidence
+                        association.session_id = session_id
+                        association.policy = policy
+                        if policy != profile.session_policy or not _read_access_matches(
+                            prepared.evidence_access, session_id, policy
+                        ):
                             self._startup_failure(
                                 generation,
                                 RuntimeIssue(
@@ -613,8 +825,17 @@ class ObservationRuntime:
                                     "internal_contract_failure",
                                 ),
                             )
-                        elif not generation.stop.is_set():
-                            generation.acquisition = Acquisition(prepared.recorder)
+                        else:
+                            if prepared.evidence_access is not None:
+                                association.live_reader = (
+                                    prepared.evidence_access.live_reader
+                                )
+                                association.terminal_opener = (
+                                    prepared.evidence_access.terminal_opener
+                                )
+                            association.live_reads_open = True
+                            if not generation.stop.is_set():
+                                generation.acquisition = Acquisition(prepared.recorder)
             if generation.acquisition is not None:
                 assert prepared is not None
                 try:
@@ -673,6 +894,17 @@ class ObservationRuntime:
             # Even a failed stop/close must join actual consumer and close work
             # before the recorder is closed. No direct second backend close.
             await generation.acquisition.join_terminated()
+        # Acquisition is joined. Seal synchronously before awaiting pinned reads;
+        # no lifecycle lock spans these joins or recorder close. Terminal access
+        # retains only opaque target metadata for its separately planned reader.
+        association = generation.evidence
+        association.live_reads_open = False
+        if association.reads:
+            await asyncio.gather(
+                *(asyncio.shield(owner) for owner in tuple(association.reads)),
+                return_exceptions=True,
+            )
+        association.live_reader = None
         if prepared is not None:
             try:
                 await prepared.recorder.close()
@@ -726,6 +958,9 @@ class ObservationRuntime:
                 owner_settled=True,
             )
             generation.acquisition = None
+            association.terminal_reads_open = (
+                self._summary.owner_settled and self._summary.recorder_close_confirmed
+            )
             self._generation = None
             if not generation.ready.done():
                 generation.ready.set_result(self._summary)

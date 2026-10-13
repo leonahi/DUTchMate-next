@@ -5,11 +5,13 @@ import json
 import logging
 import math
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal, NoReturn, cast
 
 import httpx
 
+from dutchmate_cli import evidence
 from dutchmate_cli.context import AttachPaths, CliFailure, CliFailureKind, Endpoint
 
 type RequestOutcome = Literal["not_submitted", "unknown", "report_received"]
@@ -341,6 +343,54 @@ async def exchange(
         method, route = "POST", "/v1/observation/detach"
     else:
         return local_failure(CliFailureKind.INVALID_ARGUMENTS, delivery)
+    return await _deliver(
+        endpoint=endpoint, method=method, route=route, request_body=request_body,
+        credential=credential, delivery=delivery, validate=_status, reject=_remote_error,
+    )
+
+
+def _evidence_reply(value: object) -> object:
+    try:
+        return evidence.reply(value)
+    except ValueError, TypeError, RecursionError:
+        pass
+    _invalid()
+
+
+def _evidence_error(value: object, status: int) -> object:
+    try:
+        if not evidence.recognized_error(value, status):
+            _remote_error(value, status)
+    except ValueError, TypeError, RecursionError:
+        _invalid()
+    envelope = cast(dict[str, object], value)
+    error = cast(dict[str, object], envelope["error"])
+    return {"error": {"source": error["source"], "code": error["code"]}}
+
+
+async def exchange_evidence(
+    *, endpoint: Endpoint, operation: str, request_body: dict[str, object],
+    credential: str, delivery: DeliveryState,
+) -> tuple[int, bytes]:
+    if operation == "record":
+        route = "/v1/evidence/record"
+    elif operation == "page":
+        route = "/v1/evidence/page"
+    else:
+        return local_failure(CliFailureKind.INVALID_ARGUMENTS, delivery)
+    return await _deliver(
+        endpoint=endpoint, method="POST", route=route, request_body=request_body,
+        credential=credential, delivery=delivery, validate=_evidence_reply, reject=_evidence_error,
+    )
+
+
+async def _deliver(
+    *, endpoint: Endpoint, method: str, route: str,
+    request_body: dict[str, str] | dict[str, object] | None,
+    credential: str, delivery: DeliveryState,
+    validate: Callable[[object], object], reject: Callable[[object, int], object],
+) -> tuple[int, bytes]:
+    """Shared private007 transport; only reply validation varies by workflow."""
     # Parent.disabled does not suppress child records or handlers attached to
     # the parent. Disable the pinned SDK's emitting channels themselves too.
     for name in (
@@ -377,10 +427,14 @@ async def exchange(
                     status_code = response.status_code
         value = _decode(body)
         if status_code == 200:
-            _status(value)
+            projected = validate(value)
+            if projected is not None:
+                value = projected
             exit_code = 0
         else:
-            _remote_error(value, status_code)
+            projected = reject(value, status_code)
+            if projected is not None:
+                value = projected
             exit_code = 4
         delivery.request_outcome = "report_received"
         return exit_code, _encode_record(value)

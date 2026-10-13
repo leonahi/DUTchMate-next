@@ -9,7 +9,7 @@ from typing import Annotated, cast
 
 import typer
 
-from dutchmate_cli import client, context
+from dutchmate_cli import client, context, evidence
 
 app = typer.Typer(
     invoke_without_command=True,
@@ -120,6 +120,61 @@ def detach(ctx: typer.Context) -> int:
     ))
     _write(record, error=code != 0)
     return code
+
+
+evidence_app = typer.Typer(
+    invoke_without_command=True, no_args_is_help=False, add_completion=False,
+    suggest_commands=False, rich_markup_mode=None, pretty_exceptions_enable=False,
+    pretty_exceptions_show_locals=False, context_settings={"color": False},
+    help="Retrieve bounded binary-safe evidence from an explicitly known session.",
+)
+app.add_typer(evidence_app, name="evidence")
+
+
+@evidence_app.callback()
+def evidence_root(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help(), color=False)
+
+
+def _deliver_evidence(
+    ctx: typer.Context, operation: str, body: dict[str, object],
+) -> int:
+    invocation = cast(_Invocation, ctx.obj)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange_evidence(
+        endpoint=endpoint, operation=operation, request_body=body,
+        credential=credential, delivery=invocation.delivery,
+    ))
+    _write(record, error=code != 0)
+    return code
+
+
+@evidence_app.command("record")
+def evidence_record(
+    ctx: typer.Context,
+    session: Annotated[str, typer.Option("--session", help="Explicit associated session ID.")],
+    sequence: Annotated[int, typer.Option("--sequence", help="Exact observation sequence.")],
+) -> int:
+    """Retrieve one stable reference; expired/not-found reports also exit0."""
+    return _deliver_evidence(ctx, "record", evidence.record_request(session, sequence))
+
+
+@evidence_app.command("page")
+def evidence_page(
+    ctx: typer.Context,
+    session: Annotated[str, typer.Option("--session", help="Explicit associated session ID.")],
+    max_records: Annotated[int, typer.Option("--max-records", help="Required page record bound.")],
+    max_charged_bytes: Annotated[int, typer.Option("--max-charged-bytes", help="Required journal charge bound.")],
+    start: Annotated[int | None, typer.Option("--start", help="Inclusive sequence, paired with --end.")] = None,
+    end: Annotated[int | None, typer.Option("--end", help="Exclusive sequence, paired with --start.")] = None,
+    cursor: Annotated[str | None, typer.Option("--cursor", help="Opaque bounded continuation token.")] = None,
+) -> int:
+    """Deliver one bounded page; no automatic continuation or text conversion."""
+    return _deliver_evidence(ctx, "page", evidence.page_request(
+        session, max_records, max_charged_bytes, start, end, cursor,
+    ))
 
 
 def _failure(kind: context.CliFailureKind, delivery: client.DeliveryState) -> int:

@@ -1,9 +1,9 @@
 """Append-only authoritative evidence recording boundary."""
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import FrozenInstanceError, dataclass, field
 from enum import StrEnum
-from typing import Protocol
+from typing import Final, Protocol
 
 from dutchmate_core.model import (
     BackendObservationTimestamp,
@@ -60,13 +60,26 @@ class JournalFailureKind(StrEnum):
     CLOSED = "closed"
 
 
-@dataclass(frozen=True, slots=True)
-class JournalFailure(RuntimeError):
-    """Stable journal failure without storage-library exception leakage."""
+_JOURNAL_FAILURE_FACT_FIELDS = frozenset({"operation", "kind", "detail"})
 
-    operation: JournalOperation
-    kind: JournalFailureKind
-    detail: str | None = None
+
+@dataclass(slots=True, unsafe_hash=True)
+class JournalFailure(RuntimeError):
+    """Read-only journal facts with normal RuntimeError transport fields."""
+
+    operation: Final[JournalOperation] = field()
+    kind: Final[JournalFailureKind] = field()
+    detail: Final[str | None] = None
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if name in _JOURNAL_FAILURE_FACT_FIELDS and hasattr(self, name):
+            raise FrozenInstanceError(f"cannot assign to field {name!r}")
+        RuntimeError.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        if name in _JOURNAL_FAILURE_FACT_FIELDS:
+            raise FrozenInstanceError(f"cannot delete field {name!r}")
+        RuntimeError.__delattr__(self, name)
 
     def __post_init__(self) -> None:
         if not isinstance(self.operation, JournalOperation):
