@@ -4,6 +4,7 @@ import base64
 import json
 import re
 from typing import cast
+from uuid import UUID
 
 from dutchmate_cli import context
 
@@ -219,6 +220,10 @@ def _provenance(value: object) -> dict[str, object]:
 def _record(value: object) -> dict[str, object]:
     if type(value) is not dict:
         raise ValueError("invalid_response")
+    if value.get("kind") == "operation_started":
+        return _operation_started(value)
+    if value.get("kind") == "operation_ended":
+        return _operation_ended(value)
     kind = _choice(
         value.get("kind"),
         {"segment_started", "rx_bytes", "observer_loss", "segment_ended"},
@@ -289,6 +294,130 @@ def _record(value: object) -> dict[str, object]:
     if kind != "segment_started":
         _text(view["connection_id"])
         _text(view["segment_id"])
+    return view
+
+
+_MONITOR_OUTCOMES = {
+    "matched",
+    "timeout",
+    "byte_limit",
+    "disconnected",
+    "detached",
+    "timestamp_origin_reset",
+    "recording_failure",
+    "transport_failure",
+    "service_stopping",
+}
+
+
+def _uuid(value: object) -> str:
+    text = _text(value)
+    if str(UUID(text)) != text:
+        raise ValueError("invalid_response")
+    return text
+
+
+def _condition_base64(value: object) -> str:
+    text = _text(value)
+    if len(text) > 344:
+        raise ValueError("invalid_response")
+    decoded = base64.b64decode(text, validate=True)
+    if (
+        not 1 <= len(decoded) <= 256
+        or base64.b64encode(decoded).decode("ascii") != text
+    ):
+        raise ValueError("invalid_response")
+    return text
+
+
+def _operation_clock(value: object) -> dict[str, object]:
+    view = _view(
+        value, ("origin_id", "started_at_ns", "deadline_at_ns", "decided_at_ns")
+    )
+    _uuid(view["origin_id"])
+    for name in ("started_at_ns", "deadline_at_ns", "decided_at_ns"):
+        _counter(view[name])
+    return view
+
+
+def _operation_match(value: object, outcome: str) -> dict[str, object] | None:
+    if outcome != "matched":
+        if value is not None:
+            raise ValueError("invalid_response")
+        return None
+    view = _view(value, ("start", "end"))
+    for name, offset in (("start", "byte_offset"), ("end", "byte_offset_exclusive")):
+        endpoint = _view(view[name], ("sequence", offset))
+        _counter(endpoint["sequence"], maximum=_MAX - 1)
+        _counter(endpoint[offset], minimum=0 if name == "start" else 1)
+        view[name] = endpoint
+    return view
+
+
+def _operation_facts(view: dict[str, object]) -> None:
+    """Validate wire variants only; do not reconstruct observation decisions."""
+    outcome = _choice(view["outcome"], _MONITOR_OUTCOMES)
+    if view["window"] is None:
+        raise ValueError("invalid_response")
+    view["window"] = _range(view["window"])
+    _counter(
+        view["examined_rx_bytes"],
+        minimum=1 if outcome in {"matched", "byte_limit"} else 0,
+        maximum=1048576,
+    )
+    _counter(view["observer_loss_records"])
+    view["match"] = _operation_match(view["match"], outcome)
+    view["clock"] = _operation_clock(view["clock"])
+
+
+def _operation_started(value: object) -> dict[str, object]:
+    view = _view(
+        value,
+        (
+            "kind",
+            "sequence",
+            "operation_id",
+            "operation_kind",
+            "provenance",
+            "timeout_ms",
+            "max_rx_bytes",
+            "clock_origin_id",
+            "condition_base64",
+        ),
+    )
+    _counter(view["sequence"], maximum=_MAX - 1)
+    _uuid(view["operation_id"])
+    _choice(view["operation_kind"], {"monitor"})
+    view["provenance"] = _provenance(view["provenance"])
+    _counter(view["timeout_ms"], minimum=1, maximum=4000)
+    _counter(view["max_rx_bytes"], minimum=1, maximum=1048576)
+    _uuid(view["clock_origin_id"])
+    _condition_base64(view["condition_base64"])
+    return view
+
+
+def _operation_ended(value: object) -> dict[str, object]:
+    view = _view(
+        value,
+        (
+            "kind",
+            "sequence",
+            "operation_id",
+            "operation_kind",
+            "start_sequence",
+            "window",
+            "outcome",
+            "examined_rx_bytes",
+            "observer_loss_records",
+            "match",
+            "clock",
+        ),
+    )
+    _counter(view["sequence"], maximum=_MAX - 1)
+    _uuid(view["operation_id"])
+    _choice(view["operation_kind"], {"monitor"})
+    _counter(view["start_sequence"], maximum=_MAX - 1)
+    _operation_facts(view)
     return view
 
 

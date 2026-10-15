@@ -3,15 +3,23 @@
 import asyncio
 from dataclasses import FrozenInstanceError, dataclass, field
 from enum import StrEnum
-from typing import Final, Protocol
+from typing import Final, Literal, Protocol
 
 from dutchmate_core.model import (
+    SQLITE_INTEGER_MAX,
     BackendObservationTimestamp,
     ConnectionInstanceId,
     EvidenceRangeReference,
     EvidenceRecord,
+    MonitorClockFacts,
+    MonitorMatch,
+    MonitorMatchEnd,
+    MonitorMatchStart,
+    MonitorOutcome,
     ObserverLossCause,
     ObserverLossEvidence,
+    OperationEndedEvidence,
+    OperationStartedEvidence,
     RetentionMarker,
     RxBytesEvidence,
     SegmentEndedEvidence,
@@ -21,6 +29,7 @@ from dutchmate_core.model import (
     SegmentStartedEvidence,
     SequenceRange,
     SessionId,
+    SessionPolicy,
     validate_persisted_counter,
 )
 
@@ -236,6 +245,8 @@ type PendingEvidenceRecord = (
     | PendingRxBytesEvidence
     | PendingObserverLossEvidence
     | PendingSegmentEndedEvidence
+    | PendingOperationStartedEvidence
+    | PendingOperationEndedEvidence
 )
 
 
@@ -313,5 +324,129 @@ def _assign_sequence(
                 segment_id=segment_id,
                 reason=reason,
             )
+        case PendingOperationStartedEvidence():
+            return OperationStartedEvidence(
+                sequence=sequence,
+                operation_id=draft.operation_id,
+                operation_kind=draft.operation_kind,
+                provenance=draft.provenance,
+                timeout_ms=draft.timeout_ms,
+                max_rx_bytes=draft.max_rx_bytes,
+                clock_origin_id=draft.clock_origin_id,
+                condition=draft.condition,
+            )
+        case PendingOperationEndedEvidence():
+            return OperationEndedEvidence(
+                sequence=sequence,
+                operation_id=draft.operation_id,
+                operation_kind=draft.operation_kind,
+                start_sequence=draft.start_sequence,
+                window=draft.window,
+                outcome=draft.outcome,
+                examined_rx_bytes=draft.examined_rx_bytes,
+                observer_loss_records=draft.observer_loss_records,
+                match=draft.match,
+                clock=draft.clock,
+            )
         case _:
             raise TypeError(f"unsupported evidence draft: {type(draft).__name__}")
+
+
+@dataclass(frozen=True, slots=True)
+class PendingOperationStartedEvidence:
+    operation_id: str
+    operation_kind: Literal["monitor"]
+    provenance: SegmentProvenance
+    timeout_ms: int
+    max_rx_bytes: int
+    clock_origin_id: str
+    condition: bytes
+
+    def __post_init__(self) -> None:
+        OperationStartedEvidence(
+            0,
+            self.operation_id,
+            self.operation_kind,
+            self.provenance,
+            self.timeout_ms,
+            self.max_rx_bytes,
+            self.clock_origin_id,
+            self.condition,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class PendingOperationEndedEvidence:
+    operation_id: str
+    operation_kind: Literal["monitor"]
+    start_sequence: int
+    window: SequenceRange
+    outcome: MonitorOutcome
+    examined_rx_bytes: int
+    observer_loss_records: int
+    match: MonitorMatch | None
+    clock: MonitorClockFacts
+
+    def __post_init__(self) -> None:
+        OperationEndedEvidence(
+            0,
+            self.operation_id,
+            self.operation_kind,
+            self.start_sequence,
+            self.window,
+            self.outcome,
+            self.examined_rx_bytes,
+            self.observer_loss_records,
+            self.match,
+            self.clock,
+        )
+
+
+def maximum_monitor_end_drafts(
+    operation_id: str,
+    clock_origin_id: str,
+) -> tuple[PendingOperationEndedEvidence, ...]:
+    """Nine legal standalone upper shapes, without pairing/reachability claims."""
+    maximum = SQLITE_INTEGER_MAX
+    match = MonitorMatch(
+        MonitorMatchStart(maximum - 1, maximum - 1),
+        MonitorMatchEnd(maximum - 1, maximum),
+    )
+    return tuple(
+        PendingOperationEndedEvidence(
+            operation_id=operation_id,
+            operation_kind="monitor",
+            start_sequence=maximum - 2,
+            window=SequenceRange(maximum - 1, maximum),
+            outcome=outcome,
+            examined_rx_bytes=1048576,
+            observer_loss_records=maximum,
+            match=match if outcome is MonitorOutcome.MATCHED else None,
+            clock=MonitorClockFacts(
+                clock_origin_id,
+                maximum - 2,
+                maximum - 1,
+                maximum if outcome is MonitorOutcome.TIMEOUT else maximum - 2,
+            ),
+        )
+        for outcome in MonitorOutcome
+    )
+
+
+def monitor_marker_charges_fit(policy: SessionPolicy, charges: tuple[int, int]) -> bool:
+    """Pure preflight only: no quota reservation or later commit guarantee."""
+    if not isinstance(policy, SessionPolicy):
+        raise TypeError("marker policy must be validated")
+    if type(charges) is not tuple or len(charges) != 2:
+        raise TypeError("marker charges must be a pair")
+    for charge in charges:
+        _validate_positive_persisted_integer(charge, name="marker charge")
+    return all(
+        charge <= ceiling
+        for charge in charges
+        for ceiling in (
+            policy.max_record_charged_bytes,
+            policy.max_retained_charged_bytes,
+            policy.max_retrieval_page_charged_bytes,
+        )
+    )

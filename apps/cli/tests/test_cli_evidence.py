@@ -2014,6 +2014,194 @@ def test_t023_binary_provenance_marker_order_and_outcome_are_preserved_without_p
     assert delivery.imports == []
 
 
+def _t020_sized_marker_page(size: int, kind: int, device: bool) -> dict[str, Any]:
+    monitor_tests = _helpers("test_cli_monitor")
+    record = monitor_tests._markers(device=device)[kind]
+    if kind == 0:
+        record.update(
+            condition_base64=base64.b64encode(bytes(range(256))).decode(),
+            timeout_ms=4000,
+            max_rx_bytes=1048576,
+        )
+    report = _report(records=[record], snapshot_end_exclusive=9)
+    if kind == 0:
+        target = record["provenance"]["connection_provenance"]["fields"][-1]
+        target["value"] = ""
+        key = "value"
+    else:
+        target, key = report, "run_id"
+        target[key] = ""
+    fragment = 'é/\\"\n🚀'
+    width = len(_json(fragment)) - 2
+    remaining = size - len(_json(report))
+    target[key] = fragment * (remaining // width) + "x" * (remaining % width)
+    assert len(_json(report)) == size
+    return report
+
+
+@pytest.mark.parametrize("size", [_LIMIT, _LIMIT + 1])
+@pytest.mark.parametrize("kind", [0, 1], ids=["start", "end"])
+@pytest.mark.parametrize(
+    "device", [False, True], ids=["basic-shaped", "enhanced-shaped"]
+)
+@pytest.mark.parametrize("args", [_RECORD_ARGS, _PAGE_ARGS], ids=["record", "page"])
+def test_009_t020_encoded_marker_envelope_limit_and_lf_are_independent_of_policy(
+    size: int,
+    kind: int,
+    device: bool,
+    args: list[str],
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = _t020_sized_marker_page(size, kind, device)
+    raw = _json(report)
+    cut = raw.index("é".encode()) + 1
+    delivery = Delivery(
+        account_home,
+        monkeypatch,
+        chunks=[raw[:cut], raw[cut:]],
+        headers=[("Content-Type", "application/json"), ("Content-Length", "0")],
+    )
+    assert delivery.invoke(args) == (0 if size == _LIMIT else 5)
+    if size == _LIMIT:
+        stdout, stderr = capsys.readouterr()
+        assert stdout.encode() == raw + b"\n" and stderr == ""
+        assert len(stdout.encode()) == _LIMIT + 1
+    else:
+        _local(capsys.readouterr(), "invalid_response", phase="unknown")
+    assert len(delivery.wire.requests) == 1 and delivery.wire.stream.closed
+    assert delivery.reads == ["credential"] and delivery.imports == []
+
+
+_T020_BAD_MARKERS: list[tuple[int, tuple[str, ...], Any]] = [
+    (0, ("condition_base64",), base64.b64encode(b"x" * 257).decode()),
+    (0, ("condition_base64",), "/x=="),
+    (0, ("condition_base64",), "//9="),
+    (0, ("condition_base64",), False),
+    (0, ("clock_origin_id",), None),
+    (0, ("timeout_ms",), 0),
+    (0, ("max_rx_bytes",), 1048577),
+    (1, ("window",), None),
+    (1, ("clock",), []),
+    (1, ("clock", "decided_at_ns"), True),
+    (1, ("clock", "origin_id"), "abcdefab123442348234123456789abc"),
+    (1, ("match", "start"), None),
+    (1, ("match", "end"), []),
+    (1, ("match", "end", "byte_offset_exclusive"), True),
+    (1, ("match", "start", "sequence"), _MAX),
+    (1, ("observer_loss_records",), _MAX + 1),
+    (1, ("operation_kind",), "follow"),
+    (1, ("outcome",), False),
+]
+
+
+@pytest.mark.parametrize("index,path,bad", _T020_BAD_MARKERS)
+@pytest.mark.parametrize("args", [_RECORD_ARGS, _PAGE_ARGS], ids=["record", "page"])
+def test_009_t020_nested_marker_binary_nullability_and_enum_faults_are_private(
+    index: int,
+    path: tuple[str, ...],
+    bad: Any,
+    args: list[str],
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monitor_tests = _helpers("test_cli_monitor")
+    records = monitor_tests._markers()
+    records[0]["provenance"]["connection_provenance"]["fields"][-1]["value"] = _PRIVATE
+    _at(records[index], path[:-1])[path[-1]] = bad
+    report = _report(records=records, snapshot_end_exclusive=9)
+    caplog.set_level(logging.DEBUG)
+    delivery = Delivery(account_home, monkeypatch, body=_json(report))
+    assert delivery.invoke(args) == 5
+    _local(capsys.readouterr(), "invalid_response", phase="unknown")
+    assert len(delivery.wire.requests) == 1 and delivery.wire.stream.closed
+    assert _PRIVATE not in caplog.text and _TOKEN not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "device", [False, True], ids=["basic-shaped", "enhanced-shaped"]
+)
+@pytest.mark.parametrize("args", [_RECORD_ARGS, _PAGE_ARGS], ids=["record", "page"])
+def test_009_t020_expired_start_and_rx_do_not_trigger_marker_reconstruction_or_fetch(
+    device: bool,
+    args: list[str],
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    end = _helpers("test_cli_monitor")._markers(device=device)[1]
+    report = _with_marker()
+    report["page"].update(
+        records=[end],
+        expired_range={"start_inclusive": 0, "end_exclusive": 8},
+        never_existed_range=None,
+    )
+    report["page"]["retention_marker"].update(
+        expired_range={"start_inclusive": 0, "end_exclusive": 8},
+        discarded_record_count=8,
+    )
+    delivery = Delivery(account_home, monkeypatch, body=_json(report))
+    assert delivery.invoke(args) == 0
+    assert tuple(capsys.readouterr()) == ((_json(report) + b"\n").decode(), "")
+    assert len(delivery.wire.requests) == 1
+    assert delivery.imports == [] and delivery.reads == ["credential"]
+
+
+@pytest.mark.parametrize("kind", [0, 1], ids=["start", "end"])
+@pytest.mark.parametrize("mode", ["limit", "input-over", "reply-over"])
+def test_009_t020_marker_continuations_preserve_cursor_byte_bounds_and_input_opacity(
+    kind: int,
+    mode: str,
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monitor_tests = _helpers("test_cli_monitor")
+    if mode == "input-over":
+        api = _api()
+        attempts = monitor_tests._block_preparation(api, monkeypatch)
+        assert _command(api, [*_PAGE_ARGS, "--cursor", "A" * 1025]) == 2
+        _local(capsys.readouterr(), "invalid_arguments")
+        assert attempts == []
+        return
+    document = {
+        "version": 1,
+        "session_id": "",
+        "range_start_inclusive": 0,
+        "range_end_exclusive": None,
+        "snapshot_end_exclusive": 10,
+        "next_sequence": 4 if kind == 0 else 9,
+    }
+    remaining = 768 - len(_json(document))
+    session = "\x01" * (remaining // 6) + "x" * (remaining % 6)
+    assert 1 <= len(session.encode()) <= 256
+    document["session_id"] = session
+    token = base64.urlsafe_b64encode(_json(document)).decode().rstrip("=")
+    assert len(token) == 1024
+    report = _report(
+        records=[monitor_tests._markers()[kind]],
+        snapshot_end_exclusive=10,
+        truncated=True,
+        continuation=token if mode == "limit" else "A" * 1025,
+    )
+    report["session_id"] = session
+    # Input tokens remain opaque: this alphabet/length-valid token is forwarded
+    # even though the CLI cannot establish its server-side cursor semantics.
+    incoming = "A" * 1024
+    delivery = Delivery(account_home, monkeypatch, body=_json(report))
+    args = [*_PAGE_ARGS, "--session", session, "--cursor", incoming]
+    assert delivery.invoke(args) == (0 if mode == "limit" else 5)
+    if mode == "limit":
+        assert tuple(capsys.readouterr()) == ((_json(report) + b"\n").decode(), "")
+    else:
+        _local(capsys.readouterr(), "invalid_response", phase="unknown")
+    assert len(delivery.wire.requests) == 1 and delivery.imports == []
+    assert json.loads(delivery.wire.requests[0].content)["cursor"] == incoming
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

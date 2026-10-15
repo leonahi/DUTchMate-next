@@ -40,6 +40,7 @@ from dutchmate_core.evidence import (
 from dutchmate_core.model import (
     ConnectionProvenanceSnapshot,
     EvidenceRecord,
+    ObserverLossEvidence,
     PersistedConnectionProvenance,
     ProvenanceField,
     RxBytesEvidence,
@@ -89,6 +90,7 @@ _ATTACH = "/v1/observation/attach"
 _DETACH = "/v1/observation/detach"
 _STATUS = "/v1/observation/status"
 _T017_OPEN_JOURNAL = sqlite_evidence.SqliteEvidenceJournal.open
+_T017_OPEN_JOURNAL_V2 = sqlite_evidence.SqliteEvidenceJournal.open_v2
 
 
 # T021 tests below catch shutdown that merely ends lifespan, detaches before a
@@ -1060,11 +1062,12 @@ class _T017Commits:
 
 
 async def _t017_readback(
-    path: Path, session_id: SessionId, expected: list[EvidenceRecord]
+    path: Path, session_id: SessionId, expected: list[EvidenceRecord], *, v2: bool = False
 ) -> None:
     # Capture the real reopen API before fixture guards: this call is test-only
     # after HTTP detach/confirmed close, never part of service composition.
-    reopened = await _T017_OPEN_JOURNAL(path, expected_session_id=session_id)
+    opener = _T017_OPEN_JOURNAL_V2 if v2 else _T017_OPEN_JOURNAL
+    reopened = await opener(path, expected_session_id=session_id)
     retrieved: list[EvidenceRecord] = []
     cursor = None
     pages = 0
@@ -1242,7 +1245,7 @@ async def test_t017_http_basic_captures_exact_binary_between_clients_and_reopens
                 if delivery is not None:
                     delivery.cancel()
                     await asyncio.gather(delivery, return_exceptions=True)
-        await _t017_readback(c.journal_path, c.journals[0].session_id, commits.records)
+        await _t017_readback(c.journal_path, c.journals[0].session_id, commits.records, v2=True)
 
 
 @pytest.mark.parametrize(
@@ -1472,7 +1475,16 @@ async def test_t017_identical_http_lifecycle_and_durable_binary_assertions_prese
                     == fixture.connection.descriptor.capabilities
                 )
                 assert all(
-                    record.connection_id == start.connection_id
+                    isinstance(
+                        record,
+                        (
+                            SegmentStartedEvidence,
+                            RxBytesEvidence,
+                            ObserverLossEvidence,
+                            SegmentEndedEvidence,
+                        ),
+                    )
+                    and record.connection_id == start.connection_id
                     and record.segment_id == start.segment_id
                     for record in commits.records
                 )
@@ -1664,7 +1676,7 @@ async def test_t015_preparation_failure_preserves_known_session_and_cleanup_unce
                     )
 
                 patch.setattr(
-                    sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(create)
+                    sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
                 )
             elif stage == "existing":
                 c.journal_path.write_bytes(b"existing destination must stay unchanged")
@@ -2498,7 +2510,7 @@ async def test_t012_attach_delivery_cancel_during_startup_never_creates_runtime_
         with monkeypatch.context() as patch:
             probe = CoreCalls()
             probe.install(patch)
-            original = sqlite_evidence.SqliteEvidenceJournal.create
+            original = sqlite_evidence.SqliteEvidenceJournal.create_v2
 
             async def create(
                 cls: type[sqlite_evidence.SqliteEvidenceJournal],
@@ -2511,7 +2523,7 @@ async def test_t012_attach_delivery_cancel_during_startup_never_creates_runtime_
                 return await original(path, policy)
 
             patch.setattr(
-                sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(create)
+                sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
             )
             client = Client(body=_t011_body(c.profile_path, c.journal_path))
             delivery = submit(service, client, _ATTACH)

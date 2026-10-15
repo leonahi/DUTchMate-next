@@ -209,7 +209,22 @@ Architecture boundaries are enforced with import-linter (`uv run lint-imports`, 
 
 During implementation, run focused tests and targeted static analysis, search, or diagnostics, and resolve failures before broadening validation.
 
-Before completing a slice, run the repository's required validation gate, normally including appropriate equivalents of:
+**Use focused validation by default for individual implementation tasks.** A Spec Kit task or RED/GREEN step is not automatically a repository-wide validation checkpoint. Run the new or changed tests plus directly affected regressions and static checks appropriate to the changed code.
+
+For structured work, identify the implementation group or validation checkpoint before beginning work. Do not treat each individual task as a separate slice by default.
+
+Run the complete repository validation gate when:
+
+- the active task or specification explicitly requires it;
+- completing an implementation group, user story, feature checkpoint, or other coherent slice;
+- a cross-cutting change affects shared architecture, persistence/schema compatibility, ownership/lifecycle, package boundaries, dependencies, or another area where targeted tests are not sufficient;
+- performing final verification before declaring a feature ready for commit.
+
+Do not rerun the complete repository test suite after every individual task merely as a routine precaution. Do not skip or weaken a full gate that the active specification or task explicitly requires.
+
+After a successful full gate, documentation-only updates that merely record its already-observed results require appropriate documentation, consistency, and diff checks rather than another full test run, unless they change a governing contract, executable configuration, validation requirement, or other behavior that invalidates the previous gate.
+
+Before completing a slice that requires the repository-wide gate, run the repository's required validation gate, normally including appropriate equivalents of:
 
 ```bash
 uv run ruff check .

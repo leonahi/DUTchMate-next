@@ -10,6 +10,7 @@ from typing import Annotated, cast
 import typer
 
 from dutchmate_cli import client, context, evidence
+from dutchmate_cli import monitor as monitor_wire
 
 app = typer.Typer(
     invoke_without_command=True,
@@ -118,6 +119,46 @@ def detach(ctx: typer.Context) -> int:
         endpoint=endpoint, command="detach", credential=credential,
         delivery=invocation.delivery,
     ))
+    _write(record, error=code != 0)
+    return code
+
+
+@app.command("monitor")
+def monitor(
+    ctx: typer.Context,
+    session: Annotated[
+        str, typer.Option("--session", help="Explicit active session ID.")
+    ],
+    condition_base64: Annotated[
+        str,
+        typer.Option(
+            "--condition-base64", help="Canonical base64 literal (1..256 bytes)."
+        ),
+    ],
+    timeout_ms: Annotated[
+        int,
+        typer.Option("--timeout-ms", help="Required observation bound (1..4000 ms)."),
+    ],
+    max_rx_bytes: Annotated[
+        int,
+        typer.Option(
+            "--max-rx-bytes", help="Required examined-byte bound (1..1048576)."
+        ),
+    ],
+) -> int:
+    """Deliver one bounded Monitor report; every outcome and durability exits 0."""
+    invocation = cast(_Invocation, ctx.obj)
+    endpoint = invocation.options.target()
+    body = monitor_wire.request(session, condition_base64, timeout_ms, max_rx_bytes)
+    credential = context.read_credential()
+    code, record = asyncio.run(
+        client.exchange_monitor(
+            endpoint=endpoint,
+            request_body=body,
+            credential=credential,
+            delivery=invocation.delivery,
+        )
+    )
     _write(record, error=code != 0)
     return code
 

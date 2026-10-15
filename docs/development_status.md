@@ -8,41 +8,39 @@ Completed-slice evidence is kept in [development history](development_history.md
 ## Resume Here
 
 - **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is incomplete.
-- **Committed baseline**: Features 001–008 are software-complete on `main`.
-  Feature 008 is the `Implement evidence retrieval` commit containing this reviewed
-  snapshot, identified by Git revision `:/^Implement evidence retrieval`.
-  Accepted parent: `a14d1727`; service 006 implementation remains `b4c5730`.
-- **Latest completed feature**: `008-evidence-retrieval`, bounded binary-safe
-  evidence retrieval through the authenticated service and thin CLI.
-- **Progress**: T001–T035 complete; US1–US4 software criteria and final gate passed.
-  Separately authorized final pre-commit review passed; Phase 1 remains incomplete.
-- **Delivered surface**: `dutchmate attach/status/detach` and `evidence record/page`;
-  one already-running service, numeric loopback host and required port.
-  Retrieval requires an explicit known session, with no client database/path access.
-- **Read model**: One current/last run per service incarnation. Live reads use the
-  existing capture journal; terminal reads require confirmed writer closure and
-  open/validate/close a fresh read-only reader per request. One RX path remains.
-- **Delivery**: Exact UART bytes as padded base64; unchanged 003 page facts and
-  fixed snapshots. Independent service/CLI JSON caps are 1048576 bytes, CLI LF
-  excluded. Whole overflow rejects; no trimming, refetch or automatic pagination.
-- **Ownership/security**: Separate eight service reads/eight mutations and eight
-  Core read leases; owned work joins after client loss and at shutdown. Uncertain
-  reader cleanup permanently seals reads and prevents a clean service marker.
-  Existing 006 auth/browser gates and 007 receipts/exits/10s HTTP budget remain.
-- **Recorded evidence**: Fresh pre-commit full 3889 passed, zero failures/errors/skips;
-  Ruff/mypy 75/import 7/diff clean. Final 34-file review and eight fresh artifacts/
-  two installed stacks passed. T034's one graph update remains recorded/ignored.
-- **Next action**: Await explicit direction to select the next coherent Phase 1
-  slice. Do not start it or perform native/physical acceptance automatically.
-  Nothing pushed; this authorization ends after the Feature 008 commit.
-- **Acceptance limits**: Native macOS/arm64, Darwin 25.2.0, Python 3.14.3;
-  guarded IPv4/IPv6 fake-DUT installed flows. Native Linux/Windows, active-DUT,
-  physical/electrical and Enhanced hardware acceptance remain unexecuted.
-  Actual commands initially support Linux/macOS POSIX; Windows unsupported.
-- **Scope**: Schema-v1/Profile-v1 and existing 003/005–007 semantics preserved.
-  Streaming/text/Monitor/TX/Control/handoff/reconnect/discovery/service management,
-  Enhanced production and MCP/AI remain deferred. No hardware or real credential
-  access; no push or next Phase 1 slice in this authorization.
+- **Committed baseline**: Features 001–009 are software-complete on `main`;
+  Feature 009: `:/^Implement receive-only monitor` (`Implement receive-only monitor`),
+  accepted parent `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701`.
+- **Current feature**: `009-receive-only-monitor` is software-complete through T037
+  and final pre-commit review; its implementation is committed, nothing pushed.
+- **Progress**: T001–T037 complete (37/37); no remaining 009 implementation task.
+  Software readiness does not complete Phase 1 or native/physical acceptance.
+- **Observation model**: One active-session literal-byte Monitor over the sole
+  RX/journal path; committed start boundary, host deadline and frozen window.
+  Monitor opens no DUT, transmits no UART bytes and performs no control action.
+- **Bounds**: Condition 1..256 bytes, timeout 1..4000 ms, examined RX 1..1048576;
+  body 16384, independent HTTP/CLI JSON 1048576 plus CLI LF. Existing 007 HTTP
+  budgets and 008 cursor bounds remain; observation does not bound durable I/O.
+- **Evidence**: Explicit schema-v2/operation-v2 with ordinary journal retention;
+  default v1 factories/four codecs and Profile-v1 preserved without migration.
+  Active reads share the journal; terminal reads remain strictly read-only.
+- **Lifetime**: One strongly owned Monitor, independent of eight reads/eight
+  mutations; marker owners join before writer close. Existing lifecycle facts
+  and permanent reader-cleanup uncertainty remain; end failure is explicit.
+- **Fresh validation**: Final staged gate: 5783 passed in 311.97s, no failures/
+  errors/skips; 527 focused compatibility tests passed. Ruff/mypy 92 files/seven
+  import contracts and 14-archive/four-install module/metadata/entry/lock audit passed.
+- **Current checkpoint**: Final review/staged/installability/privacy checks passed;
+  no software correction. The implementation commit preserves the verified inputs.
+- **Next action**: Await explicit instructions; do not push, start another slice
+  or access physical hardware automatically.
+  T036 final Graphify update is recorded; no later Graphify run was needed.
+- **Acceptance limits**: macOS/arm64 Python 3.14.3 software evidence only. Native
+  Linux/Windows, active-DUT, physical/electrical and Enhanced hardware acceptance
+  remain unexecuted; actual Windows commands remain unsupported.
+- **Deferrals**: Follow, TX/Interact/console, Control, handoff/reconnect, text/regex,
+  annotations/catalogue/history/restart/service management, Enhanced production/MCP/AI.
+  No project, Phase 1, release or physical acceptance completion is claimed.
 
 ## Repository Baseline
 
@@ -55,7 +53,8 @@ Completed-slice evidence is kept in [development history](development_history.md
 | [005](../specs/005-observation-runtime/spec.md) | Backend-neutral runtime, in-memory Profile/session association, serialized lifecycle | `2824c0dc3ecc63684f573b3b0a55c621e18e069f` |
 | [006](../specs/006-local-observation-service/spec.md) | Authenticated local service, persistent runtime, private bootstrap, joined shutdown | `b4c5730b2a5e593c10c06ad9e8f24c39e06f794b` |
 | [007](../specs/007-observation-cli/spec.md) | Thin authenticated Typer observation CLI, bounded HTTP delivery, reported facts and private exits | `a14d1727f5a9a2dd1cab59ac2b662f47919bbe9d` |
-| [008](../specs/008-evidence-retrieval/spec.md) | Bounded authenticated active/terminal evidence retrieval, exact binary pages and read-cleanup ownership | `:/^Implement evidence retrieval` |
+| [008](../specs/008-evidence-retrieval/spec.md) | Bounded authenticated active/terminal evidence retrieval, exact binary pages and read-cleanup ownership | `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701` |
+| [009](../specs/009-receive-only-monitor/spec.md) | Bounded receive-only Monitor, explicit v2 markers, authenticated service/CLI and owned settlement | `:/^Implement receive-only monitor` |
 
 All prior implementation commits remain ancestors of feature 007. Its accepted
 parent `c2c9ce3` records feature 006; `b4c5730` is the service implementation.
@@ -66,13 +65,143 @@ Wheel/sdist installs and outside-cwd entry/import checks passed. Features 006/00
 completed their code-only Graphify updates before commit; generated output and
 backups remain ignored. Detailed earlier checkpoints belong in history.
 
-Feature 008 is the commit titled `Implement evidence retrieval` containing this
-reviewed snapshot. Resolve its full hash with
-`git rev-parse ':/^Implement evidence retrieval'`; the title-based reference avoids
-a self-referential hash or second bookkeeping commit. Its accepted parent is
+Feature 008's implementation commit is
+`11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701`, `Implement evidence retrieval`.
+The earlier title-based reference `:/^Implement evidence retrieval` resolves to
+the same committed baseline. Its accepted parent is
 `a14d1727f5a9a2dd1cab59ac2b662f47919bbe9d`. All prior implementation commits remain
-ancestors. Nothing was pushed. T034's single code-only Graphify update remains
+ancestors. Nothing was pushed. Feature 008 T034's code-only Graphify update remains
 recorded; outputs/backups are ignored and excluded from the commit.
+
+Feature 009's implementation commit is `:/^Implement receive-only monitor`,
+`Implement receive-only monitor`, with accepted parent `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701`.
+The title-based reference resolves to the implementation commit; prior baselines
+remain ancestors. Nothing was pushed.
+
+## Completed Feature: Receive-Only Monitor (009; Software-Complete)
+
+Artifacts: [spec](../specs/009-receive-only-monitor/spec.md),
+[plan](../specs/009-receive-only-monitor/plan.md),
+[model](../specs/009-receive-only-monitor/data-model.md),
+[contract](../specs/009-receive-only-monitor/contracts/monitor.md),
+[research](../specs/009-receive-only-monitor/research.md),
+[quickstart](../specs/009-receive-only-monitor/quickstart.md),
+[quality checklist](../specs/009-receive-only-monitor/checklists/requirements.md) and
+[tasks](../specs/009-receive-only-monitor/tasks.md).
+
+The specified bounded receive-only Monitor is implemented through Core/service/CLI.
+T001–T037 are complete (37/37). Feature 009 is software-complete within its
+specified scope; implementation commit `:/^Implement receive-only monitor` retains
+008 as its accepted parent. Phase 1 remains incomplete.
+Current progress lives here; detailed RED/GREEN commands, corrections, per-file reasons
+and completed-slice evidence remain in [history](development_history.md).
+
+### Implemented scope
+
+The application owns one finite literal-byte Monitor over the existing authoritative
+acknowledged stream. Its committed start marker installs matching/deadline atomically;
+the first decision freezes its record window, examined-byte count and byte endpoints.
+It keeps bounded prefix state, preserves whole RX/trailing/ambient chunks and never
+creates another reader, transport or journal. Host timing remains distinct from
+backend observation clocks; start positions claim observation order, not causation.
+
+Operation markers use explicit schema-v2/record-v2 through the existing journal
+gate/worker/order/charge/rolling retention. Default v1 factories and old four codecs,
+generic provenance-v1, Profile-v1 and 003 retrieval/cursor/snapshot/outcome semantics
+remain intact. Active reads use the same journal; expected-version terminal reads
+remain fresh verified read-only transactions after confirmed writer close, with
+native identity/session/policy checks and permanent 008 cleanup uncertainty.
+
+Optional prepared access preserves legacy attach-only construction. Present support
+must identify the transferred recorder/coordinator/session/policy and same clock;
+T033 corrected transfer validation for mismatched or stale support before backend
+open. Six regression cases on both fixture shapes first failed, then passed. T005's
+explicitly authorized union-compatibility narrowing and all earlier corrections
+remain documented with affected files/reasons in history.
+
+The authenticated literal POST and thin CLI command accept only the four required
+inputs in the contract, project the closed 14-field report and add exactly two
+evidence shapes. Condition 1..256 bytes, timeout 1..4000 ms, RX 1..1048576 bytes,
+body 16384, cursor 1024 and independent HTTP/raw/CLI JSON 1048576 caps remain exact;
+CLI LF is extra. Original security/media/no-store/privacy, 007 receipts/exits and
+5s phase/10s overall budgets remain. All nine outcomes and both durability states
+are facts; end_unconfirmed preserves a decision without inventing end acknowledgement.
+
+One Core owner and one independent service Monitor slot remain strongly owned across
+client loss. Detach/shutdown seal admission and join submitted markers before writer
+closure; eight read/eight mutation jobs and existing 005/006/008 cleanup facts are
+preserved. Blocked durable I/O/cleanup remains pending rather than abandoned. Backend
+capability/provenance rules stay neutral; the simulated Enhanced-shaped fixture is
+software evidence only, not Enhanced implementation or hardware acceptance.
+
+Existing packages and Ports-and-Adapters boundaries suffice. Model/evidence values,
+the application matcher/coordinator/runtime, infrastructure clock/versioned journal
+and delivery projections follow the plan's mapping. Acquisition/backend/Profile,
+server stop implementation, package declarations and lockfile are unchanged by 009;
+root import contracts add Monitor coverage without weakening a boundary. No Core
+architecture rule or product contract needs rewriting, and no new dependency exists.
+
+### Progress and recorded verification
+
+| Completed checkpoint | Recorded evidence |
+|---|---|
+| T001–T005 foundation | Protected 001–008 baseline; pure RED/GREEN values/matcher/marker codecs and charge preflight. T005 full gate: 4064 passed. |
+| T006–T016 operational implementation | Explicit v2/read-only terminal compatibility, committed coordinator/clock/composition, runtime admission/lifetime, authenticated HTTP and thin CLI; paired RED/GREEN evidence in history. |
+| T017 US1 MVP | 688 focused and 4935 full-suite cases passed. |
+| T018–T025 US2 quality | Boundary/error/retention tests and cross-layer contract audit; no genuine edge defect. T025: 2402 focused/5310 full passed. |
+| T026–T032 US3 ownership/installability | Lifetime/security/installed fixtures, no genuine correction in paired tasks; T032: 2723 focused/5777 full passed and artifact audit GREEN. |
+| T033 complete-diff review | One preparation-contract defect corrected; six RED→GREEN, 1549 focused/5783 full passed. |
+| T034 safe quickstart acceptance | 2804 focused/5783 full passed; guarded help, exact bounds/privacy, installed stories and artifact audit GREEN. |
+| T035 documentation reconciliation | Implemented scope/counts/limits reconciled; documentation checks only, no suite rerun. |
+| T036 final structural maintenance | Graphify 0.9.48 completed on the single explicitly authorized corrected retry: 4947 nodes/16016 edges/207 communities, zero input/output LLM tokens. |
+| T037 final verification | 527 focused compatibility/5783 full passed; Ruff/mypy/seven import contracts, fresh 14-archive/four-install audit and final diff/privacy review passed; no correction. |
+| Final pre-commit review | Clean software review; staged export 527 focused/5783 full passed; 14 fresh archives/four installs and final staged privacy/diff checks passed; implementation committed, nothing pushed. |
+
+The final pre-commit staged gate: 5783 passed in 311.97s (Core 2111/service 1641/CLI 2031),
+zero failures/errors/skips; Ruff, mypy 92 files and seven import contracts passed
+(67 files/228 dependencies). It includes 153 Monitor/112 original 007/111 original
+008 installed-process cases. Four isolated non-editable installs and 14 rebuilt
+archives passed source/metadata/RECORD/entry/import checks: 30 production modules,
+28 locked runtime distributions per install, no checkout/.pth or generated/runtime/
+credential/Graphify inputs. These selections overlap; counts are not added together.
+
+T035 changes documentation only. Source/tests/configuration and governing behavior/
+validation requirements retain the T034 gate's baseline. No new test or full gate
+was run for T035 under AGENTS §8.3; its evidence is documentation consistency, task/
+baseline/hash/link/diff verification. This is not final-feature validation.
+
+### Software readiness and remaining acceptance
+
+The final pre-commit review found no genuine software defect. Core/009 and
+completed 003/005–008 ownership, evidence, lifecycle, security and thin-client
+contracts remain satisfied. V1 codecs/legacy CLI definitions and Profile/backend/
+acquisition/package/lock baselines remain intact; import contracts only add Monitor
+coverage. All 37 tasks and feature progress annotations agree. Governing requirements
+and normative contract bodies are unchanged. The previously authorized AGENTS §8.3
+validation-policy update is included in the reviewed commit.
+
+All 50 intended files were staged and inspected. An export of all 213 index blobs
+passed the fresh full gate and guarded installability audit outside the checkout;
+final documentation-only recording was checked separately and leaves all executable
+inputs identical. No unrelated, generated, runtime, credential or Graphify artifact
+is included. See history for actual validation and implementation-commit evidence.
+
+T036's final code-only Graphify update remains recorded: 4947 nodes/16016 edges/
+207 communities, zero LLM tokens, after the explicitly authorized corrected retry.
+Its known zero-node pyproject.toml, 238 dangling candidates and 381 collapsed-edge
+warnings remain navigation limitations. Outputs/backups remain ignored. No Graphify
+run was required or performed during T037 or pre-commit review; no code changed after T036.
+
+Feature 009 is software-ready for its bounded receive-only Monitor scope on the
+validated macOS environment. All 37 tasks are complete; there is no recorded
+uncorrected software defect. The last full gate, installed software fixtures and
+simulated Enhanced-shaped backend do not establish native Linux/Windows, active-DUT,
+physical/electrical or Enhanced hardware acceptance. Those remain unexecuted;
+actual Windows commands remain unsupported. Phase 1 and deferred workflows remain
+incomplete. The authorized implementation commit is recorded above. Nothing was
+pushed; no next slice or hardware access was performed or automatically authorized.
+Await explicit instructions; do not push, start another slice or access physical
+hardware automatically.
 
 ## Completed Feature: Bounded Evidence Retrieval (008; Software-Complete)
 
@@ -278,8 +407,8 @@ No physical device has been accessed. Safe-open DTR/RTS/glitches, OS/driver
 loss/re-enumeration, non-standard baud, RX load and physical cancellation/close
 require separately authorized acceptance with an identified device/Profile/setup.
 
-Explicit deferrals remain streaming/follow, text/line decoding, regex/pattern matching,
-Monitor, annotations/derived views, catalogue/discovery, restart recovery/arbitrary
+Explicit deferrals remain streaming/follow, text/line decoding, regex/multiple conditions,
+annotations/derived views, catalogue/discovery, restart recovery/arbitrary
 historical browsing, TX/Interact/console, Control, reconnect/handoff, service management,
 Enhanced production, MCP/AI and physical-hardware acceptance. Profile discovery/
 defaults/writing/migration/overlays/reload, durable Profile identity, session management,
@@ -290,9 +419,10 @@ forced abandonment is introduced.
 
 Phase 1 remains incomplete under
 [Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): follow,
-Monitor, Interact, console, control, handoff, annotations, reconnect and real-DUT
-acceptance remain. Features 001–008 are committed software slices; 008's final
-review found no new software defect. Nothing was pushed. Do not start another
+Interact, console, control, handoff, annotations, reconnect and real-DUT acceptance
+remain. Features 001–009 are committed software slices. Bounded Monitor is implemented
+in software-complete 009 after the T037 final gate; it does not establish physical
+Monitor acceptance. Nothing was pushed. Do not start another
 slice or access physical hardware automatically.
 
 ## References

@@ -2,10 +2,15 @@
 
 from functools import partial
 from pathlib import Path
+from weakref import WeakKeyDictionary
 
 from dutchmate_core.adapters.basic_profile import to_basic_serial_open_request
 from dutchmate_core.adapters.basic_serial import BasicSerialBackend
-from dutchmate_core.adapters.sqlite_evidence import SqliteEvidenceJournal
+from dutchmate_core.adapters.monotonic_clock import MonotonicMonitorClock
+from dutchmate_core.adapters.sqlite_evidence import (
+    SqliteEvidenceJournal,
+    charge_monitor_markers,
+)
 from dutchmate_core.adapters.terminal_evidence import (
     capture_terminal_target,
     open_terminal_reader,
@@ -14,6 +19,7 @@ from dutchmate_core.adapters.toml_profile import resolve_profile
 from dutchmate_core.backend import NormalizedBackendFailure
 from dutchmate_core.evidence import JournalFailure, JournalFailureKind, JournalOperation
 from dutchmate_core.evidence_access import PreparedEvidenceAccess
+from dutchmate_core.monitor import MonitorRecordingCoordinator, PreparedMonitorAccess
 from dutchmate_core.profile import ProfileFailure, ResolvedDutProfile
 from dutchmate_core.runtime import (
     ObservationRuntime,
@@ -22,6 +28,12 @@ from dutchmate_core.runtime import (
     RuntimeIssue,
     RuntimeIssueSource,
     RuntimeStatus,
+)
+
+# Clock identity spans attaches, but this adapter does not retain runtime owners.
+# No backend, journal, operation or result is kept in this association.
+_clocks: WeakKeyDictionary[ObservationRuntime, MonotonicMonitorClock] = (
+    WeakKeyDictionary()
 )
 
 
@@ -43,7 +55,7 @@ async def attach_basic_observation(
 
     async def prepare(profile: ResolvedDutProfile) -> PreparedObservationRun:
         try:
-            journal = await SqliteEvidenceJournal.create(
+            journal = await SqliteEvidenceJournal.create_v2(
                 explicit_journal_path, profile.session_policy
             )
         except Exception as error:
@@ -66,6 +78,7 @@ async def attach_basic_observation(
                     explicit_journal_path,
                     session_id=journal.session_id,
                     policy=journal.policy,
+                    expected_schema_version=2,
                 )
             except Exception:
                 target = None
@@ -77,14 +90,26 @@ async def attach_basic_observation(
                 backend = BasicSerialBackend(
                     request.selector, request.configuration, request.line_intent
                 )
+                clock = _clocks.get(runtime)
+                if clock is None:
+                    clock = MonotonicMonitorClock()
+                    _clocks[runtime] = clock
+                coordinator = MonitorRecordingCoordinator(recorder=journal, clock=clock)
                 return PreparedObservationRun(
-                    recorder=journal,
+                    recorder=coordinator,
                     backend=backend,
                     evidence_access=PreparedEvidenceAccess(
                         session_id=journal.session_id,
                         policy=journal.policy,
                         live_reader=journal,
                         terminal_opener=terminal_opener,
+                    ),
+                    monitor_access=PreparedMonitorAccess(
+                        session_id=journal.session_id,
+                        policy=journal.policy,
+                        coordinator=coordinator,
+                        clock=clock,
+                        charge_markers=charge_monitor_markers,
                     ),
                 )
             except Exception as error:

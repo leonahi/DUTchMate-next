@@ -18,7 +18,11 @@ from dutchmate_core.model import (
     EvidenceRangeReference,
     EvidenceRecord,
     EvidenceReference,
+    MonitorClockFacts,
+    MonitorMatch,
     ObserverLossEvidence,
+    OperationEndedEvidence,
+    OperationStartedEvidence,
     RetentionMarker,
     RetentionTimestampEndpoint,
     RxBytesEvidence,
@@ -267,6 +271,36 @@ def _marker(value: RetentionMarker | None) -> dict[str, object] | None:
 
 
 def _record(value: EvidenceRecord) -> dict[str, object]:
+    if isinstance(value, OperationStartedEvidence):
+        return {
+            "kind": "operation_started",
+            "sequence": value.sequence,
+            "operation_id": value.operation_id,
+            "operation_kind": value.operation_kind,
+            "provenance": {
+                "connection_id": value.provenance.connection_id.value,
+                "segment_id": value.provenance.segment_id.value,
+                **_observation_view(value.provenance),
+            },
+            "timeout_ms": value.timeout_ms,
+            "max_rx_bytes": value.max_rx_bytes,
+            "clock_origin_id": value.clock_origin_id,
+            "condition_base64": base64.b64encode(value.condition).decode("ascii"),
+        }
+    if isinstance(value, OperationEndedEvidence):
+        return {
+            "kind": "operation_ended",
+            "sequence": value.sequence,
+            "operation_id": value.operation_id,
+            "operation_kind": value.operation_kind,
+            "start_sequence": value.start_sequence,
+            "window": _range(value.window),
+            "outcome": value.outcome.value,
+            "examined_rx_bytes": value.examined_rx_bytes,
+            "observer_loss_records": value.observer_loss_records,
+            "match": _match_view(value.match),
+            "clock": _clock_view(value.clock),
+        }
     if isinstance(value, SegmentStartedEvidence):
         return {
             "kind": "segment_started",
@@ -277,6 +311,10 @@ def _record(value: EvidenceRecord) -> dict[str, object]:
                 **_observation_view(value.provenance),
             },
         }
+    if not isinstance(
+        value, (RxBytesEvidence, ObserverLossEvidence, SegmentEndedEvidence)
+    ):
+        raise TypeError("unknown normalized evidence record")
     common = {
         "sequence": value.sequence,
         "connection_id": value.connection_id.value,
@@ -304,6 +342,30 @@ def _record(value: EvidenceRecord) -> dict[str, object]:
     if isinstance(value, SegmentEndedEvidence):
         return {"kind": "segment_ended", **common, "reason": value.reason.value}
     raise TypeError("unknown normalized evidence record")
+
+
+def _match_view(value: MonitorMatch | None) -> dict[str, object] | None:
+    if value is None:
+        return None
+    return {
+        "start": {
+            "sequence": value.start.sequence,
+            "byte_offset": value.start.byte_offset,
+        },
+        "end": {
+            "sequence": value.end.sequence,
+            "byte_offset_exclusive": value.end.byte_offset_exclusive,
+        },
+    }
+
+
+def _clock_view(value: MonitorClockFacts) -> dict[str, object]:
+    return {
+        "origin_id": value.origin_id,
+        "started_at_ns": value.started_at_ns,
+        "deadline_at_ns": value.deadline_at_ns,
+        "decided_at_ns": value.decided_at_ns,
+    }
 
 
 def _encode(value: object) -> bytes:

@@ -234,6 +234,7 @@ async def _service(
 
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create", forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v2", forbidden)
     with process_credential(config) as (owner, token):
         context = _t009_module()._LaunchContext(config, owner)
         app = _t009_module().create_app(config, _launch_context=context)
@@ -1783,6 +1784,7 @@ async def _t019_service(
 
         patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", forbidden)
         patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create", forbidden)
+        patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v2", forbidden)
         yield service
     finally:
         try:
@@ -2138,6 +2140,212 @@ async def test_t019_terminal_delivery_eligibility_preserves_recorder_and_physica
 
 def _t021_raw_token(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+
+
+@pytest.mark.parametrize("kind", ["start", "end"])
+@pytest.mark.parametrize(
+    "device", [False, True], ids=["basic-shaped", "enhanced-shaped"]
+)
+@pytest.mark.parametrize("path", [_RECORD, _PAGE])
+@pytest.mark.parametrize("size", [_BOUND, _BOUND + 1])
+@pytest.mark.parametrize("unit", ["é", '"', "🚀"], ids=["utf8", "escaped", "four-byte"])
+@pytest.mark.asyncio
+async def test_009_t019_marker_envelopes_keep_exact_encoded_limit_without_trimming_or_refetch(
+    process_credential: Callable[[ServiceConfig], Any],
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+    device: bool,
+    path: str,
+    size: int,
+    unit: str,
+) -> None:
+    # Import test-only helpers after module initialization, avoiding the existing
+    # Monitor test module's import of this evidence harness at collection time.
+    from dutchmate_core import model
+
+    from test_monitor_http import _t019_marker, _t019_padding
+
+    record, wire = _t019_marker(device, kind)
+    expected = _envelope(records=[wire], snapshot_end_exclusive=9, charged_bytes=_BOUND)
+    run = "run-é"
+    if isinstance(record, model.OperationStartedEvidence):
+        wire["provenance"]["connection_provenance"]["fields"] = [
+            {"name": "padding", "value": ""}
+        ]
+        padding = _t019_padding(expected, size, unit)
+        wire["provenance"]["connection_provenance"]["fields"][0]["value"] = padding
+        snapshot = record.provenance.connection_provenance.to_snapshot()
+        record = replace(
+            record,
+            provenance=replace(
+                record.provenance,
+                connection_provenance=model.PersistedConnectionProvenance(
+                    replace(
+                        snapshot, fields=(model.ProvenanceField("padding", padding),)
+                    )
+                ),
+            ),
+        )
+    else:
+        # End fields are bounded facts. Grow only the opaque envelope ID, never
+        # invent an invalid operation UUID, counter or clock to reach the cap.
+        expected["run_id"] = ""
+        run = _t019_padding(expected, size, unit)
+        expected["run_id"] = run
+    assert len(_json(expected)) == size
+    async with _service(process_credential, monkeypatch) as service:
+        original = RunEvidencePage(
+            RunId(run),
+            _SESSION,
+            _page(records=(record,), snapshot_end_exclusive=9, charged_bytes=_BOUND),
+        )
+        service.boundary.result = original
+        body = (
+            {"session_id": _SESSION.value, "sequence": record.sequence}
+            if path == _RECORD
+            else {**_PAGE_BODY, "max_charged_bytes": _BOUND}
+        )
+        response = await service.request(path, body)
+        if size == _BOUND:
+            _success(response, expected)
+        else:
+            _error(response, 413, "evidence", "delivery_too_large")
+            assert response.payload == _json(
+                {"error": {"source": "evidence", "code": "delivery_too_large"}}
+            )
+        assert service.boundary.result is original and original.page.records == (
+            record,
+        )
+        assert len(service.boundary.calls) == 1
+
+
+@pytest.mark.parametrize("path", [_RECORD, _PAGE])
+@pytest.mark.parametrize("size", [_BOUND, _BOUND + 1])
+@pytest.mark.asyncio
+async def test_009_t019_old_rx_envelope_still_uses_evidence_whole_report_overflow(
+    process_credential: Callable[[ServiceConfig], Any],
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    size: int,
+) -> None:
+    from test_monitor_http import _t019_padding
+
+    payload = bytes(range(256))
+    record = RxBytesEvidence(
+        0,
+        ConnectionInstanceId("c"),
+        SegmentId("s"),
+        payload,
+        BackendObservationTimestamp("clock", 0),
+    )
+    wire = {
+        "kind": "rx_bytes",
+        "sequence": 0,
+        "connection_id": "c",
+        "segment_id": "s",
+        "observed_at": {"domain_id": "clock", "value": 0},
+        "payload_base64": base64.b64encode(payload).decode(),
+    }
+    expected = _envelope(records=[wire], snapshot_end_exclusive=1, charged_bytes=512)
+    expected["run_id"] = ""
+    run = _t019_padding(expected, size, '"')
+    expected["run_id"] = run
+    assert len(_json(expected)) == size
+    async with _service(process_credential, monkeypatch) as service:
+        original = RunEvidencePage(
+            RunId(run),
+            _SESSION,
+            _page(records=(record,), snapshot_end_exclusive=1, charged_bytes=512),
+        )
+        service.boundary.result = original
+        response = await service.request(
+            path, _RECORD_BODY if path == _RECORD else _PAGE_BODY
+        )
+        if size == _BOUND:
+            _success(response, expected)
+        else:
+            _error(response, 413, "evidence", "delivery_too_large")
+        assert service.boundary.result is original and record.payload == payload
+        assert len(service.boundary.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "device", [False, True], ids=["basic-shaped", "enhanced-shaped"]
+)
+@pytest.mark.parametrize("raw_bytes", [768, 769], ids=["cursor-1024", "cursor-1026"])
+@pytest.mark.asyncio
+async def test_009_t019_marker_page_retains_old_cursor_limit_and_rejects1025_input(
+    process_credential: Callable[[ServiceConfig], Any],
+    monkeypatch: pytest.MonkeyPatch,
+    device: bool,
+    raw_bytes: int,
+) -> None:
+    from test_monitor_http import _t019_marker
+
+    document = {
+        "version": 1,
+        "session_id": "",
+        "range_start_inclusive": 0,
+        "range_end_exclusive": None,
+        "snapshot_end_exclusive": 9,
+        "next_sequence": 4,
+    }
+    remaining = raw_bytes - len(_json(document))
+    session = "\x01" * (remaining // 6) + "x" * (remaining % 6)
+    assert 1 <= len(session.encode()) <= 256 and "\0" not in session
+    document["session_id"] = session
+    assert len(_json(document)) == raw_bytes
+    token = _token(document)
+    assert len(token) == (1024 if raw_bytes == 768 else 1026)
+    sid = SessionId(session)
+    cursor = EvidenceCursor(sid, 0, None, 9, 4)
+    marker, wire = _t019_marker(device, "start")
+    async with _service(process_credential, monkeypatch) as service:
+        original = RunEvidencePage(
+            RunId("run-é"),
+            sid,
+            _page(
+                records=(marker,),
+                snapshot_end_exclusive=9,
+                truncated=True,
+                continuation=cursor,
+                charged_bytes=800,
+            ),
+        )
+        service.boundary.result = original
+        response = await service.request(_PAGE, {**_PAGE_BODY, "session_id": session})
+        if raw_bytes == 768:
+            expected = _envelope(
+                records=[wire],
+                snapshot_end_exclusive=9,
+                truncated=True,
+                continuation=token,
+                charged_bytes=800,
+            )
+            expected["session_id"] = session
+            _success(response, expected)
+            repeated = await service.request(
+                _PAGE, {**_PAGE_BODY, "session_id": session, "cursor": token}
+            )
+            _success(repeated, expected)
+            assert service.boundary.calls[-1] == EvidenceRetrievalRequest(
+                sid, 32, 65536, cursor
+            )
+        else:
+            _error(response, 413, "evidence", "delivery_too_large")
+        before = len(service.boundary.calls)
+        _error(
+            await service.request(
+                _PAGE, {**_PAGE_BODY, "session_id": session, "cursor": "A" * 1025}
+            ),
+            422,
+            "request",
+            "invalid_request",
+        )
+        assert len(service.boundary.calls) == before
+        assert (
+            service.boundary.result is original and original.page.continuation == cursor
+        )
 
 
 def _t021_bad_cursor_cases() -> list[tuple[str, str]]:

@@ -30,7 +30,20 @@ from dutchmate_core.evidence_access import (
     PreparedEvidenceAccess,
     RunEvidencePage,
 )
-from dutchmate_core.model import EvidenceReference, SessionId, SessionPolicy
+from dutchmate_core.model import (
+    BackendCapability,
+    EvidenceReference,
+    MonitorOutcome,
+    SegmentProvenance,
+    SessionId,
+    SessionPolicy,
+)
+from dutchmate_core.monitor import (
+    MonitorRejected,
+    MonitorReport,
+    MonitorRequest,
+    PreparedMonitorAccess,
+)
 from dutchmate_core.profile import ProfileFailureKind, ResolvedDutProfile
 
 
@@ -343,6 +356,7 @@ class PreparedObservationRun:
     recorder: ObservationRecorder
     backend: Backend
     evidence_access: PreparedEvidenceAccess | None = None
+    monitor_access: PreparedMonitorAccess | None = None
 
 
 def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | None:
@@ -388,6 +402,31 @@ def _read_access_matches(
     return True
 
 
+def _monitor_access_matches(
+    access: PreparedMonitorAccess | None,
+    recorder: ObservationRecorder,
+    session_id: SessionId,
+    policy: SessionPolicy,
+) -> bool:
+    if access is None:
+        return True
+    if not isinstance(access, PreparedMonitorAccess):
+        return False
+    if (
+        access.session_id != session_id
+        or access.policy != policy
+        or access.coordinator is not recorder
+    ):
+        return False
+    try:
+        # Revalidate mutable recorder/clock facts at ownership transfer, just
+        # as for prepared evidence access. Invalid provided support is not absent.
+        replace(access)
+    except Exception:
+        return False
+    return True
+
+
 @dataclass(slots=True)
 class _EvidenceAssociation:
     run_id: RunId
@@ -401,6 +440,16 @@ class _EvidenceAssociation:
 
 
 @dataclass(slots=True)
+class _MonitorRun:
+    access: PreparedMonitorAccess
+    request: MonitorRequest
+    provenance: SegmentProvenance
+    operation_id: str
+    intent: MonitorOutcome | None = None
+    owner: asyncio.Task[MonitorReport] | None = None
+
+
+@dataclass(slots=True)
 class _ObservationGeneration:
     ready: asyncio.Future[RuntimeStatus]
     evidence: _EvidenceAssociation
@@ -409,6 +458,9 @@ class _ObservationGeneration:
     owner: asyncio.Task[RuntimeStatus] | None = None
     startup_succeeded: bool = False
     startup_failed: bool = False
+    monitor_access: PreparedMonitorAccess | None = None
+    monitor_sealed: bool = False
+    monitor: _MonitorRun | None = None
 
 
 def _running_loop() -> asyncio.AbstractEventLoop:
@@ -438,6 +490,7 @@ class ObservationRuntime:
         self._evidence_association: _EvidenceAssociation | None = None
         self._reads: set[asyncio.Task[RunEvidencePage]] = set()
         self._evidence_read_cleanup_confirmed = True
+        self._monitors_sealed = False
 
     @property
     def evidence_read_cleanup_confirmed(self) -> bool:
@@ -489,6 +542,160 @@ class ObservationRuntime:
             cleanup_issues=((acquisition_cleanup,) if acquisition_cleanup else ())
             + recorder_cleanup,
         )
+
+    def _monitor_access(
+        self, generation: _ObservationGeneration
+    ) -> PreparedMonitorAccess:
+        access = generation.monitor_access
+        if not isinstance(access, PreparedMonitorAccess):
+            raise MonitorRejected("monitor_unavailable")
+        try:
+            replace(access)  # Recheck current infrastructure identity and callables.
+            if (
+                access.session_id != generation.evidence.session_id
+                or access.policy != generation.evidence.policy
+            ):
+                raise ValueError("Monitor access no longer matches the run")
+        except Exception:
+            raise MonitorRejected("monitor_unavailable") from None
+        return access
+
+    async def monitor(self, request: MonitorRequest) -> MonitorReport:
+        self._guard_context()
+        if not isinstance(request, MonitorRequest):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        if self._monitors_sealed:
+            raise MonitorRejected("monitor_unavailable")
+        association = self._evidence_association
+        if association is None or association.session_id is None:
+            raise MonitorRejected("no_associated_session")
+        if request.session_id != association.session_id:
+            raise MonitorRejected("session_not_associated")
+        generation = self._generation
+        if (
+            generation is None
+            or self._summary.state is not RuntimeState.ACTIVE
+            or generation.monitor_sealed
+        ):
+            raise MonitorRejected("not_active")
+        access = self._monitor_access(generation)
+        provenance = access.coordinator.current_provenance
+        if provenance is None:
+            raise MonitorRejected("monitor_unavailable")
+        if not provenance.capabilities.supports(BackendCapability.UART_RECEIVE):
+            raise MonitorRejected("capability_unavailable")
+        draft = access.coordinator.preflight(request, provenance, access.charge_markers)
+        if generation.monitor is not None:
+            raise MonitorRejected("busy")
+        # Selection and registration are synchronous before the first await.
+        pending = _MonitorRun(access, request, provenance, draft.operation_id)
+        generation.monitor = pending
+        owner = asyncio.create_task(
+            self._own_monitor(generation, pending),
+            name=f"dutchmate-monitor-{association.run_id.value}",
+        )
+        pending.owner = owner
+        owner.add_done_callback(self._monitor_settled)
+        try:
+            return await asyncio.shield(owner)
+        except asyncio.CancelledError:
+            # Delivery loss never stops capture or cancels a submitted marker.
+            while not owner.done():
+                try:
+                    await asyncio.shield(owner)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not owner.cancelled():
+                owner.exception()
+            raise
+
+    def _monitor_settled(self, owner: asyncio.Task[MonitorReport]) -> None:
+        self._guard_context()
+        if not owner.cancelled():
+            owner.exception()
+
+    async def _own_monitor(
+        self, generation: _ObservationGeneration, pending: _MonitorRun
+    ) -> MonitorReport:
+        def revalidate() -> None:
+            self._guard_context()
+            if self._monitors_sealed:
+                raise MonitorRejected("monitor_unavailable")
+            if (
+                self._generation is not generation
+                or generation.monitor_sealed
+                or self._summary.state is not RuntimeState.ACTIVE
+            ):
+                raise MonitorRejected("not_active")
+            if self._monitor_access(generation) is not pending.access:
+                raise MonitorRejected("monitor_unavailable")
+
+        try:
+            operation = await pending.access.coordinator.start(
+                pending.request,
+                run_id=generation.evidence.run_id.value,
+                expected_provenance=pending.provenance,
+                revalidate=revalidate,
+                charge_markers=pending.access.charge_markers,
+                operation_id=pending.operation_id,
+                pending_stop=lambda: pending.intent,
+            )
+            return await operation.wait()
+        finally:
+            if generation.monitor is pending:
+                generation.monitor = None
+
+    def _latch_monitor_stop(
+        self, generation: _ObservationGeneration, outcome: MonitorOutcome
+    ) -> None:
+        pending = generation.monitor
+        if pending is not None:
+            if pending.intent is None:
+                pending.intent = outcome
+            pending.access.coordinator._stop(pending.intent)
+
+    def _seal_monitors(self) -> None:
+        """Seal this incarnation immediately, without backend or journal I/O."""
+        self._guard_context()
+        self._monitors_sealed = True
+        generation = self._generation
+        if generation is not None:
+            self._latch_monitor_stop(generation, MonitorOutcome.SERVICE_STOPPING)
+
+    async def _join_monitor(
+        self, generation: _ObservationGeneration, snapshot: AcquisitionSnapshot | None
+    ) -> None:
+        pending = generation.monitor
+        if pending is not None:
+            # Only joined acquisition facts supply fallback when no end committed.
+            # Existing capture status/failure facts are never rewritten.
+            if pending.intent is not None:
+                outcome = pending.intent
+            elif (
+                snapshot is not None
+                and snapshot.terminal_trigger is AcquisitionTerminalTrigger.DISCONNECTED
+            ):
+                outcome = MonitorOutcome.DISCONNECTED
+            elif (
+                snapshot is not None
+                and snapshot.primary_failure_kind
+                is AcquisitionFailureKind.RECORDING_FAILURE
+            ):
+                outcome = MonitorOutcome.RECORDING_FAILURE
+            elif (
+                snapshot is not None
+                and snapshot.primary_failure_kind
+                is AcquisitionFailureKind.TRANSPORT_FAILURE
+            ):
+                outcome = MonitorOutcome.TRANSPORT_FAILURE
+            else:
+                outcome = MonitorOutcome.DETACHED
+            self._latch_monitor_stop(generation, outcome)
+            assert pending.owner is not None
+            await asyncio.gather(asyncio.shield(pending.owner), return_exceptions=True)
+        generation.monitor_access = None
 
     async def read_record(self, reference: EvidenceReference) -> RunEvidencePage:
         self._guard_context()
@@ -680,6 +887,8 @@ class ObservationRuntime:
         """Caller holds the lifecycle lock; only this generation can mutate it."""
         if self._generation is not generation:
             return
+        generation.monitor_sealed = True
+        self._latch_monitor_stop(generation, MonitorOutcome.DETACHED)
         if self._summary.stop_intent is RuntimeStopIntent.NONE:
             self._summary = replace(
                 self._summary, state=RuntimeState.DETACHING, stop_intent=intent
@@ -815,8 +1024,17 @@ class ObservationRuntime:
                         association = generation.evidence
                         association.session_id = session_id
                         association.policy = policy
-                        if policy != profile.session_policy or not _read_access_matches(
-                            prepared.evidence_access, session_id, policy
+                        if (
+                            policy != profile.session_policy
+                            or not _read_access_matches(
+                                prepared.evidence_access, session_id, policy
+                            )
+                            or not _monitor_access_matches(
+                                prepared.monitor_access,
+                                prepared.recorder,
+                                session_id,
+                                policy,
+                            )
                         ):
                             self._startup_failure(
                                 generation,
@@ -826,6 +1044,7 @@ class ObservationRuntime:
                                 ),
                             )
                         else:
+                            generation.monitor_access = prepared.monitor_access
                             if prepared.evidence_access is not None:
                                 association.live_reader = (
                                     prepared.evidence_access.live_reader
@@ -871,6 +1090,8 @@ class ObservationRuntime:
         self._guard_context()
         async with self._lock:
             self._summary = replace(self.status(), state=RuntimeState.DETACHING)
+            generation.monitor_sealed = True
+        joined_snapshot: AcquisitionSnapshot | None = None
         if generation.acquisition is not None:
             try:
                 # Observed termination already owns its final append/close.
@@ -893,8 +1114,9 @@ class ObservationRuntime:
                         )
             # Even a failed stop/close must join actual consumer and close work
             # before the recorder is closed. No direct second backend close.
-            await generation.acquisition.join_terminated()
-        # Acquisition is joined. Seal synchronously before awaiting pinned reads;
+            joined_snapshot = await generation.acquisition.join_terminated()
+        await self._join_monitor(generation, joined_snapshot)
+        # Acquisition and Monitor are joined. Seal before awaiting pinned reads;
         # no lifecycle lock spans these joins or recorder close. Terminal access
         # retains only opaque target metadata for its separately planned reader.
         association = generation.evidence

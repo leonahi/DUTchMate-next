@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Literal
 
 SQLITE_INTEGER_MAX = 2**63 - 1
 GENERIC_PROVENANCE_ENVELOPE_VERSION = 1
@@ -478,6 +479,8 @@ type EvidenceRecord = (
     | RxBytesEvidence
     | ObserverLossEvidence
     | SegmentEndedEvidence
+    | OperationStartedEvidence
+    | OperationEndedEvidence
 )
 
 
@@ -607,3 +610,194 @@ def _validate_observer_loss(
         raise TypeError("lost-byte count must be an integer or absent")
     if lost_bytes <= 0:
         raise ValueError("lost-byte count must be positive when present")
+
+
+class MonitorOutcome(StrEnum):
+    MATCHED = "matched"
+    TIMEOUT = "timeout"
+    BYTE_LIMIT = "byte_limit"
+    DISCONNECTED = "disconnected"
+    DETACHED = "detached"
+    TIMESTAMP_ORIGIN_RESET = "timestamp_origin_reset"
+    RECORDING_FAILURE = "recording_failure"
+    TRANSPORT_FAILURE = "transport_failure"
+    SERVICE_STOPPING = "service_stopping"
+
+
+def validate_monitor_uuid(value: str) -> None:
+    """New operation/host-origin identities use canonical UUID spelling."""
+    from uuid import UUID
+
+    if type(value) is not str:
+        raise TypeError("Monitor identity must be a UUID string")
+    if str(UUID(value)) != value:
+        raise ValueError("Monitor identity must be a canonical UUID")
+
+
+def validate_monitor_bounds(
+    condition: bytes, timeout_ms: int, max_rx_bytes: int
+) -> None:
+    if type(condition) is not bytes:
+        raise TypeError("condition must be exact bytes")
+    if not 1 <= len(condition) <= 256:
+        raise ValueError("condition must contain 1..256 bytes")
+    for value, maximum, name in (
+        (timeout_ms, 4000, "timeout_ms"),
+        (max_rx_bytes, 1048576, "max_rx_bytes"),
+    ):
+        validate_persisted_counter(value, name=name)
+        if not 1 <= value <= maximum:
+            raise ValueError(f"{name} is outside Monitor bounds")
+
+
+@dataclass(frozen=True, slots=True)
+class MonitorMatchStart:
+    sequence: int
+    byte_offset: int
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_persisted_counter(self.byte_offset, name="match start offset")
+
+
+@dataclass(frozen=True, slots=True)
+class MonitorMatchEnd:
+    sequence: int
+    byte_offset_exclusive: int
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        _validate_positive_persisted_integer(
+            self.byte_offset_exclusive, name="match end offset"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class MonitorMatch:
+    start: MonitorMatchStart
+    end: MonitorMatchEnd
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.start, MonitorMatchStart) or not isinstance(
+            self.end, MonitorMatchEnd
+        ):
+            raise TypeError("match endpoints must be validated")
+        if self.start.sequence > self.end.sequence or (
+            self.start.sequence == self.end.sequence
+            and self.start.byte_offset >= self.end.byte_offset_exclusive
+        ):
+            raise ValueError("match must be ordered and nonempty")
+
+
+@dataclass(frozen=True, slots=True)
+class MonitorClockFacts:
+    origin_id: str
+    started_at_ns: int
+    deadline_at_ns: int
+    decided_at_ns: int
+
+    def __post_init__(self) -> None:
+        validate_monitor_uuid(self.origin_id)
+        for value in (self.started_at_ns, self.deadline_at_ns, self.decided_at_ns):
+            validate_persisted_counter(value, name="host monotonic nanoseconds")
+        if not self.started_at_ns < self.deadline_at_ns:
+            raise ValueError("host start must precede deadline")
+        if self.decided_at_ns < self.started_at_ns:
+            raise ValueError("host decision must not precede start")
+
+
+def validate_monitor_decision(
+    start_sequence: int,
+    window: SequenceRange,
+    outcome: MonitorOutcome,
+    examined_rx_bytes: int,
+    observer_loss_records: int,
+    match: MonitorMatch | None,
+    clock: MonitorClockFacts,
+) -> None:
+    """Standalone structural facts, independent of retained paired records."""
+    validate_record_sequence(start_sequence)
+    if not isinstance(window, SequenceRange):
+        raise TypeError("Monitor window must be validated")
+    if window.start_inclusive != start_sequence + 1:
+        raise ValueError("Monitor window must start after its start marker")
+    if not isinstance(outcome, MonitorOutcome):
+        raise TypeError("Monitor outcome must be declared")
+    validate_persisted_counter(examined_rx_bytes, name="examined RX bytes")
+    validate_persisted_counter(observer_loss_records, name="observed loss records")
+    if examined_rx_bytes > 1048576:
+        raise ValueError("examined RX exceeds Monitor bound")
+    if (
+        outcome in (MonitorOutcome.MATCHED, MonitorOutcome.BYTE_LIMIT)
+        and not examined_rx_bytes
+    ):
+        raise ValueError("match/byte exhaustion requires examined RX")
+    if not isinstance(clock, MonitorClockFacts):
+        raise TypeError("Monitor clock facts must be validated")
+    if (outcome is MonitorOutcome.TIMEOUT) != (
+        clock.decided_at_ns >= clock.deadline_at_ns
+    ):
+        raise ValueError("Monitor decision disagrees with its deadline")
+    if outcome is MonitorOutcome.MATCHED:
+        if not isinstance(match, MonitorMatch):
+            raise ValueError("matched outcome requires a match")
+        if (
+            not window.start_inclusive
+            <= match.start.sequence
+            <= match.end.sequence
+            < window.end_exclusive
+        ):
+            raise ValueError("match endpoints must lie inside the frozen window")
+    elif match is not None:
+        raise ValueError("only matched outcome may contain a match")
+
+
+@dataclass(frozen=True, slots=True)
+class OperationStartedEvidence:
+    sequence: int
+    operation_id: str
+    operation_kind: Literal["monitor"]
+    provenance: SegmentProvenance
+    timeout_ms: int
+    max_rx_bytes: int
+    clock_origin_id: str
+    condition: bytes
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_monitor_uuid(self.operation_id)
+        validate_monitor_uuid(self.clock_origin_id)
+        if type(self.operation_kind) is not str or self.operation_kind != "monitor":
+            raise ValueError("operation kind must be monitor")
+        if not isinstance(self.provenance, SegmentProvenance):
+            raise TypeError("operation requires actual segment provenance")
+        validate_monitor_bounds(self.condition, self.timeout_ms, self.max_rx_bytes)
+
+
+@dataclass(frozen=True, slots=True)
+class OperationEndedEvidence:
+    sequence: int
+    operation_id: str
+    operation_kind: Literal["monitor"]
+    start_sequence: int
+    window: SequenceRange
+    outcome: MonitorOutcome
+    examined_rx_bytes: int
+    observer_loss_records: int
+    match: MonitorMatch | None
+    clock: MonitorClockFacts
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_monitor_uuid(self.operation_id)
+        if type(self.operation_kind) is not str or self.operation_kind != "monitor":
+            raise ValueError("operation kind must be monitor")
+        validate_monitor_decision(
+            self.start_sequence,
+            self.window,
+            self.outcome,
+            self.examined_rx_bytes,
+            self.observer_loss_records,
+            self.match,
+            self.clock,
+        )

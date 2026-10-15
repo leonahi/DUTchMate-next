@@ -11,7 +11,7 @@ from typing import Literal, NoReturn, cast
 
 import httpx
 
-from dutchmate_cli import evidence
+from dutchmate_cli import evidence, monitor
 from dutchmate_cli.context import AttachPaths, CliFailure, CliFailureKind, Endpoint
 
 type RequestOutcome = Literal["not_submitted", "unknown", "report_received"]
@@ -381,6 +381,43 @@ async def exchange_evidence(
     return await _deliver(
         endpoint=endpoint, method="POST", route=route, request_body=request_body,
         credential=credential, delivery=delivery, validate=_evidence_reply, reject=_evidence_error,
+    )
+
+
+def _monitor_reply(value: object) -> object:
+    try:
+        return monitor.reply(value)
+    except ValueError, TypeError, RecursionError:
+        pass
+    _invalid()
+
+
+def _monitor_error(value: object, status: int) -> object:
+    try:
+        if not monitor.recognized_error(value, status):
+            _remote_error(value, status)
+    except ValueError, TypeError, RecursionError:
+        _invalid()
+    error = _object(_object(value, {"error"})["error"], {"source", "code"})
+    return {"error": {"source": error["source"], "code": error["code"]}}
+
+
+async def exchange_monitor(
+    *,
+    endpoint: Endpoint,
+    request_body: dict[str, object],
+    credential: str,
+    delivery: DeliveryState,
+) -> tuple[int, bytes]:
+    return await _deliver(
+        endpoint=endpoint,
+        method="POST",
+        route="/v1/observation/monitor",
+        request_body=request_body,
+        credential=credential,
+        delivery=delivery,
+        validate=_monitor_reply,
+        reject=_monitor_error,
     )
 
 

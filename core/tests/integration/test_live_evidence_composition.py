@@ -40,8 +40,10 @@ class QueryWorkerGate:
             connection: sqlite3.Connection,
             policy: model.SessionPolicy,
             request: EvidenceRetrievalRequest,
+            *,
+            schema_version: int = 1,
         ) -> EvidencePage:
-            page = original(connection, policy, request)
+            page = original(connection, policy, request, schema_version=schema_version)
             loop.call_soon_threadsafe(self.entered.set)
             # Harness watchdog only; release in every test's finally before cleanup.
             if not self.release.wait(3):
@@ -74,7 +76,7 @@ async def test_t009_handoff_uses_created_capture_journal_and_optional_terminal_o
 ) -> None:
     selected = tmp_path / "profile.toml"
     selected.write_text(_PROFILE, encoding="utf-8")
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
     journals: list[sqlite_evidence.SqliteEvidenceJournal] = []
 
     async def create(
@@ -85,7 +87,7 @@ async def test_t009_handoff_uses_created_capture_journal_and_optional_terminal_o
         return journal
 
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create", staticmethod(create)
+        sqlite_evidence.SqliteEvidenceJournal, "create_v2", staticmethod(create)
     )
     probe = AdmissionProbe([])
     await observation_runtime.attach_basic_observation(
@@ -95,10 +97,12 @@ async def test_t009_handoff_uses_created_capture_journal_and_optional_terminal_o
     )
     prepared = await probe.captured_preparation()
     try:
-        assert len(journals) == 1 and prepared.recorder is journals[0]
+        assert len(journals) == 1
+        assert prepared.monitor_access is not None
+        assert prepared.recorder is prepared.monitor_access.coordinator
         read = prepared.evidence_access
         assert read is not None, "production preparation must supply live read access"
-        assert read.live_reader is prepared.recorder
+        assert read.live_reader is journals[0]
         assert read.session_id == prepared.recorder.session_id
         assert read.policy == prepared.recorder.policy
         # T018 supplies the optional native target; live identity is unchanged.

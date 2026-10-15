@@ -168,7 +168,9 @@ def block_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
 def _block_preparation(monkeypatch: pytest.MonkeyPatch, destination: Path) -> None:
     for target, name in (
         (sqlite_evidence.SqliteEvidenceJournal, "create"),
+        (sqlite_evidence.SqliteEvidenceJournal, "create_v2"),
         (sqlite_evidence.SqliteEvidenceJournal, "open"),
+        (sqlite_evidence.SqliteEvidenceJournal, "open_v2"),
         (basic_serial.BasicSerialBackend, "__init__"),
         (basic_serial.BasicSerialBackend, "open"),
         (acquisition.Acquisition, "__init__"),
@@ -233,7 +235,7 @@ def _inject_fake_basic(
     fake = CloseGatedSerial()
     factory = FakeSerialFactory(fake)
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
     original_init = basic_serial.BasicSerialBackend.__init__
     original_open = basic_serial.BasicSerialBackend.open
 
@@ -270,9 +272,10 @@ def _inject_fake_basic(
         return await original_open(self)
 
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(create)
+        sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
     )
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", construct)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", open_backend)
     return fake, factory, created
@@ -430,7 +433,10 @@ async def test_preparation_creates_exact_journal_policy_then_unopened_basic_back
     assert not destination.exists() and not created and not factory.calls
     prepared = await probe.captured_preparation()
     try:
-        assert prepared.recorder is created[0]
+        assert prepared.monitor_access is not None
+        assert prepared.recorder is prepared.monitor_access.coordinator
+        assert prepared.evidence_access is not None
+        assert prepared.evidence_access.live_reader is created[0]
         assert prepared.recorder.policy == _expected_policy()
         assert probe.resolved is not None
         assert prepared.recorder.policy == probe.resolved.session_policy
@@ -523,6 +529,7 @@ async def test_existing_destination_rejects_without_overwrite_reopen_or_backend_
     trace: list[str] = []
     probe = AdmissionProbe(trace)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
     await edge(probe, selected, destination)
@@ -585,6 +592,7 @@ _RAW_DIAGNOSTIC = "fixture private cause /secret/profile-and-device"
 def _t013_block_artifact_access(patch: pytest.MonkeyPatch, destination: Path) -> None:
     """Install after bootstrap: infrastructure's own create I/O stays real."""
     patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
+    patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
     patch.setattr(sqlite_evidence, "_connect_sqlite", _forbidden)
 
     def guard(original: Callable[..., object]) -> Callable[..., object]:
@@ -623,7 +631,7 @@ async def _t013_preparation_failure(probe: AdmissionProbe) -> rt.PreparationFail
 async def _t013_empty_journal(path: Path, known_id: model.SessionId) -> None:
     # Explicit test readback occurs after the normalization guard is restored;
     # this is not an application probe for a failed-create artifact's identity.
-    reopened = await sqlite_evidence.SqliteEvidenceJournal.open(
+    reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(
         path, expected_session_id=known_id
     )
     try:
@@ -691,7 +699,9 @@ async def test_t013_preopen_certainty_requires_exact_create_operation_and_catego
 
     with monkeypatch.context() as patch:
         patch.setattr(
-            sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(failed_create)
+            sqlite_evidence.SqliteEvidenceJournal,
+            "create_v2",
+            classmethod(failed_create),
         )
         patch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
         patch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
@@ -735,7 +745,7 @@ async def test_t013_failed_create_keeps_artifact_without_identity_probe_or_certa
     destination = tmp_path / "failed-create.sqlite3"
     probe = AdmissionProbe([])
     await _edge()(probe, selected, destination)
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
     calls = 0
     before: bytes | None = None
     hidden_id: model.SessionId | None = None
@@ -769,7 +779,9 @@ async def test_t013_failed_create_keeps_artifact_without_identity_probe_or_certa
             ) from OSError(_RAW_DIAGNOSTIC)
 
         patch.setattr(
-            sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(failed_create)
+            sqlite_evidence.SqliteEvidenceJournal,
+            "create_v2",
+            classmethod(failed_create),
         )
         patch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
         patch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
@@ -810,7 +822,7 @@ async def test_t013_postcreate_failure_closes_owned_recorder_and_keeps_known_emp
     probe = AdmissionProbe([])
     await _edge()(probe, selected, destination)
     edge_module = importlib.import_module(_EDGE_MODULE)
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
     original_close = sqlite_evidence.SqliteEvidenceJournal.close
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
     trace: list[str] = []
@@ -861,7 +873,7 @@ async def test_t013_postcreate_failure_closes_owned_recorder_and_keeps_known_emp
                 raise error from OSError(_RAW_DIAGNOSTIC)
 
             patch.setattr(
-                sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(create)
+                sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
             )
             patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "close", close)
             patch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
@@ -986,7 +998,7 @@ async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_op
     selected = _selected(tmp_path)
     destination = tmp_path / "mismatched-policy.sqlite3"
     runtime = rt.ObservationRuntime()
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
     original_close = sqlite_evidence.SqliteEvidenceJournal.close
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
     closes = 0
@@ -1013,7 +1025,9 @@ async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_op
         await original_close(journal)
 
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(mismatched_create)
+        sqlite_evidence.SqliteEvidenceJournal,
+        "create_v2",
+        classmethod(mismatched_create),
     )
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "close", close)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", forbidden_open)

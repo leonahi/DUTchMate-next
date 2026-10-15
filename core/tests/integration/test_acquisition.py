@@ -266,8 +266,20 @@ async def test_arbitrary_chunking_reconstructs_every_byte_with_provenance(
     rx_records = [record for record in records if isinstance(record, RxBytesEvidence)]
     assert b"".join(record.payload for record in rx_records) == payload
     assert [record.sequence for record in records] == list(range(len(records)))
-    assert {record.connection_id for record in records} == {connection_id}
-    assert len({record.segment_id for record in records}) == 1
+    first = records[0]
+    assert isinstance(first, SegmentStartedEvidence)
+    for record in records:
+        assert isinstance(
+            record,
+            (
+                SegmentStartedEvidence,
+                RxBytesEvidence,
+                ObserverLossEvidence,
+                SegmentEndedEvidence,
+            ),
+        )
+        assert record.connection_id == connection_id
+        assert record.segment_id == first.segment_id
     assert {record.observed_at.domain_id for record in rx_records} == {
         connection.descriptor.backend_observation_timestamp_domain.domain_id
     }

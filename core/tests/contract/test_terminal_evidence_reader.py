@@ -1263,3 +1263,317 @@ async def test_hot_source_is_rejected_as_is_without_rollback_recovery(
         evidence.JournalFailureKind.CORRUPT_JOURNAL,
     }
     assert _files(closed.path.parent) == before
+
+
+# 009 T006 adds a private expected_schema_version capture argument (default 1,
+# explicit 2). This is an adapter-private test seam, not a client-selected format.
+# Existing 008 tests above remain unchanged; no terminal implementation lives here.
+
+
+def _t006_capture(api: Any, seed: Any, expected: int | None = 2) -> Any:
+    if expected is None:
+        return _capture(api, seed.path, seed.session, seed.policy)
+    return api.capture_terminal_target(
+        seed.path,
+        session_id=seed.session,
+        policy=seed.policy,
+        expected_schema_version=expected,
+    )
+
+
+def _t006_forbid_writable(patch: pytest.MonkeyPatch) -> None:
+    _forbid_writable(patch)
+
+    def forbidden(*args: object, **kwargs: object) -> Any:
+        pytest.fail("terminal v2 retrieval cannot use writable v2 factories")
+
+    for name in ("create_v2", "open_v2"):
+        if hasattr(sqlite_evidence.SqliteEvidenceJournal, name):
+            patch.setattr(sqlite_evidence.SqliteEvidenceJournal, name, forbidden)
+
+
+@pytest.mark.asyncio
+async def test_t006_default_target_captures_immutable_v1_expectation_and_preserves_legacy_read(
+    closed: ClosedJournal,
+) -> None:
+    api = _adapter()
+    target = _capture(api, closed.path, closed.session, closed.policy)
+    assert getattr(target, "expected_schema_version", None) == 1
+    with pytest.raises(FrozenInstanceError):
+        target.expected_schema_version = 2
+    reader = await _open(api, target)
+    try:
+        assert (
+            await reader.retrieve(
+                evidence.EvidenceRetrievalRequest(closed.session, 10, 16384)
+            )
+            == closed.page
+        )
+    finally:
+        await reader.close()
+
+
+@pytest.mark.asyncio
+async def test_t006_explicit_v2_expectation_rejects_a_legacy_v1_file_without_guessing_or_mutation(
+    closed: ClosedJournal, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    api = _adapter()
+    target = _t006_capture(api, closed)
+    before = _files(closed.path.parent)
+    _t006_forbid_writable(monkeypatch)
+    probe = ConnectionProbe(monkeypatch)
+    with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+        reader = await _open(api, target)
+        await reader.close()
+    failure = caught.value.primary
+    assert isinstance(failure, evidence.JournalFailure)
+    assert failure.kind is evidence.JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+    assert caught.value.reader_close_confirmed is True
+    assert probe.close_calls == 1 and probe.closed == probe.connections
+    assert _files(closed.path.parent) == before
+
+
+@pytest.mark.parametrize("index", [0, 1], ids=["basic", "enhanced-shaped"])
+@pytest.mark.asyncio
+async def test_t006_v2_terminal_markers_and_raw_bytes_use_fresh_verified_read_only_transactions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, index: int
+) -> None:
+    from tests.contract.test_monitor_journal import _seed_v2
+
+    seed = await _seed_v2(tmp_path / "terminal-v2 spaced-é ?#%.sqlite3", index)
+    api = _adapter()
+    target = _t006_capture(api, seed)
+    assert target.expected_schema_version == 2
+    with pytest.raises(FrozenInstanceError):
+        target.expected_schema_version = 1
+    before = _files(seed.path.parent)
+    for sequence in (1, 4):
+        with monkeypatch.context() as patch:
+            _t006_forbid_writable(patch)
+            probe = ConnectionProbe(patch)
+            reader = await _open(api, target)
+            try:
+                marker = await reader.resolve_record(
+                    model.EvidenceReference(seed.session, sequence)
+                )
+                assert marker.records == (seed.records[sequence],)
+                page = await reader.retrieve(
+                    evidence.EvidenceRetrievalRequest(seed.session, 20, 20000)
+                )
+                assert page == seed.page
+            finally:
+                await reader.close()
+            probe.read_only(seed.path)
+        assert _files(seed.path.parent) == before
+
+
+@pytest.mark.asyncio
+async def test_t006_legacy_default_terminal_target_rejects_v2_even_without_operation_rows(
+    tmp_path: Path,
+) -> None:
+    from tests.contract.test_monitor_journal import _create_v2
+    from tests.contract.test_sqlite_evidence_journal import _policy
+
+    path = tmp_path / "empty-v2.sqlite3"
+    journal = await _create_v2(path, _policy())
+    session, policy = journal.session_id, journal.policy
+    await journal.close()
+    api = _adapter()
+    target = _capture(api, path, session, policy)
+    before = _files(path.parent)
+    with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+        reader = await _open(api, target)
+        await reader.close()
+    failure = caught.value.primary
+    assert isinstance(failure, evidence.JournalFailure)
+    assert failure.kind is evidence.JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+    assert caught.value.reader_close_confirmed is True
+    assert _files(path.parent) == before
+
+
+@pytest.mark.parametrize("retained", [2, 100])
+@pytest.mark.asyncio
+async def test_t006_terminal_v2_reuses_fixed_snapshot_shortage_and_expired_marker_results(
+    tmp_path: Path, retained: int
+) -> None:
+    from tests.contract.test_monitor_journal import _seed_v2
+
+    seed = await _seed_v2(tmp_path / "terminal-pages.sqlite3", retained=retained)
+    api = _adapter()
+    target = _t006_capture(api, seed)
+    reader = await _open(api, target)
+    try:
+        page = await reader.retrieve(
+            evidence.EvidenceRetrievalRequest(seed.session, 20, 20000)
+        )
+        assert page == seed.page
+        sequence = 4
+        shortage = await reader.retrieve(
+            evidence.EvidenceRetrievalRequest(
+                model.EvidenceRangeReference(seed.session, sequence, 5),
+                20,
+                1,
+            )
+        )
+        assert shortage.records == () and shortage.truncated
+        assert shortage.continuation is not None
+        assert shortage.continuation.next_sequence == sequence
+        assert shortage.snapshot_end_exclusive == 5
+        assert (
+            shortage.next_record_required_bytes
+            == sqlite_evidence.encode_evidence_record_v2(seed.records[4]).charged_bytes
+        )
+        if retained == 2:
+            expired = await reader.resolve_record(
+                model.EvidenceReference(seed.session, 1)
+            )
+            assert expired.outcome is evidence.EvidencePageOutcome.EXPIRED
+            assert expired.retention_marker == seed.page.retention_marker
+    finally:
+        await reader.close()
+
+
+@pytest.mark.parametrize(
+    "change", ["session", "identity", *[f.name for f in fields(model.SessionPolicy)]]
+)
+@pytest.mark.asyncio
+async def test_t006_v2_terminal_keeps_exact_session_native_identity_and_each_policy_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    from tests.contract.test_monitor_journal import _seed_v2, _sql
+
+    seed = await _seed_v2(tmp_path / "captured-v2.sqlite3")
+    api = _adapter()
+    target = _t006_capture(api, seed)
+    if change == "session":
+        _sql(seed.path, "UPDATE session_metadata SET session_id='different-session'")
+    elif change == "identity":
+        replacement = seed.path.with_name("replacement.sqlite3")
+        shutil.copyfile(seed.path, replacement)
+        replacement.replace(seed.path)
+    else:
+        assert change in {f.name for f in fields(model.SessionPolicy)}
+        _sql(seed.path, f"UPDATE session_metadata SET {change}={change}+1")
+    before = _files(seed.path.parent)
+    _t006_forbid_writable(monkeypatch)
+    probe = ConnectionProbe(monkeypatch)
+    with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+        reader = await _open(api, target)
+        await reader.close()
+    primary = caught.value.primary
+    if change == "session":
+        assert isinstance(primary, evidence.JournalFailure)
+        assert primary.kind is evidence.JournalFailureKind.SESSION_MISMATCH
+    else:
+        assert isinstance(primary, evidence_access.EvidenceReadRejected)
+        assert primary.kind == "source_changed"
+    assert caught.value.reader_close_confirmed is True
+    assert probe.closed == probe.connections
+    assert _files(seed.path.parent) == before
+
+
+@pytest.mark.parametrize(
+    "failure_stage", ["query_only", "partial_open_close", "read", "close"]
+)
+@pytest.mark.asyncio
+async def test_t006_v2_terminal_does_not_hide_query_only_or_cleanup_uncertainty(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure_stage: str
+) -> None:
+    from tests.contract.test_monitor_journal import _seed_v2
+
+    seed = await _seed_v2(tmp_path / "cleanup-v2.sqlite3")
+    api = _adapter()
+    target = _t006_capture(api, seed)
+    if failure_stage == "partial_open_close":
+        target = replace(target, session_id=model.SessionId("wrong-session"))
+    _t006_forbid_writable(monkeypatch)
+    probe = ConnectionProbe(monkeypatch)
+    if failure_stage in {"query_only", "partial_open_close"}:
+        if failure_stage == "query_only":
+            probe.refuse_query_only = True
+        else:
+            probe.close_failure = OSError(errno.EIO, _DETAIL)
+        with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+            await _open(api, target)
+        assert isinstance(caught.value.primary, evidence.JournalFailure)
+        assert caught.value.primary.kind is (
+            evidence.JournalFailureKind.READ_ONLY
+            if failure_stage == "query_only"
+            else evidence.JournalFailureKind.SESSION_MISMATCH
+        )
+        assert caught.value.reader_close_confirmed is (failure_stage == "query_only")
+    else:
+        reader = await _open(api, target)
+        if failure_stage == "read":
+            probe.read_failure = OSError(errno.EIO, _DETAIL)
+            try:
+                with pytest.raises(evidence.JournalFailure) as read:
+                    await reader.retrieve(
+                        evidence.EvidenceRetrievalRequest(seed.session, 20, 20000)
+                    )
+                assert read.value.operation is evidence.JournalOperation.RETRIEVE
+                assert read.value.kind is evidence.JournalFailureKind.IO_FAILURE
+                assert read.value.detail is None
+            finally:
+                await reader.close()
+        else:
+            probe.close_failure = OSError(errno.EIO, _DETAIL)
+            with pytest.raises(evidence.JournalFailure) as close:
+                await reader.close()
+            assert close.value.operation is evidence.JournalOperation.CLOSE
+            assert close.value.kind is evidence.JournalFailureKind.IO_FAILURE
+            assert close.value.detail is None
+    assert probe.close_calls == 1 and probe.closed == probe.connections
+
+
+@pytest.mark.parametrize(
+    "statement,kind",
+    [
+        (
+            "PRAGMA user_version=1",
+            evidence.JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION,
+        ),
+        (
+            "UPDATE evidence_records SET record_version=1 WHERE sequence=1",
+            evidence.JournalFailureKind.INCOMPATIBLE_RECORD_VERSION,
+        ),
+        (
+            "UPDATE evidence_records SET record_kind='operation_other' WHERE sequence=4",
+            evidence.JournalFailureKind.CORRUPT_JOURNAL,
+        ),
+        (
+            "UPDATE evidence_records SET payload=NULL WHERE sequence=4",
+            evidence.JournalFailureKind.CORRUPT_JOURNAL,
+        ),
+        (
+            "UPDATE evidence_records SET timestamp_endpoint_json=X'7b7d' WHERE sequence=1",
+            evidence.JournalFailureKind.CORRUPT_JOURNAL,
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_t006_terminal_v2_validates_unselected_operation_rows_without_writes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    statement: str,
+    kind: evidence.JournalFailureKind,
+) -> None:
+    from tests.contract.test_monitor_journal import _seed_v2, _sql
+
+    seed = await _seed_v2(tmp_path / "invalid-v2.sqlite3")
+    api = _adapter()
+    target = _t006_capture(api, seed)
+    _sql(seed.path, statement)
+    before = _files(seed.path.parent)
+    _t006_forbid_writable(monkeypatch)
+    probe = ConnectionProbe(monkeypatch)
+    with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+        reader = await _open(api, target)
+        try:
+            await reader.resolve_record(model.EvidenceReference(seed.session, 0))
+        finally:
+            await reader.close()
+    assert isinstance(caught.value.primary, evidence.JournalFailure)
+    assert caught.value.primary.kind is kind
+    assert caught.value.reader_close_confirmed is True
+    assert probe.closed == probe.connections and _files(seed.path.parent) == before

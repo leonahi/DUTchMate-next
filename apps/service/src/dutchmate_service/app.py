@@ -6,12 +6,13 @@ launch context may enter lifespan; importing or building an app owns no resource
 
 import asyncio
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 from dutchmate_core.adapters.observation_runtime import attach_basic_observation
 from dutchmate_core.evidence import EvidenceRetrievalRequest
 from dutchmate_core.model import EvidenceReference
+from dutchmate_core.monitor import MonitorRequest
 from dutchmate_core.runtime import ObservationRuntime, RuntimeStatus
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException
@@ -37,6 +38,11 @@ from dutchmate_service.http import (
     status_response,
     validate_request,
 )
+from dutchmate_service.monitor_http import (
+    monitor_rejection_response,
+    monitor_response,
+    validate_monitor_request,
+)
 
 
 class _LaunchContext:
@@ -49,6 +55,8 @@ class _LaunchContext:
         self._claimed = False
         self.stopping = False
         self.runtime_started = False
+        # Installed only inside the owning lifespan; cleared after joined cleanup.
+        self._seal_monitors: Callable[[], None] | None = None
         # Captured on the owning loop after joined cleanup, safe to inspect later.
         # No runtime/task/resource handle crosses the bootstrap handoff.
         self.final_status: RuntimeStatus | None = None
@@ -56,6 +64,8 @@ class _LaunchContext:
 
     def request_stop(self) -> None:
         self.stopping = True
+        if self._seal_monitors is not None:
+            self._seal_monitors()
 
     def claim(self, config: ServiceConfig) -> None:
         if (
@@ -89,6 +99,7 @@ def create_app(
     ready = False
     operations: set[asyncio.Task[Response]] = set()
     reads: set[asyncio.Task[Response]] = set()
+    monitors: set[asyncio.Task[Response]] = set()
 
     def accepting() -> bool:
         return ready and _launch_context is not None and not _launch_context.stopping
@@ -208,6 +219,52 @@ def create_app(
             observer.cancel()
             await asyncio.gather(observer, return_exceptions=True)
 
+    def monitor_completed(task: asyncio.Task[Response]) -> None:
+        monitors.discard(task)
+        if not task.cancelled():
+            task.exception()
+
+    async def invoke_monitor(
+        owner: ObservationRuntime, value: MonitorRequest
+    ) -> Response:
+        try:
+            return monitor_response(await owner.monitor(value))
+        except Exception as error:
+            # Keep normalization inside the retained job after delivery loss.
+            return monitor_rejection_response(error)
+
+    async def monitor_job(
+        request: Request, owner: ObservationRuntime, value: MonitorRequest
+    ) -> Response:
+        caller = asyncio.current_task()
+        if caller is not None and caller.cancelling():
+            raise asyncio.CancelledError()
+        if not accepting():
+            return error_response(503, "service", "stopping")
+        for previous in tuple(monitors):
+            if previous.done():
+                monitor_completed(previous)
+        if monitors:
+            return error_response(503, "service", "operation_capacity")
+        operation = asyncio.create_task(invoke_monitor(owner, value))
+        monitors.add(operation)
+        operation.add_done_callback(monitor_completed)
+        # One independent job is registered before Core entry or delivery waits.
+        shielded = asyncio.shield(operation)
+        observer = asyncio.create_task(disconnected(request))
+        try:
+            done, _ = await asyncio.wait(
+                (shielded, observer), return_when=asyncio.FIRST_COMPLETED
+            )
+            if observer in done:
+                observer.result()
+                raise asyncio.CancelledError()
+            return shielded.result()
+        finally:
+            shielded.cancel()
+            observer.cancel()
+            await asyncio.gather(observer, return_exceptions=True)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         del app
@@ -217,6 +274,9 @@ def create_app(
         _launch_context.claim(config)
         runtime = ObservationRuntime()
         _launch_context.runtime_started = True
+        _launch_context._seal_monitors = runtime._seal_monitors
+        if _launch_context.stopping:
+            _launch_context.request_stop()
         ready = not _launch_context.stopping
         try:
             yield
@@ -228,7 +288,10 @@ def create_app(
                 # Admission is closed before taking this finite snapshot. Tasks
                 # not yet inside Core must settle before the final detach.
                 await asyncio.gather(
-                    *tuple(operations), *tuple(reads), return_exceptions=True
+                    *tuple(operations),
+                    *tuple(reads),
+                    *tuple(monitors),
+                    return_exceptions=True,
                 )
                 try:
                     await runtime.detach()
@@ -238,7 +301,10 @@ def create_app(
                         runtime.evidence_read_cleanup_confirmed
                     )
 
-            await _settle_task(asyncio.create_task(cleanup()))
+            try:
+                await _settle_task(asyncio.create_task(cleanup()))
+            finally:
+                _launch_context._seal_monitors = None
 
     app = FastAPI(
         lifespan=lifespan,
@@ -322,6 +388,20 @@ def create_app(
             raise asyncio.CancelledError() from None
         except Exception as error:
             return evidence_rejection_response(error)
+
+    @app.post("/v1/observation/monitor")
+    async def monitor(request: Request) -> Response:
+        if not accepting() or runtime is None:
+            return error_response(503, "service", "stopping")
+        try:
+            value = await validate_monitor_request(request.scope, request.receive)
+            if isinstance(value, Response):
+                return value
+            return await monitor_job(request, runtime, value)
+        except _Disconnected:
+            raise asyncio.CancelledError() from None
+        except Exception as error:
+            return monitor_rejection_response(error)
 
     def credential() -> str | None:
         return None if _launch_context is None else _launch_context.bootstrap.credential

@@ -42,6 +42,7 @@ _ROUTES = {
     b"/v1/observation/attach": "POST",
     b"/v1/observation/status": "GET",
     b"/v1/observation/detach": "POST",
+    b"/v1/observation/monitor": "POST",
     b"/v1/evidence/record": "POST",
     b"/v1/evidence/page": "POST",
 }
@@ -542,8 +543,12 @@ class SecurityGate:
             if error is not None:
                 await error(scope, receive, safe_send)
                 return
-            if scope["raw_path"] in {b"/v1/evidence/record", b"/v1/evidence/page"}:
-                # Retrieval checks readiness before bounded body validation. The
+            if scope["raw_path"] in {
+                b"/v1/evidence/record",
+                b"/v1/evidence/page",
+                b"/v1/observation/monitor",
+            }:
+                # Bounded reads/Monitor check readiness before body validation. The
                 # existing observation validation/replay path stays unchanged.
                 await self._app(scope, receive, safe_send)
                 return

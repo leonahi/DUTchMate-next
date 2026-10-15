@@ -5,6 +5,7 @@ import sqlite3
 import stat
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 from dutchmate_core.adapters.sqlite_evidence import (
@@ -37,10 +38,15 @@ class _TerminalTarget:
     inode: int
     session_id: SessionId
     policy: SessionPolicy
+    expected_schema_version: int = 1
 
 
 def capture_terminal_target(
-    path: str | Path, *, session_id: SessionId, policy: SessionPolicy
+    path: str | Path,
+    *,
+    session_id: SessionId,
+    policy: SessionPolicy,
+    expected_schema_version: int = 1,
 ) -> _TerminalTarget | None:
     """Capture metadata only; inability to capture must not invalidate live RX."""
     try:
@@ -51,7 +57,12 @@ def capture_terminal_target(
     except OSError:
         return None
     return _TerminalTarget(
-        resolved, identity.st_dev, identity.st_ino, session_id, policy
+        resolved,
+        identity.st_dev,
+        identity.st_ino,
+        session_id,
+        policy,
+        expected_schema_version,
     )
 
 
@@ -107,7 +118,10 @@ def _open_on_worker(target: _TerminalTarget) -> sqlite3.Connection:
         if row != (1,):
             raise JournalFailure(JournalOperation.OPEN, JournalFailureKind.READ_ONLY)
         connection.execute("BEGIN")
-        session_id, policy = _validate_existing_journal(connection)
+        session_id, policy = _validate_existing_journal(
+            connection,
+            schema_version=target.expected_schema_version,
+        )
         if session_id != target.session_id:
             raise JournalFailure(
                 JournalOperation.OPEN, JournalFailureKind.SESSION_MISMATCH
@@ -226,7 +240,9 @@ class _TerminalReader:
         async with self._gate:
             future = asyncio.get_running_loop().run_in_executor(
                 self._executor,
-                _resolve_record_on_worker,
+                _resolve_record_on_worker
+                if self._target.expected_schema_version == 1
+                else partial(_resolve_record_on_worker, schema_version=2),
                 self._open_connection(),
                 reference,
             )
@@ -240,7 +256,9 @@ class _TerminalReader:
         async with self._gate:
             future = asyncio.get_running_loop().run_in_executor(
                 self._executor,
-                _retrieve_page_on_worker,
+                _retrieve_page_on_worker
+                if self._target.expected_schema_version == 1
+                else partial(_retrieve_page_on_worker, schema_version=2),
                 self._open_connection(),
                 self.policy,
                 request,
