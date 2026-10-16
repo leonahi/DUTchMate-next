@@ -11,6 +11,7 @@ from dutchmate_core.evidence import (
     EvidenceRecorder,
     JournalFailure,
     JournalFailureKind,
+    PendingClientAnnotationEvidence,
     PendingEvidenceRecord,
     PendingOperationEndedEvidence,
     PendingOperationStartedEvidence,
@@ -19,6 +20,7 @@ from dutchmate_core.evidence import (
 )
 from dutchmate_core.model import (
     SQLITE_INTEGER_MAX,
+    ClientAnnotationEvidence,
     EvidenceRecord,
     EvidenceReference,
     MonitorClockFacts,
@@ -348,18 +350,39 @@ class MonitorRecordingCoordinator:
         async with self._gate:
             record = await self._recorder.append(draft)
             # No await between positive ACK, publication and gate release.
-            if isinstance(record, SegmentStartedEvidence):
-                self._current_provenance = record.provenance
-            elif isinstance(record, SegmentEndedEvidence):
-                self._current_provenance = None
-            operation = self._operation
-            if operation is not None and not operation.decided:
-                try:
-                    operation.publish(record, self._now())
-                except Exception:
-                    # An operation infrastructure fault must not reclassify capture.
-                    operation.fail()
+            self._publish(record)
             return record
+
+    async def append_client_annotation(
+        self, client_surface: str, text: str
+    ) -> ClientAnnotationEvidence:
+        """Sample the host receipt boundary under the ordinary recording gate."""
+        async with self._gate:
+            draft = PendingClientAnnotationEvidence(
+                text=text,
+                client_surface=client_surface,
+                clock_origin_id=self.clock.origin_id,
+                received_at_ns=self._now(),
+            )
+            record = await self._recorder.append(draft)
+            if not isinstance(record, ClientAnnotationEvidence):
+                raise RuntimeError("invalid annotation acknowledgement")
+            self._publish(record)
+            return record
+
+    def _publish(self, record: EvidenceRecord) -> None:
+        """Publish under the append gate using fresh post-ACK Monitor time."""
+        if isinstance(record, SegmentStartedEvidence):
+            self._current_provenance = record.provenance
+        elif isinstance(record, SegmentEndedEvidence):
+            self._current_provenance = None
+        operation = self._operation
+        if operation is not None and not operation.decided:
+            try:
+                operation.publish(record, self._now())
+            except Exception:
+                # An operation infrastructure fault must not reclassify capture.
+                operation.fail()
 
     async def start(
         self,

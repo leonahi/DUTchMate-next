@@ -15,6 +15,7 @@ from dutchmate_core.evidence_access import EvidenceReadRejected, RunEvidencePage
 from dutchmate_core.model import (
     SQLITE_INTEGER_MAX,
     BackendObservationTimestamp,
+    ClientAnnotationEvidence,
     EvidenceRangeReference,
     EvidenceRecord,
     EvidenceReference,
@@ -271,6 +272,17 @@ def _marker(value: RetentionMarker | None) -> dict[str, object] | None:
 
 
 def _record(value: EvidenceRecord) -> dict[str, object]:
+    if isinstance(value, ClientAnnotationEvidence):
+        return {
+            "kind": "client_annotation",
+            "sequence": value.sequence,
+            "assertion_class": value.assertion_class,
+            "client_surface": value.client_surface,
+            "attribution_basis": value.attribution_basis,
+            "clock_origin_id": value.clock_origin_id,
+            "received_at_ns": value.received_at_ns,
+            "text": value.text,
+        }
     if isinstance(value, OperationStartedEvidence):
         return {
             "kind": "operation_started",

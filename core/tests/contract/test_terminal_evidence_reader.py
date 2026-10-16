@@ -39,6 +39,92 @@ _MODULE = "dutchmate_core.adapters.terminal_evidence"
 _DETAIL = "private-terminal-file-SQL-resource-detail"
 
 
+@pytest.mark.parametrize("stored", [1, 2, 3])
+@pytest.mark.parametrize("expected", [1, 2, 3, 4, True])
+@pytest.mark.asyncio
+async def test_annotation_selected_terminal_format_matrix(
+    tmp_path: Path, stored: int, expected: int
+) -> None:
+    from dutchmate_core.adapters import terminal_evidence as api
+    from tests.contract.test_annotation_journal import create
+    from tests.unit.test_annotation_values import draft
+
+    path = tmp_path / "selected.db"
+    journal = await create(path, stored)
+    session, policy = journal.session_id, journal.policy
+    if stored == 3:
+        await journal.append(draft())
+    await journal.close()
+    target = api.capture_terminal_target(
+        path, session_id=session, policy=policy, expected_schema_version=expected
+    )
+    assert target is not None
+    before = _files(tmp_path)
+    if type(expected) is int and expected == stored:
+        reader = await api.open_terminal_reader(target)
+        try:
+            page = await reader.retrieve(evidence.EvidenceRetrievalRequest(session, 20, 20000))
+            assert len(page.records) == (1 if stored == 3 else 0)
+            if stored == 3:
+                assert isinstance(page.records[0], model.ClientAnnotationEvidence)
+        finally:
+            await reader.close()
+    else:
+        with pytest.raises(evidence_access.EvidenceSourceOpenFailure) as caught:
+            await api.open_terminal_reader(target)
+        primary = caught.value.primary
+        assert isinstance(primary, evidence.JournalFailure)
+        assert primary.kind is evidence.JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+        assert caught.value.reader_close_confirmed
+    assert _files(tmp_path) == before
+
+
+@pytest.mark.parametrize("index", [0, 1], ids=["basic", "enhanced-shaped"])
+@pytest.mark.asyncio
+async def test_v3_terminal_match_validation_and_annotation_point_page_reads_are_read_only(
+    tmp_path: Path, index: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dutchmate_core.adapters import terminal_evidence as api
+    from tests.contract.test_annotation_journal import seed_match
+    from tests.contract.test_sqlite_evidence_journal import _policy
+
+    path = tmp_path / "annotation-terminal.db"
+    session = await seed_match(path, index)
+    target = api.capture_terminal_target(
+        path, session_id=session, policy=_policy(),
+        expected_schema_version=3,
+    )
+    assert target is not None
+    original = sqlite_evidence._connect_sqlite
+    uris: list[str] = []
+    statements: list[str] = []
+
+    def traced(database: str, *, uri: bool = False) -> sqlite3.Connection:
+        uris.append(str(database))
+        connection = original(database, uri=uri)
+        connection.set_trace_callback(statements.append)
+        return connection
+
+    monkeypatch.setattr(api, "_connect_sqlite", traced)
+    before = _files(tmp_path)
+    reader = await api.open_terminal_reader(target)
+    try:
+        page = await reader.retrieve(evidence.EvidenceRetrievalRequest(session, 20, 20000))
+        point = await reader.resolve_record(model.EvidenceReference(session, 3))
+        assert point.records == (page.records[3],)
+        annotation = point.records[0]
+        assert isinstance(annotation, model.ClientAnnotationEvidence)
+        assert annotation.assertion_class == "client_assertion"
+        assert annotation.received_at_ns == 17
+        assert page.records[-1].sequence == 7
+    finally:
+        await reader.close()
+    assert uris and all("mode=ro&cache=private" in value for value in uris)
+    assert "PRAGMA query_only=ON" in statements and "BEGIN" in statements
+    assert not any(s.upper().startswith(("INSERT", "UPDATE", "DELETE", "CREATE", "PRAGMA MAX_PAGE_COUNT=", "PRAGMA JOURNAL_MODE=")) for s in statements)
+    assert _files(tmp_path) == before
+
+
 def _adapter() -> Any:
     try:
         return importlib.import_module(_MODULE)

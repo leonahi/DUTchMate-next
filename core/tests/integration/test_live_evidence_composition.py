@@ -76,7 +76,7 @@ async def test_t009_handoff_uses_created_capture_journal_and_optional_terminal_o
 ) -> None:
     selected = tmp_path / "profile.toml"
     selected.write_text(_PROFILE, encoding="utf-8")
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     journals: list[sqlite_evidence.SqliteEvidenceJournal] = []
 
     async def create(
@@ -87,7 +87,7 @@ async def test_t009_handoff_uses_created_capture_journal_and_optional_terminal_o
         return journal
 
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create_v2", staticmethod(create)
+        sqlite_evidence.SqliteEvidenceJournal, "create_v3", staticmethod(create)
     )
     probe = AdmissionProbe([])
     await observation_runtime.attach_basic_observation(

@@ -224,6 +224,8 @@ def _record(value: object) -> dict[str, object]:
         return _operation_started(value)
     if value.get("kind") == "operation_ended":
         return _operation_ended(value)
+    if value.get("kind") == "client_annotation":
+        return _client_annotation(value)
     kind = _choice(
         value.get("kind"),
         {"segment_started", "rx_bytes", "observer_loss", "segment_ended"},
@@ -294,6 +296,32 @@ def _record(value: object) -> dict[str, object]:
     if kind != "segment_started":
         _text(view["connection_id"])
         _text(view["segment_id"])
+    return view
+
+
+def _annotation_text(value: object) -> str:
+    text = _text(value)
+    if "\0" in text or len(text.encode("utf-8")) > 1024:
+        raise ValueError("invalid_response")
+    return text
+
+
+def _client_annotation(value: object) -> dict[str, object]:
+    view = _view(
+        value,
+        (
+            "kind", "sequence", "assertion_class", "client_surface",
+            "attribution_basis", "clock_origin_id", "received_at_ns", "text",
+        ),
+    )
+    _choice(view["kind"], {"client_annotation"})
+    _counter(view["sequence"], maximum=_MAX - 1)
+    _choice(view["assertion_class"], {"client_assertion"})
+    _choice(view["client_surface"], {"cli", "http", "core"})
+    _choice(view["attribution_basis"], {"client_asserted"})
+    _uuid(view["clock_origin_id"])
+    _counter(view["received_at_ns"])
+    _annotation_text(view["text"])
     return view
 
 

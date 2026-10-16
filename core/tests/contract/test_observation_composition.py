@@ -9,8 +9,10 @@ import asyncio
 import importlib
 import importlib.util
 import os
+import sqlite3
 import threading
 from collections.abc import Awaitable, Callable
+from contextlib import closing
 from dataclasses import replace
 from pathlib import Path
 from typing import BinaryIO, NoReturn, Protocol, cast
@@ -18,7 +20,7 @@ from typing import BinaryIO, NoReturn, Protocol, cast
 import pytest
 import serial
 
-from dutchmate_core import acquisition, evidence, model, profile
+from dutchmate_core import acquisition, annotation, evidence, model, profile
 from dutchmate_core import runtime as rt
 from dutchmate_core.adapters import basic_serial, sqlite_evidence
 from dutchmate_core.backend import (
@@ -169,8 +171,10 @@ def _block_preparation(monkeypatch: pytest.MonkeyPatch, destination: Path) -> No
     for target, name in (
         (sqlite_evidence.SqliteEvidenceJournal, "create"),
         (sqlite_evidence.SqliteEvidenceJournal, "create_v2"),
+        (sqlite_evidence.SqliteEvidenceJournal, "create_v3"),
         (sqlite_evidence.SqliteEvidenceJournal, "open"),
         (sqlite_evidence.SqliteEvidenceJournal, "open_v2"),
+        (sqlite_evidence.SqliteEvidenceJournal, "open_v3"),
         (basic_serial.BasicSerialBackend, "__init__"),
         (basic_serial.BasicSerialBackend, "open"),
         (acquisition.Acquisition, "__init__"),
@@ -235,7 +239,7 @@ def _inject_fake_basic(
     fake = CloseGatedSerial()
     factory = FakeSerialFactory(fake)
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     original_init = basic_serial.BasicSerialBackend.__init__
     original_open = basic_serial.BasicSerialBackend.open
 
@@ -272,10 +276,11 @@ def _inject_fake_basic(
         return await original_open(self)
 
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
+        sqlite_evidence.SqliteEvidenceJournal, "create_v3", classmethod(create)
     )
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v3", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", construct)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", open_backend)
     return fake, factory, created
@@ -530,6 +535,7 @@ async def test_existing_destination_rejects_without_overwrite_reopen_or_backend_
     probe = AdmissionProbe(trace)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v3", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
     await edge(probe, selected, destination)
@@ -593,6 +599,7 @@ def _t013_block_artifact_access(patch: pytest.MonkeyPatch, destination: Path) ->
     """Install after bootstrap: infrastructure's own create I/O stays real."""
     patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", _forbidden)
     patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", _forbidden)
+    patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v3", _forbidden)
     patch.setattr(sqlite_evidence, "_connect_sqlite", _forbidden)
 
     def guard(original: Callable[..., object]) -> Callable[..., object]:
@@ -631,7 +638,7 @@ async def _t013_preparation_failure(probe: AdmissionProbe) -> rt.PreparationFail
 async def _t013_empty_journal(path: Path, known_id: model.SessionId) -> None:
     # Explicit test readback occurs after the normalization guard is restored;
     # this is not an application probe for a failed-create artifact's identity.
-    reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(
+    reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v3(
         path, expected_session_id=known_id
     )
     try:
@@ -700,7 +707,7 @@ async def test_t013_preopen_certainty_requires_exact_create_operation_and_catego
     with monkeypatch.context() as patch:
         patch.setattr(
             sqlite_evidence.SqliteEvidenceJournal,
-            "create_v2",
+            "create_v3",
             classmethod(failed_create),
         )
         patch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
@@ -745,7 +752,7 @@ async def test_t013_failed_create_keeps_artifact_without_identity_probe_or_certa
     destination = tmp_path / "failed-create.sqlite3"
     probe = AdmissionProbe([])
     await _edge()(probe, selected, destination)
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     calls = 0
     before: bytes | None = None
     hidden_id: model.SessionId | None = None
@@ -780,7 +787,7 @@ async def test_t013_failed_create_keeps_artifact_without_identity_probe_or_certa
 
         patch.setattr(
             sqlite_evidence.SqliteEvidenceJournal,
-            "create_v2",
+            "create_v3",
             classmethod(failed_create),
         )
         patch.setattr(basic_serial.BasicSerialBackend, "__init__", _forbidden)
@@ -822,7 +829,7 @@ async def test_t013_postcreate_failure_closes_owned_recorder_and_keeps_known_emp
     probe = AdmissionProbe([])
     await _edge()(probe, selected, destination)
     edge_module = importlib.import_module(_EDGE_MODULE)
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     original_close = sqlite_evidence.SqliteEvidenceJournal.close
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
     trace: list[str] = []
@@ -873,7 +880,7 @@ async def test_t013_postcreate_failure_closes_owned_recorder_and_keeps_known_emp
                 raise error from OSError(_RAW_DIAGNOSTIC)
 
             patch.setattr(
-                sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
+                sqlite_evidence.SqliteEvidenceJournal, "create_v3", classmethod(create)
             )
             patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "close", close)
             patch.setattr(basic_serial.BasicSerialBackend, "open", _forbidden)
@@ -991,6 +998,147 @@ async def test_t013_failed_open_keeps_session_but_never_proves_physical_release(
         await _t013_join_test_resources(runtime, created, original_close)
 
 
+def _t008_fake_serial_only(monkeypatch: pytest.MonkeyPatch) -> FakeSerialFactory:
+    """Use actual preparation/version selection; replace only physical serial I/O."""
+    factory = FakeSerialFactory(CloseGatedSerial())
+    original = basic_serial.BasicSerialBackend.__init__
+
+    def construct(
+        self: basic_serial.BasicSerialBackend,
+        selector: basic_serial.SerialDeviceSelector,
+        configuration: basic_serial.SerialConfiguration,
+        line_intent: basic_serial.SerialOpenLineIntent,
+    ) -> None:
+        original(self, selector, configuration, line_intent, _serial_factory=factory)
+
+    monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", construct)
+    return factory
+
+
+def _t008_annotation_access(
+    prepared: rt.PreparedObservationRun,
+) -> annotation.PreparedAnnotationAccess:
+    access = getattr(prepared, "annotation_access", None)
+    assert isinstance(access, annotation.PreparedAnnotationAccess), (
+        "T009 missing: production preparation annotation capability"
+    )
+    return access
+
+
+@pytest.mark.asyncio
+async def test_t008_production_preparation_wires_annotation_monitor_and_reads_to_one_writer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    probe = AdmissionProbe([])
+    await _edge()(probe, _selected(tmp_path), tmp_path / "annotations.db")
+    prepared = await probe.captured_preparation()
+    try:
+        access = _t008_annotation_access(prepared)
+        assert (
+            prepared.monitor_access is not None and prepared.evidence_access is not None
+        )
+        assert (
+            access.coordinator
+            is prepared.recorder
+            is prepared.monitor_access.coordinator
+        )
+        assert access.clock is prepared.monitor_access.clock is access.coordinator.clock
+        journal = prepared.evidence_access.live_reader
+        assert isinstance(journal, sqlite_evidence.SqliteEvidenceJournal)
+        assert (
+            access.session_id
+            == journal.session_id
+            == prepared.monitor_access.session_id
+        )
+        assert access.policy == journal.policy == _expected_policy()
+        maximum = evidence.PendingClientAnnotationEvidence(
+            "温度\r\n", "core", access.clock.origin_id, model.SQLITE_INTEGER_MAX
+        )
+        assert access.charge_annotation(
+            maximum
+        ) == sqlite_evidence.charge_client_annotation(maximum)
+        accepted = await access.coordinator.append_client_annotation(
+            "core", "prepared assertion"
+        )
+        resolved = await journal.resolve_record(
+            model.EvidenceReference(journal.session_id, accepted.sequence)
+        )
+        assert resolved.records == (accepted,)
+        assert factory.calls == []  # Preparing/inserting context never opens the DUT.
+    finally:
+        await prepared.recorder.close()
+
+
+@pytest.mark.asyncio
+async def test_t008_production_selects_explicit_v3_and_matching_read_only_terminal_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    probe = AdmissionProbe([])
+    destination = tmp_path / "annotations.db"
+    await _edge()(probe, _selected(tmp_path), destination)
+    prepared = await probe.captured_preparation()
+    try:
+        with closing(
+            sqlite3.connect(f"file:{destination}?mode=ro", uri=True)
+        ) as connection:
+            assert connection.execute("PRAGMA user_version").fetchone() == (3,), (
+                "T009 missing: production composition selects schema v3"
+            )
+            assert connection.execute(
+                "SELECT schema_version FROM session_metadata"
+            ).fetchone() == (3,)
+        assert (
+            prepared.monitor_access is not None and prepared.evidence_access is not None
+        )
+        access = prepared.evidence_access
+        accepted = await prepared.monitor_access.coordinator.append_client_annotation(
+            "http", "host-only context"
+        )
+        await prepared.recorder.close()
+        assert access.terminal_opener is not None
+        reader = await access.terminal_opener()
+        try:
+            resolved = await reader.resolve_record(
+                model.EvidenceReference(access.session_id, accepted.sequence)
+            )
+            assert resolved.records == (accepted,)
+            assert resolved.outcome is evidence.EvidencePageOutcome.COMPLETE
+        finally:
+            await reader.close()
+        assert factory.calls == []
+    finally:
+        await prepared.recorder.close()
+
+
+@pytest.mark.asyncio
+async def test_t008_production_reuses_runtime_host_clock_across_annotation_preparations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    probe = AdmissionProbe([])
+    selected = _selected(tmp_path)
+    await _edge()(probe, selected, tmp_path / "first.db")
+    first = await probe.captured_preparation()
+    try:
+        first_access = _t008_annotation_access(first)
+        await first.recorder.close()
+        await _edge()(probe, selected, tmp_path / "second.db")
+        second = await probe.captured_preparation()
+        try:
+            second_access = _t008_annotation_access(second)
+            assert second_access.coordinator is not first_access.coordinator
+            assert second_access.session_id != first_access.session_id
+            assert second_access.clock is first_access.clock
+            assert second_access.clock.origin_id == first_access.clock.origin_id
+            assert factory.calls == []
+        finally:
+            await second.recorder.close()
+    finally:
+        await first.recorder.close()
+
+
 @pytest.mark.asyncio
 async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_open(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -998,7 +1146,7 @@ async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_op
     selected = _selected(tmp_path)
     destination = tmp_path / "mismatched-policy.sqlite3"
     runtime = rt.ObservationRuntime()
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     original_close = sqlite_evidence.SqliteEvidenceJournal.close
     created: list[sqlite_evidence.SqliteEvidenceJournal] = []
     closes = 0
@@ -1026,7 +1174,7 @@ async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_op
 
     monkeypatch.setattr(
         sqlite_evidence.SqliteEvidenceJournal,
-        "create_v2",
+        "create_v3",
         classmethod(mismatched_create),
     )
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "close", close)

@@ -322,9 +322,16 @@ async def test_old_active_read_api_and_marker_appends_share_actual_journal_worke
         draft: evidence.PendingEvidenceRecord,
         *,
         schema_version: int = 1,
+        timestamp_context: sqlite_evidence._WriterTimestampContext | None = None,
     ) -> model.EvidenceRecord:
         append_calls.append((threading.get_ident(), id(connection)))
-        return original_append(connection, policy, draft, schema_version=schema_version)
+        return original_append(
+            connection,
+            policy,
+            draft,
+            schema_version=schema_version,
+            timestamp_context=timestamp_context,
+        )
 
     def retrieve(
         connection: sqlite3.Connection,
@@ -397,7 +404,7 @@ async def test_terminal_marker_retrieval_waits_for_confirmed_writer_close(
 @pytest.mark.parametrize(
     "factory", BACKEND_FIXTURE_FACTORIES, ids=("basic", "enhanced")
 )
-async def test_production_preparation_selects_v2_and_transfers_same_coordinator_and_reader(
+async def test_production_preparation_selects_v3_and_transfers_same_coordinator_and_reader(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     factory: BackendFixtureFactory,
@@ -419,12 +426,12 @@ async def test_production_preparation_selects_v2_and_transfers_same_coordinator_
     # Inspect only after confirmed writer close; never open an extra active reader.
     connection = sqlite3.connect(f"{path.as_uri()}?mode=ro&cache=private", uri=True)
     try:
-        assert connection.execute("PRAGMA user_version").fetchone() == (2,), (
-            "T010 missing: production preparation must explicitly create schema v2"
+        assert connection.execute("PRAGMA user_version").fetchone() == (3,), (
+            "T010 missing: production preparation must explicitly create schema v3"
         )
         assert connection.execute(
             "SELECT schema_version FROM session_metadata"
-        ).fetchone() == (2,)
+        ).fetchone() == (3,)
     finally:
         connection.close()
     access = getattr(prepared, "monitor_access", None)
@@ -1082,6 +1089,7 @@ async def test_t026_native_marker_worker_survives_cancel_and_detach_until_ack(
             draft: evidence.PendingEvidenceRecord,
             *,
             schema_version: int = 1,
+            timestamp_context: sqlite_evidence._WriterTimestampContext | None = None,
         ) -> model.EvidenceRecord:
             selected = (
                 phase == "start"
@@ -1093,7 +1101,11 @@ async def test_t026_native_marker_worker_survives_cancel_and_detach_until_ack(
             if selected and not committed:
                 pause()
             record = original_append(
-                connection, policy, draft, schema_version=schema_version
+                connection,
+                policy,
+                draft,
+                schema_version=schema_version,
+                timestamp_context=timestamp_context,
             )
             if selected and committed:
                 pause()

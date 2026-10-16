@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 from dutchmate_core.adapters.observation_runtime import attach_basic_observation
+from dutchmate_core.annotation import AnnotationRequest
 from dutchmate_core.evidence import EvidenceRetrievalRequest
 from dutchmate_core.model import EvidenceReference
 from dutchmate_core.monitor import MonitorRequest
@@ -19,6 +20,11 @@ from starlette.exceptions import HTTPException
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
+from dutchmate_service.annotation_http import (
+    annotation_rejection_response,
+    annotation_response,
+    validate_annotation_request,
+)
 from dutchmate_service.bootstrap import (
     BootstrapFailure,
     BootstrapFailureKind,
@@ -57,6 +63,7 @@ class _LaunchContext:
         self.runtime_started = False
         # Installed only inside the owning lifespan; cleared after joined cleanup.
         self._seal_monitors: Callable[[], None] | None = None
+        self._seal_annotations: Callable[[], None] | None = None
         # Captured on the owning loop after joined cleanup, safe to inspect later.
         # No runtime/task/resource handle crosses the bootstrap handoff.
         self.final_status: RuntimeStatus | None = None
@@ -66,6 +73,8 @@ class _LaunchContext:
         self.stopping = True
         if self._seal_monitors is not None:
             self._seal_monitors()
+        if self._seal_annotations is not None:
+            self._seal_annotations()
 
     def claim(self, config: ServiceConfig) -> None:
         if (
@@ -112,18 +121,22 @@ def create_app(
             task.exception()
 
     async def invoke(
-        owner: ObservationRuntime, paths: tuple[str, str] | None
+        owner: ObservationRuntime, value: tuple[str, str] | AnnotationRequest | None
     ) -> Response:
         try:
+            if isinstance(value, AnnotationRequest):
+                return annotation_response(await owner.annotate(value))
             captured = (
                 await owner.detach()
-                if paths is None
-                else await attach_basic_observation(owner, *paths)
+                if value is None
+                else await attach_basic_observation(owner, *value)
             )
             return status_response(captured)
         except Exception as error:
             # Normalize inside the owner: Python 3.14 shield reports late raised
             # exceptions to the loop after delivery cancellation, even if read.
+            if isinstance(value, AnnotationRequest):
+                return annotation_rejection_response(error)
             return rejection_response(error)
 
     async def disconnected(request: Request) -> None:
@@ -131,7 +144,9 @@ def create_app(
             pass
 
     async def mutation(
-        request: Request, owner: ObservationRuntime, paths: tuple[str, str] | None
+        request: Request,
+        owner: ObservationRuntime,
+        value: tuple[str, str] | AnnotationRequest | None,
     ) -> Response:
         caller = asyncio.current_task()
         if caller is not None and caller.cancelling():
@@ -146,7 +161,7 @@ def create_app(
         if len(operations) >= 8:
             return error_response(503, "service", "operation_capacity")
 
-        operation = asyncio.create_task(invoke(owner, paths))
+        operation = asyncio.create_task(invoke(owner, value))
         operations.add(operation)
         operation.add_done_callback(completed)
         # Registration is complete before any await or disconnect observation.
@@ -275,6 +290,7 @@ def create_app(
         runtime = ObservationRuntime()
         _launch_context.runtime_started = True
         _launch_context._seal_monitors = runtime._seal_monitors
+        _launch_context._seal_annotations = runtime._seal_annotations
         if _launch_context.stopping:
             _launch_context.request_stop()
         ready = not _launch_context.stopping
@@ -305,6 +321,7 @@ def create_app(
                 await _settle_task(asyncio.create_task(cleanup()))
             finally:
                 _launch_context._seal_monitors = None
+                _launch_context._seal_annotations = None
 
     app = FastAPI(
         lifespan=lifespan,
@@ -402,6 +419,20 @@ def create_app(
             raise asyncio.CancelledError() from None
         except Exception as error:
             return monitor_rejection_response(error)
+
+    @app.post("/v1/observation/annotations")
+    async def annotate(request: Request) -> Response:
+        if not accepting() or runtime is None:
+            return error_response(503, "service", "stopping")
+        try:
+            value = await validate_annotation_request(request.scope, request.receive)
+            if isinstance(value, Response):
+                return value
+            return await mutation(request, runtime, value)
+        except _Disconnected:
+            raise asyncio.CancelledError() from None
+        except Exception as error:
+            return annotation_rejection_response(error)
 
     def credential() -> str | None:
         return None if _launch_context is None else _launch_context.bootstrap.credential

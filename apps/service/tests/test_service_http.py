@@ -209,6 +209,7 @@ def forbid_profile_and_run_preparation(
     monkeypatch.setattr(observation_runtime, "resolve_profile", forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create", forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v2", forbidden)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v3", forbidden)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", forbidden)
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "open", forbidden)
@@ -1330,7 +1331,7 @@ def t011_composition(
     )
     state.profile_path.write_text(_T011_PROFILE, encoding="utf-8")
     original_init = basic_serial.BasicSerialBackend.__init__
-    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v2
+    original_create = sqlite_evidence.SqliteEvidenceJournal.create_v3
     original_create_v1 = sqlite_evidence.SqliteEvidenceJournal.create
     original_path_open = Path.open
 
@@ -1397,13 +1398,14 @@ def t011_composition(
 
     monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", construct)
     monkeypatch.setattr(
-        sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(create)
+        sqlite_evidence.SqliteEvidenceJournal, "create_v3", classmethod(create)
     )
     monkeypatch.setattr(
         sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(create_v1)
     )
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open", no_reopen)
     monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v2", no_reopen)
+    monkeypatch.setattr(sqlite_evidence.SqliteEvidenceJournal, "open_v3", no_reopen)
     monkeypatch.setattr(Path, "open", opened)
     return state
 
@@ -1706,6 +1708,7 @@ async def test_t011_busy_basic_edge_reads_only_bounded_explicit_profile_without_
         with monkeypatch.context() as patch:
             patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create", forbidden)
             patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v2", forbidden)
+            patch.setattr(sqlite_evidence.SqliteEvidenceJournal, "create_v3", forbidden)
             patch.setattr(basic_serial.BasicSerialBackend, "__init__", forbidden)
             patch.setattr(basic_serial.BasicSerialBackend, "open", forbidden)
             patch.setattr(Path, "stat", stat)

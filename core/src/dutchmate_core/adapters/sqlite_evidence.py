@@ -18,6 +18,7 @@ from dutchmate_core.evidence import (
     JournalFailure,
     JournalFailureKind,
     JournalOperation,
+    PendingClientAnnotationEvidence,
     PendingEvidenceRecord,
     PendingOperationEndedEvidence,
     PendingOperationStartedEvidence,
@@ -30,6 +31,7 @@ from dutchmate_core.model import (
     BackendCapability,
     BackendObservationTimestamp,
     BackendObservationTimestampDomain,
+    ClientAnnotationEvidence,
     ConnectionInstanceId,
     ConnectionProvenanceSnapshot,
     EvidenceRangeReference,
@@ -173,6 +175,11 @@ _SCHEMA_STATEMENTS_V2 = (
     *_SCHEMA_STATEMENTS[1:],
 )
 
+_SCHEMA_STATEMENTS_V3 = (
+    _SCHEMA_STATEMENTS[0].replace("CHECK (schema_version = 1)", "CHECK (schema_version = 3)"),
+    *_SCHEMA_STATEMENTS[1:],
+)
+
 
 @dataclass(frozen=True, slots=True)
 class EncodedEvidenceRecord:
@@ -193,6 +200,12 @@ class _StoredRetentionMarker:
     discarded_record_count: int
     discarded_rx_payload_byte_count: int
     discarded_charged_bytes: int
+
+
+@dataclass(slots=True)
+class _WriterTimestampContext:
+    # One committed segment descriptor, independent of the rolling evidence tail.
+    segment: tuple[tuple[str, str], BackendObservationTimestampDomain] | None = None
 
 
 def encode_evidence_record(record: EvidenceRecord) -> EncodedEvidenceRecord:
@@ -674,7 +687,7 @@ async def _await_bootstrap_worker(
 
 
 class SqliteEvidenceJournal:
-    """One explicitly selected schema-version-1 or schema-version-2 session."""
+    """One explicitly selected schema-version-1, -2 or -3 session."""
 
     def __init__(
         self,
@@ -693,6 +706,7 @@ class SqliteEvidenceJournal:
         self._policy = policy
         self._physical_page_ceiling = physical_page_ceiling
         self._schema_version = schema_version
+        self._timestamp_context = _WriterTimestampContext()
         self._closed = False
 
     @property
@@ -724,6 +738,14 @@ class SqliteEvidenceJournal:
         return await cls._create(path, session_policy, 2)
 
     @classmethod
+    async def create_v3(
+        cls,
+        path: str | Path,
+        session_policy: SessionPolicy,
+    ) -> SqliteEvidenceJournal:
+        return await cls._create(path, session_policy, 3)
+
+    @classmethod
     async def _create(
         cls,
         path: str | Path,
@@ -746,7 +768,7 @@ class SqliteEvidenceJournal:
                 executor,
                 _create_on_worker
                 if schema_version == 1
-                else partial(_create_on_worker, schema_version=2),
+                else partial(_create_on_worker, schema_version=schema_version),
                 journal_path,
                 session_policy,
             )
@@ -782,6 +804,14 @@ class SqliteEvidenceJournal:
         return await cls._open(path, expected_session_id, 2)
 
     @classmethod
+    async def open_v3(
+        cls,
+        path: str | Path,
+        expected_session_id: SessionId | None = None,
+    ) -> SqliteEvidenceJournal:
+        return await cls._open(path, expected_session_id, 3)
+
+    @classmethod
     async def _open(
         cls,
         path: str | Path,
@@ -807,7 +837,7 @@ class SqliteEvidenceJournal:
                 executor,
                 _open_on_worker
                 if schema_version == 1
-                else partial(_open_on_worker, schema_version=2),
+                else partial(_open_on_worker, schema_version=schema_version),
                 journal_path,
                 expected_session_id,
             )
@@ -834,11 +864,16 @@ class SqliteEvidenceJournal:
                     JournalFailureKind.CLOSED,
                 )
             loop = asyncio.get_running_loop()
-            future = loop.run_in_executor(
-                self._executor,
+            append = (
                 _append_on_worker
                 if self._schema_version == 1
-                else partial(_append_on_worker, schema_version=2),
+                else partial(_append_on_worker, schema_version=self._schema_version)
+            )
+            if self._schema_version == 3:
+                append = partial(append, timestamp_context=self._timestamp_context)
+            future = loop.run_in_executor(
+                self._executor,
+                append,
                 self._connection,
                 self._policy,
                 draft,
@@ -862,7 +897,9 @@ class SqliteEvidenceJournal:
                 self._executor,
                 _resolve_record_on_worker
                 if self._schema_version == 1
-                else partial(_resolve_record_on_worker, schema_version=2),
+                else partial(
+                    _resolve_record_on_worker, schema_version=self._schema_version
+                ),
                 self._connection,
                 reference,
             )
@@ -885,7 +922,9 @@ class SqliteEvidenceJournal:
                 self._executor,
                 _retrieve_page_on_worker
                 if self._schema_version == 1
-                else partial(_retrieve_page_on_worker, schema_version=2),
+                else partial(
+                    _retrieve_page_on_worker, schema_version=self._schema_version
+                ),
                 self._connection,
                 self._policy,
                 request,
@@ -928,6 +967,7 @@ def _create_on_worker(
     *,
     schema_version: int = 1,
 ) -> tuple[sqlite3.Connection, SessionId, SessionPolicy, int]:
+    statements = _schema_statements_for_version(schema_version, JournalOperation.CREATE)
     if path.exists():
         raise JournalFailure(
             JournalOperation.CREATE,
@@ -947,9 +987,7 @@ def _create_on_worker(
         )
         session_id = SessionId(str(uuid4()))
         connection.execute("BEGIN IMMEDIATE")
-        for statement in (
-            _SCHEMA_STATEMENTS if schema_version == 1 else _SCHEMA_STATEMENTS_V2
-        ):
+        for statement in statements:
             connection.execute(statement)
         connection.execute(
             """
@@ -1066,8 +1104,8 @@ def _validate_existing_journal(
                 JournalFailureKind.CORRUPT_JOURNAL,
             ) from None
         raise
-    if schema_version == 2:
-        _validate_operation_pairs(connection)
+    if schema_version in (2, 3):
+        _validate_operation_pairs(connection, schema_version=schema_version)
     return result
 
 
@@ -1083,7 +1121,7 @@ def _validate_existing_journal_contents(
         )
     if (
         type(schema_version) is not int
-        or schema_version not in (1, 2)
+        or schema_version not in (1, 2, 3)
         or _pragma_integer(connection, "user_version") != schema_version
     ):
         raise JournalFailure(
@@ -1097,10 +1135,13 @@ def _validate_existing_journal_contents(
         )
     if schema_version == 2:
         _validate_v2_schema(connection)
+    elif schema_version == 3:
+        _validate_v3_schema(connection)
+    if schema_version in (2, 3):
         version_row = connection.execute(
             "SELECT schema_version FROM session_metadata"
         ).fetchone()
-        if version_row is not None and version_row != (2,):
+        if version_row is not None and version_row != (schema_version,):
             raise JournalFailure(
                 JournalOperation.OPEN, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
             )
@@ -1174,22 +1215,57 @@ def _validate_v2_schema(connection: sqlite3.Connection) -> None:
         raise JournalFailure(JournalOperation.OPEN, JournalFailureKind.CORRUPT_JOURNAL)
 
 
-def _validate_operation_pairs(connection: sqlite3.Connection) -> None:
+def _schema_statements_for_version(
+    schema_version: int, operation: JournalOperation
+) -> tuple[str, ...]:
+    if type(schema_version) is int:
+        if schema_version == 1:
+            return _SCHEMA_STATEMENTS
+        if schema_version == 2:
+            return _SCHEMA_STATEMENTS_V2
+        if schema_version == 3:
+            return _SCHEMA_STATEMENTS_V3
+    raise JournalFailure(operation, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION)
+
+
+def _validate_v3_schema(connection: sqlite3.Connection) -> None:
+    """V3 retains the fixed three-table organization with an explicit header."""
+    expected = {
+        ("table", name): " ".join(statement.split())
+        for name, statement in zip(_TABLE_COLUMNS, _SCHEMA_STATEMENTS_V3, strict=True)
+    }
+    actual = {
+        (kind, name): " ".join((sql or "").split())
+        for kind, name, sql in connection.execute(
+            "SELECT type, name, sql FROM sqlite_schema"
+        )
+    }
+    if actual != expected:
+        raise JournalFailure(JournalOperation.OPEN, JournalFailureKind.CORRUPT_JOURNAL)
+
+
+def _validate_operation_pairs(
+    connection: sqlite3.Connection, *, schema_version: int = 2
+) -> None:
     rows = connection.execute(
         "SELECT sequence, record_kind, record_version, metadata_json, payload, "
         "charged_bytes, rx_payload_bytes FROM evidence_records "
         "WHERE record_kind='operation_ended' ORDER BY sequence"
     ).fetchall()
     for row in rows:
-        record = decode_evidence_record_v2(EncodedEvidenceRecord(*row))
+        record = _decode_versioned_record(EncodedEvidenceRecord(*row), schema_version)
         if isinstance(record, OperationEndedEvidence):
-            _validate_operation_pair(connection, record, JournalOperation.OPEN)
+            _validate_operation_pair(
+                connection, record, JournalOperation.OPEN, schema_version=schema_version
+            )
 
 
 def _validate_operation_pair(
     connection: sqlite3.Connection,
     end: OperationEndedEvidence,
     operation: JournalOperation,
+    *,
+    schema_version: int = 2,
 ) -> None:
     """Check surviving paired facts, without requiring an evicted/failed marker."""
     row = connection.execute(
@@ -1199,7 +1275,7 @@ def _validate_operation_pair(
     ).fetchone()
     if row is None:
         return
-    start = decode_evidence_record_v2(EncodedEvidenceRecord(*row))
+    start = _decode_versioned_record(EncodedEvidenceRecord(*row), schema_version)
     if not isinstance(start, OperationStartedEvidence) or (
         end.operation_id != start.operation_id
         or end.operation_kind != start.operation_kind
@@ -1223,7 +1299,10 @@ def _validate_operation_pair(
         "WHERE sequence>=? AND sequence<=? ORDER BY sequence",
         (match.start.sequence, match.end.sequence),
     ).fetchall()
-    records = [decode_evidence_record_v2(EncodedEvidenceRecord(*row)) for row in rows]
+    records = [
+        _decode_versioned_record(EncodedEvidenceRecord(*row), schema_version)
+        for row in rows
+    ]
     if not records or len(records) != match.end.sequence - match.start.sequence + 1:
         raise JournalFailure(operation, JournalFailureKind.INVARIANT_VIOLATION)
     first, last = records[0], records[-1]
@@ -1289,7 +1368,7 @@ def _read_session_metadata(
         raise JournalFailure(operation, JournalFailureKind.INVARIANT_VIOLATION)
     row = rows[0]
     try:
-        if schema_version == 2 and row[2] != 2:
+        if schema_version in (2, 3) and row[2] != schema_version:
             raise JournalFailure(
                 operation, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
             )
@@ -1374,11 +1453,7 @@ def _validate_stored_records(
             charged_bytes=cast("int", row[5]),
             rx_payload_bytes=cast("int", row[6]),
         )
-        record = (
-            decode_evidence_record_v2(encoded)
-            if schema_version == 2
-            else decode_evidence_record(encoded)
-        )
+        record = _decode_versioned_record(encoded, schema_version)
         timestamp_endpoint_json = cast("bytes | None", row[7])
         timestamp = _record_timestamp(record)
         if timestamp_endpoint_json is not None:
@@ -1570,11 +1645,16 @@ def _timestamp_endpoint_for_candidate(
     candidate: EvidenceRecord,
     *,
     schema_version: int = 1,
+    timestamp_context: _WriterTimestampContext | None = None,
 ) -> bytes | None:
     timestamp = _record_timestamp(candidate)
-    if timestamp is None:
+    if timestamp is None and (
+        timestamp_context is None or timestamp_context.segment is not None
+    ):
         return None
-    candidate_identity = _record_stream_identity(candidate)
+    candidate_identity = (
+        None if timestamp is None else _record_stream_identity(candidate)
+    )
     rows = connection.execute(
         """
         SELECT sequence, record_kind, record_version, metadata_json,
@@ -1592,34 +1672,37 @@ def _timestamp_endpoint_for_candidate(
             charged_bytes=cast("int", row[5]),
             rx_payload_bytes=cast("int", row[6]),
         )
-        retained_record = (
-            decode_evidence_record_v2(encoded)
-            if schema_version == 2
-            else decode_evidence_record(encoded)
-        )
+        retained_record = _decode_versioned_record(encoded, schema_version)
         if isinstance(
-            retained_record, (OperationStartedEvidence, OperationEndedEvidence)
+            retained_record,
+            (OperationStartedEvidence, OperationEndedEvidence, ClientAnnotationEvidence),
         ):
             continue
-        if _record_stream_identity(retained_record) != candidate_identity:
+        retained_identity = _record_stream_identity(retained_record)
+        if timestamp_context is None and retained_identity != candidate_identity:
             continue
         endpoint_json = cast("bytes | None", row[7])
         if endpoint_json is not None:
-            endpoint = _decode_retention_timestamp_endpoint(endpoint_json)
+            domain = _decode_retention_timestamp_endpoint(endpoint_json).domain
+        elif isinstance(retained_record, SegmentStartedEvidence):
+            domain = retained_record.provenance.backend_observation_timestamp_domain
+        else:
+            continue
+        # On the first append after reopen, recover only an actually retained
+        # descriptor before a host-only candidate can evict its final anchor.
+        if timestamp_context is not None and timestamp_context.segment is None:
+            timestamp_context.segment = (retained_identity, domain)
+        if timestamp is None:
+            return None
+        if retained_identity == candidate_identity:
             return _encode_retention_timestamp_endpoint(
-                RetentionTimestampEndpoint(
-                    timestamp=timestamp,
-                    domain=endpoint.domain,
-                )
+                RetentionTimestampEndpoint(timestamp=timestamp, domain=domain)
             )
-        if isinstance(retained_record, SegmentStartedEvidence):
+    if timestamp is not None and timestamp_context is not None:
+        segment = timestamp_context.segment
+        if segment is not None and segment[0] == candidate_identity:
             return _encode_retention_timestamp_endpoint(
-                RetentionTimestampEndpoint(
-                    timestamp=timestamp,
-                    domain=(
-                        retained_record.provenance.backend_observation_timestamp_domain
-                    ),
-                )
+                RetentionTimestampEndpoint(timestamp=timestamp, domain=segment[1])
             )
     return None
 
@@ -1960,11 +2043,7 @@ def _read_evidence_range(
             charged_bytes=cast("int", row[5]),
             rx_payload_bytes=cast("int", row[6]),
         )
-        records.append(
-            decode_evidence_record_v2(encoded)
-            if schema_version == 2
-            else decode_evidence_record(encoded)
-        )
+        records.append(_decode_versioned_record(encoded, schema_version))
         charged_bytes = checked_persisted_add(
             charged_bytes,
             encoded.charged_bytes,
@@ -2021,11 +2100,7 @@ def _read_bounded_evidence_page(
             charged_bytes=cast("int", row[5]),
             rx_payload_bytes=cast("int", row[6]),
         )
-        record = (
-            decode_evidence_record_v2(encoded)
-            if schema_version == 2
-            else decode_evidence_record(encoded)
-        )
+        record = _decode_versioned_record(encoded, schema_version)
         if charged_bytes + encoded.charged_bytes > max_charged_bytes:
             next_record_required_bytes = encoded.charged_bytes
             break
@@ -2085,14 +2160,11 @@ def _append_on_worker(
     draft: PendingEvidenceRecord,
     *,
     schema_version: int = 1,
+    timestamp_context: _WriterTimestampContext | None = None,
 ) -> EvidenceRecord:
     transaction_started = False
     try:
-        candidate = (
-            encode_evidence_record_v2(_assign_sequence(draft, 0))
-            if schema_version == 2
-            else encode_evidence_record(_assign_sequence(draft, 0))
-        )
+        candidate = _encode_versioned_record(_assign_sequence(draft, 0), schema_version)
         if (
             candidate.charged_bytes > policy.max_record_charged_bytes
             or candidate.charged_bytes > policy.max_retained_charged_bytes
@@ -2174,15 +2246,12 @@ def _append_on_worker(
             charged_bytes=candidate.charged_bytes,
             rx_payload_bytes=candidate.rx_payload_bytes,
         )
-        accepted_record = (
-            decode_evidence_record_v2(accepted)
-            if schema_version == 2
-            else decode_evidence_record(accepted)
-        )
+        accepted_record = _decode_versioned_record(accepted, schema_version)
         timestamp_endpoint_json = _timestamp_endpoint_for_candidate(
             connection,
             accepted_record,
             schema_version=schema_version,
+            timestamp_context=timestamp_context,
         )
         retained_rows = connection.execute(
             """
@@ -2454,12 +2523,24 @@ def _append_on_worker(
                 JournalOperation.APPEND,
                 JournalFailureKind.INVARIANT_VIOLATION,
             )
-        if schema_version == 2 and isinstance(accepted_record, OperationEndedEvidence):
+        if schema_version in (2, 3) and isinstance(
+            accepted_record, OperationEndedEvidence
+        ):
             _validate_operation_pair(
-                connection, accepted_record, JournalOperation.APPEND
+                connection,
+                accepted_record,
+                JournalOperation.APPEND,
+                schema_version=schema_version,
             )
         connection.commit()
         transaction_started = False
+        if timestamp_context is not None and isinstance(
+            accepted_record, SegmentStartedEvidence
+        ):
+            timestamp_context.segment = (
+                _record_stream_identity(accepted_record),
+                accepted_record.provenance.backend_observation_timestamp_domain,
+            )
         return accepted_record
     except PersistedCounterOverflowError:
         if transaction_started:
@@ -2784,3 +2865,128 @@ def charge_monitor_markers(
         raise JournalFailure(
             JournalOperation.ENCODE, JournalFailureKind.INVALID_INPUT, str(error)
         ) from None
+
+
+def encode_evidence_record_v3(record: EvidenceRecord) -> EncodedEvidenceRecord:
+    """Add one client assertion; six legacy variants retain their exact codec."""
+    if not isinstance(record, ClientAnnotationEvidence):
+        return encode_evidence_record_v2(record)
+    try:
+        record = replace(record)
+        metadata = _canonical_json(
+            {
+                "assertion_class": record.assertion_class,
+                "client_surface": record.client_surface,
+                "attribution_basis": record.attribution_basis,
+                "clock_origin_id": record.clock_origin_id,
+                "received_at_ns": record.received_at_ns,
+            }
+        )
+        payload = record.text.encode("utf-8")
+        kind = "client_annotation"
+        return EncodedEvidenceRecord(
+            record.sequence,
+            kind,
+            3,
+            metadata,
+            payload,
+            _record_charge(kind, metadata, payload),
+            0,
+        )
+    except (AttributeError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.ENCODE, JournalFailureKind.INVALID_INPUT, str(error)
+        ) from None
+
+
+def decode_evidence_record_v3(encoded: EncodedEvidenceRecord) -> EvidenceRecord:
+    """Strict explicit annotation dispatch; older codecs remain unchanged."""
+    try:
+        if encoded.record_kind != "client_annotation":
+            return decode_evidence_record_v2(encoded)
+        if type(encoded.record_version) is not int or encoded.record_version != 3:
+            raise JournalFailure(
+                JournalOperation.DECODE, JournalFailureKind.INCOMPATIBLE_RECORD_VERSION
+            )
+        sequence = validate_record_sequence(encoded.sequence)
+        if (
+            type(encoded.metadata_json) is not bytes
+            or type(encoded.payload) is not bytes
+        ):
+            raise TypeError("annotation metadata and BLOB must be exact bytes")
+        metadata = _decode_canonical_json(encoded.metadata_json)
+        _expect_keys(
+            metadata,
+            {
+                "assertion_class", "client_surface", "attribution_basis",
+                "clock_origin_id", "received_at_ns",
+            },
+        )
+        if (
+            metadata["assertion_class"] != "client_assertion"
+            or metadata["attribution_basis"] != "client_asserted"
+        ):
+            raise ValueError("annotation must remain an attributed client assertion")
+        validate_persisted_counter(encoded.charged_bytes, name="record charge")
+        validate_persisted_counter(encoded.rx_payload_bytes, name="RX payload bytes")
+        if encoded.rx_payload_bytes != 0 or encoded.charged_bytes != _record_charge(
+            encoded.record_kind, encoded.metadata_json, encoded.payload
+        ):
+            raise ValueError("annotation charge or RX telemetry mismatch")
+        return ClientAnnotationEvidence(
+            sequence=sequence,
+            text=encoded.payload.decode("utf-8"),
+            client_surface=_text(metadata["client_surface"], "client surface"),
+            clock_origin_id=_text(metadata["clock_origin_id"], "host origin"),
+            received_at_ns=_integer(metadata["received_at_ns"], "receipt time"),
+        )
+    except JournalFailure:
+        raise
+    except (AttributeError, KeyError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.DECODE, JournalFailureKind.CORRUPT_JOURNAL, str(error)
+        ) from None
+
+
+def charge_client_annotation(draft: PendingClientAnnotationEvidence) -> int:
+    """Pure exact charge; callers supply their valid maximum-shaped draft."""
+    try:
+        if not isinstance(draft, PendingClientAnnotationEvidence):
+            raise TypeError("annotation charge requires a pending annotation")
+        return encode_evidence_record_v3(_assign_sequence(draft, 0)).charged_bytes
+    except JournalFailure:
+        raise
+    except (AttributeError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.ENCODE, JournalFailureKind.INVALID_INPUT, str(error)
+        ) from None
+
+
+def _encode_versioned_record(
+    record: EvidenceRecord, schema_version: int
+) -> EncodedEvidenceRecord:
+    if type(schema_version) is int:
+        if schema_version == 1:
+            return encode_evidence_record(record)
+        if schema_version == 2:
+            return encode_evidence_record_v2(record)
+        if schema_version == 3:
+            return encode_evidence_record_v3(record)
+    raise JournalFailure(
+        JournalOperation.ENCODE, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+    )
+
+
+def _decode_versioned_record(
+    encoded: EncodedEvidenceRecord, schema_version: int
+) -> EvidenceRecord:
+    if type(schema_version) is int:
+        if schema_version == 1:
+            return decode_evidence_record(encoded)
+        if schema_version == 2:
+            return decode_evidence_record_v2(encoded)
+        if schema_version == 3:
+            return decode_evidence_record_v3(encoded)
+    raise JournalFailure(
+        JournalOperation.DECODE, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+    )

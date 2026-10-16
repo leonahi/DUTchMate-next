@@ -481,6 +481,7 @@ type EvidenceRecord = (
     | SegmentEndedEvidence
     | OperationStartedEvidence
     | OperationEndedEvidence
+    | ClientAnnotationEvidence
 )
 
 
@@ -801,3 +802,38 @@ class OperationEndedEvidence:
             self.match,
             self.clock,
         )
+
+
+def validate_annotation_content(text: str, client_surface: str) -> None:
+    """Bound exact client prose without interpreting or normalizing it."""
+    if type(text) is not str or type(client_surface) is not str:
+        raise TypeError("annotation text and surface must be exact strings")
+    if client_surface not in {"cli", "http", "core"}:
+        raise ValueError("annotation surface must be declared")
+    if "\x00" in text or not 1 <= len(text.encode("utf-8")) <= 1024:
+        raise ValueError("annotation text must be 1..1024 UTF-8 bytes without NUL")
+
+
+@dataclass(frozen=True, slots=True)
+class ClientAnnotationEvidence:
+    """Session-level client assertion with host receipt time, never UART RX."""
+
+    sequence: int
+    text: str
+    client_surface: str
+    clock_origin_id: str
+    received_at_ns: int
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_annotation_content(self.text, self.client_surface)
+        validate_monitor_uuid(self.clock_origin_id)
+        validate_persisted_counter(self.received_at_ns, name="annotation receipt time")
+
+    @property
+    def assertion_class(self) -> Literal["client_assertion"]:
+        return "client_assertion"
+
+    @property
+    def attribution_basis(self) -> Literal["client_asserted"]:
+        return "client_asserted"

@@ -9,6 +9,7 @@ from typing import Annotated, cast
 
 import typer
 
+from dutchmate_cli import annotation as annotation_wire
 from dutchmate_cli import client, context, evidence
 from dutchmate_cli import monitor as monitor_wire
 
@@ -159,6 +160,25 @@ def monitor(
             delivery=invocation.delivery,
         )
     )
+    _write(record, error=code != 0)
+    return code
+
+
+@app.command("annotate")
+def annotate(
+    ctx: typer.Context,
+    session: Annotated[str, typer.Option("--session", help="Explicit active session ID.")],
+    text: Annotated[str, typer.Option("--text", help="Client assertion (1..1024 UTF-8 bytes).")],
+) -> int:
+    """Record a bounded client assertion; receipt delivery does not verify its truth."""
+    invocation = cast(_Invocation, ctx.obj)
+    body = annotation_wire.request(session, text)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange_annotation(
+        endpoint=endpoint, request_body=body, credential=credential,
+        delivery=invocation.delivery,
+    ))
     _write(record, error=code != 0)
     return code
 

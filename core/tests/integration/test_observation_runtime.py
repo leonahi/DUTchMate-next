@@ -210,7 +210,7 @@ async def test_binary_and_ambient_rx_round_trip_with_final_segment_boundary(
             )
         assert closed.value.kind is JournalFailureKind.CLOSED
 
-        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(
+        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v3(
             run.journal_path,
             expected_session_id=run.active.session_id,
         )
@@ -276,7 +276,7 @@ async def test_small_retention_quota_reports_expired_prefix_after_reopen(
         for index in range(3):
             await run.emit(index)
         await run.runtime.detach()
-        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(run.journal_path)
+        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v3(run.journal_path)
         try:
             page = await reopened.retrieve(
                 EvidenceRetrievalRequest(
@@ -348,7 +348,7 @@ async def test_fixed_snapshot_pages_exclude_later_ambient_rx_and_detach_boundary
         await run.emit(1)
         await run.runtime.detach()
 
-        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(run.journal_path)
+        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v3(run.journal_path)
         try:
             second = await reopened.retrieve(
                 EvidenceRetrievalRequest(
@@ -444,7 +444,7 @@ async def test_reopen_preserves_policy_and_effective_provenance_without_full_pro
         run.profile_path.unlink()
         terminal = await run.runtime.detach()
         assert terminal.profile == profile  # Only the in-memory summary retains it.
-        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v2(run.journal_path)
+        reopened = await sqlite_evidence.SqliteEvidenceJournal.open_v3(run.journal_path)
         try:
             page = await reopened.retrieve(
                 EvidenceRetrievalRequest(
@@ -467,11 +467,11 @@ async def test_reopen_preserves_policy_and_effective_provenance_without_full_pro
         assert fields["effective_data_bits"] == 7
         assert fields["effective_parity"] == "even"
 
-        # Inspect all schema-v2 persisted values, including opaque JSON blobs;
+        # Inspect all schema-v3 persisted values, including opaque JSON blobs;
         # nothing outside the bounded public readback can recover DUT identity,
         # display name, or the explicit source Profile path either.
         with closing(sqlite3.connect(run.journal_path)) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (2,)
+            assert connection.execute("PRAGMA user_version").fetchone() == (3,)
             values = [
                 value
                 for table in (

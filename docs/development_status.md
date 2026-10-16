@@ -7,40 +7,37 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 ## Resume Here
 
-- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 is incomplete.
-- **Committed baseline**: Features 001–009 are software-complete on `main`;
-  Feature 009: `:/^Implement receive-only monitor` (`Implement receive-only monitor`),
-  accepted parent `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701`.
-- **Current feature**: `009-receive-only-monitor` is software-complete through T037
-  and final pre-commit review; its implementation is committed, nothing pushed.
-- **Progress**: T001–T037 complete (37/37); no remaining 009 implementation task.
-  Software readiness does not complete Phase 1 or native/physical acceptance.
-- **Observation model**: One active-session literal-byte Monitor over the sole
-  RX/journal path; committed start boundary, host deadline and frozen window.
-  Monitor opens no DUT, transmits no UART bytes and performs no control action.
-- **Bounds**: Condition 1..256 bytes, timeout 1..4000 ms, examined RX 1..1048576;
-  body 16384, independent HTTP/CLI JSON 1048576 plus CLI LF. Existing 007 HTTP
-  budgets and 008 cursor bounds remain; observation does not bound durable I/O.
-- **Evidence**: Explicit schema-v2/operation-v2 with ordinary journal retention;
-  default v1 factories/four codecs and Profile-v1 preserved without migration.
-  Active reads share the journal; terminal reads remain strictly read-only.
-- **Lifetime**: One strongly owned Monitor, independent of eight reads/eight
-  mutations; marker owners join before writer close. Existing lifecycle facts
-  and permanent reader-cleanup uncertainty remain; end failure is explicit.
-- **Fresh validation**: Final staged gate: 5783 passed in 311.97s, no failures/
-  errors/skips; 527 focused compatibility tests passed. Ruff/mypy 92 files/seven
-  import contracts and 14-archive/four-install module/metadata/entry/lock audit passed.
-- **Current checkpoint**: Final review/staged/installability/privacy checks passed;
-  no software correction. The implementation commit preserves the verified inputs.
-- **Next action**: Await explicit instructions; do not push, start another slice
-  or access physical hardware automatically.
-  T036 final Graphify update is recorded; no later Graphify run was needed.
-- **Acceptance limits**: macOS/arm64 Python 3.14.3 software evidence only. Native
-  Linux/Windows, active-DUT, physical/electrical and Enhanced hardware acceptance
-  remain unexecuted; actual Windows commands remain unsupported.
+- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 remains incomplete.
+- **Committed baseline**: Features001–010 are software-complete on main.
+  Feature010: `:/^Implement client annotations` (`Implement client annotations`),
+  accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569` (Feature009).
+- **Current checkpoint**: Feature010 T001–T024 complete,24/24, with separately
+  authorized final pre-commit review and implementation commit complete.
+  No next implementation slice is selected or authorized.
+- **Implemented010**: Exact bounded attributed client assertions through Core,
+  authenticated service and thin CLI; explicitv3 and ordinary evidence retrieval.
+- **Preserved**: Strictv1/v2/Profile-v1 and oldsix codecs/charges; sole RX/journal/
+  coordinator/clock,005 lifecycle/008 cleanup/009 Monitor timing and security.
+- **Fresh staged gate**:6951 passed in471.58s, zero failures/errors/skips;
+  Ruff/mypy107/seven import contracts, working/staged diff checks clean.
+- **Installed evidence**:529 process cases within that run:153 annotation and376
+  CLI/evidence/Monitor; wheel/sdist, both backend shapes and IPv4/IPv6.
+- **Staged artifact review**:20 archives, six full-stack/two CLI-only installs;
+  all33 module bytes/imports/locked dependencies/metadata/private exclusions pass.
+- **Review/scope**: No defect or product correction;47 intended files only.
+  All236 index blobs exported/checked; executable and governing inputs unchanged
+  during final documentation result recording. No extra full-gate rerun.
+- **Graphify**: T023's one code-only update/recorded warnings remain; no rerun.
+  Generated output/backups/local tooling stay ignored and outside the commit.
+- **Next action**: Await human direction for the next Phase1 slice. Do not start
+  implementation or native/physical acceptance automatically.
+- **Stop boundary**: Commit only completed; nothing pushed, no next slice/hardware.
+- **Acceptance limits**: macOS/arm64 Python3.14.3 software evidence only. Native
+  Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced hardware
+  acceptance remain unexecuted; actual Windows commands remain unsupported.
 - **Deferrals**: Follow, TX/Interact/console, Control, handoff/reconnect, text/regex,
-  annotations/catalogue/history/restart/service management, Enhanced production/MCP/AI.
-  No project, Phase 1, release or physical acceptance completion is claimed.
+  annotation editing/backdating/attachments, catalogue/history/restart/service
+  management, verified identity, Enhanced production/MCP/AI.
 
 ## Repository Baseline
 
@@ -55,6 +52,7 @@ Completed-slice evidence is kept in [development history](development_history.md
 | [007](../specs/007-observation-cli/spec.md) | Thin authenticated Typer observation CLI, bounded HTTP delivery, reported facts and private exits | `a14d1727f5a9a2dd1cab59ac2b662f47919bbe9d` |
 | [008](../specs/008-evidence-retrieval/spec.md) | Bounded authenticated active/terminal evidence retrieval, exact binary pages and read-cleanup ownership | `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701` |
 | [009](../specs/009-receive-only-monitor/spec.md) | Bounded receive-only Monitor, explicit v2 markers, authenticated service/CLI and owned settlement | `:/^Implement receive-only monitor` |
+| [010](../specs/010-client-annotations/spec.md) | Bounded attributed client assertions, explicitv3 evidence, authenticated service/thin CLI and owned insertion | `:/^Implement client annotations` |
 
 All prior implementation commits remain ancestors of feature 007. Its accepted
 parent `c2c9ce3` records feature 006; `b4c5730` is the service implementation.
@@ -77,6 +75,109 @@ Feature 009's implementation commit is `:/^Implement receive-only monitor`,
 `Implement receive-only monitor`, with accepted parent `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701`.
 The title-based reference resolves to the implementation commit; prior baselines
 remain ancestors. Nothing was pushed.
+
+Feature010's implementation commit is `:/^Implement client annotations`, `Implement client annotations`,
+with accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569`. The title-based reference resolves to
+the implementation commit without a self-referential hash; prior baselines remain
+ancestors. Nothing was pushed.
+
+## Completed Feature: Client Annotations (010; Software-Complete)
+
+Artifacts: [spec](../specs/010-client-annotations/spec.md),
+[plan](../specs/010-client-annotations/plan.md),
+[research](../specs/010-client-annotations/research.md),
+[model](../specs/010-client-annotations/data-model.md),
+[contract](../specs/010-client-annotations/contracts/annotations.md),
+[quickstart](../specs/010-client-annotations/quickstart.md),
+[quality checklist](../specs/010-client-annotations/checklists/requirements.md) and
+[tasks](../specs/010-client-annotations/tasks.md).
+
+**Progress: T001–T024 complete (24/24); Feature010 is software-complete.**
+Phase1 remains incomplete. Features001–010 form the committed software baseline.
+Numbering is sequential after009; Git remains main, with no branch hook configured.
+
+Core/runtime/v3 persistence, authenticated service and thin CLI annotation are
+implemented. Assertions remain exact bounded client-supplied context, explicitly
+client_assertion/client_asserted. They use the existing recorder gate, host clock,
+ordinary sequence, retention and active/confirmed-close terminal retrieval. The
+incarnation limiter and per-run strongly owned insertion preserve existing
+005 lifecycle,008 read-cleanup uncertainty and009 Monitor post-ACK timing.
+V1/v2/Profile-v1 and all six prior codecs/charges remain compatible; no migration,
+new backend contract/reader/store, dependency or verified-identity claim.
+Exact product contracts remain in Core and the active010 spec/contract.
+
+Completed checkpoint evidence is summarized below. Detailed RED/GREEN results,
+consumer inventories, corrections, commands and limitations are preserved newest
+first in [development history](development_history.md); counts are separate runs,
+not cumulative and not hardware acceptance.
+
+| Completed checkpoint | Recorded evidence |
+|---|---|
+| T001–T005 foundation | Pure values/codecs and explicitv3 journal/read-only terminal;592 focused/5936 full passed. |
+| T006–T009 coordinator/runtime | T006 RED made GREEN at T007;1264 focused passed. T008's101 RED cases made GREEN at T009 within2720 focused tests. |
+| T010–T013 delivery/US1 | T011:1820 service regressions passed. T013: all300 T012 cases GREEN, end-to-end active/terminal retrieval verified;6552 full passed. |
+| T014–T016 bounds/retention | Four genuine timestamp-provenance failures corrected at T016 with one bounded v3 committed segment descriptor;51 retention/6194 compatibility passed. No unresolved defect. |
+| T017–T019 lifetime/combined hardening |56 Core/44 service new cases already GREEN; no correction needed.3181 focused/6798 full passed, zero failures/errors/skips. |
+| T020 guarded installed flows |529 passed (153 new annotation/376 existing CLI/evidence/Monitor process cases); non-editable wheel/sdist, both backends, IPv4/IPv6. |
+| T021 complete-diff/artifact review | No production/test correction.1276 focused/44 installed passed;14 archives and four stack/two CLI-only installs reviewed; all33 product modules/locked dependencies/private-artifact exclusion verified. |
+| T022 documentation/conformance | Completed evidence/progress/limits reconciled; Core16 and all seven import contracts conform. Documentation/diff/scope checks pass; no new test run or full gate claimed. |
+| T023 final code Graphify | Structural/shared-interface trigger met; one code-only incremental update completed in5.853s:5436 nodes/18055 edges/246 communities, zero tokens.36 code sources stamped; pyproject.toml yields zero nodes. Built-in sequential fallback and graph-health limits recorded in history; outputs/backups/tooling ignored. |
+| T024 fresh final verification |6951 passed in464.54s, zero failures/errors/skips (Core2517/service1903/CLI2531); Ruff/mypy107/seven import contracts/diff pass. Includes all529 installed-process cases.20 fresh archives and six full-stack/two CLI-only installs pass source/metadata/import/locked-dependency/privacy review. No corrective change. |
+
+T024 is the fresh final full gate:6951 passed in464.54s, with Ruff, mypy107
+files, seven import contracts and diff checks clean. Its529 installed-process
+cases include153 annotation and376 existing CLI/evidence/Monitor regressions,
+not an additional test run. Fresh wheel/sdist source/metadata/RECORD/import and
+privacy review passed across20 archives and eight non-editable environments.
+No genuine Feature010 defect or corrective change was found; no full-gate rerun
+was needed while closing T024. The separately authorized staged review/commit is
+recorded below. Software validation does not establish native/physical acceptance
+or Phase1 completion.
+
+**Core §16 conformance:** deterministic annotation admission/limiter/ordering and
+evidence ownership stay in Device Core. Service composition owns the sole backend,
+coordinator and journal; FastAPI/HTTP models and security stay in delivery. The CLI
+uses one authenticated local HTTP request without Core/service imports, direct DUT
+access, policy duplication or retry. Authentication/browser rejection and independent
+read/Monitor ownership remain intact. No MCP/AI/external-program feature was added.
+The existing Service/Core/CLI layer directions and ownership relationships are
+unchanged; internal annotation module additions are documented in the active010
+artifacts. Core and its architecture explanation need no update, and no design
+document was created. T024 import-linter:70 modules/249 dependencies, seven kept/
+zero broken.
+
+T023 evaluated final010 module additions and shared evidence/preparation/runtime/
+delivery interfaces against the tooling trigger. Graphify0.9.48 processed only37
+changed code/configuration paths;18 changed documents were excluded. Its parallel
+workers failed because the temporary launcher lacked a multiprocessing main guard;
+the tool's built-in sequential fallback completed the same invocation. No second
+update, semantic extraction, LLM, force override or direct graph.json read occurred.
+Health diagnostics found392 dangling-endpoint candidates,115 exact duplicates and
+690 undirected same-endpoint collapsed edges; no missing endpoints/self-loops/
+unverified code nodes. These are navigation limits requiring source verification.
+The >5000-node HTML uses246 community nodes;79 stale labels were renamed by hubs.
+All36 selected Python sources have current AST stamps; root pyproject.toml remains
+unstamped after yielding zero nodes. Generated outputs and five curated backups
+remain ignored. All109 source/configuration hashes match task entry.
+
+**Next action: Await human direction for the next Phase1 slice. Do not start
+implementation or native/physical acceptance automatically.**
+No next slice, push or hardware action was authorized by the completed commit task.
+
+T024 task evidence remains /private/tmp/dutchmate-010-t024-96i7fh5x/.
+The separately authorized pre-commit checkpoint freshly validated an exact236-blob
+index export:6951 passed in471.58s, zero failures/errors/skips; Ruff/mypy107/
+seven import contracts/diff clean. Includes all529 installed-process cases. Fresh
+20-archive/eight-install source/metadata/RECORD/import/dependency/privacy review passes.
+Final review found no genuine defect. Scope:16 production,20 test and11 spec/status/
+configuration files. Eight old codec/helper and29 CLI transport definitions retain
+their committed009 AST;219 prior test functions retain coverage, including one
+explicitv2-to-v3 composition-test rename. No unrelated/generated/runtime/credential/
+Graphify/local-tooling file is staged. Final result/commit-baseline documentation
+uses consistency/diff/blob checks under AGENTS8.3; no executable/governing contract
+or validation requirement changed and no extra full-gate rerun was needed.
+Evidence: /private/tmp/dutchmate-010-precommit-q_r9_4w8/. No Graphify rerun, physical hardware/real-account credential
+access, native acceptance, push or next slice. Acceptance limits below remain.
 
 ## Completed Feature: Receive-Only Monitor (009; Software-Complete)
 
@@ -407,8 +508,17 @@ No physical device has been accessed. Safe-open DTR/RTS/glitches, OS/driver
 loss/re-enumeration, non-standard baud, RX load and physical cancellation/close
 require separately authorized acceptance with an identified device/Profile/setup.
 
-Explicit deferrals remain streaming/follow, text/line decoding, regex/multiple conditions,
-annotations/derived views, catalogue/discovery, restart recovery/arbitrary
+Client annotations are accepted010 scope; Core values/v3 persistence/coordinator,
+runtime admission/rate/ownership, production composition and authenticated service
+delivery and thin CLI US1 MVP are implemented. Annotation bound/lifetime hardening
+and the combined T019 full gate are verified, with no further correction after T016.
+T020 guarded installed annotation workflow validation, T021 complete-diff/artifact
+review and T022 documentation/conformance reconciliation are verified. T023 final
+code-only Graphify update is complete with recorded tooling/health limits. T024
+fresh final full gate, installed flows and artifact/privacy/Core/contract review
+passed; Feature010 is software-complete and committed.
+Explicit deferrals beyond010 remain streaming/follow, text/line decoding, regex/multiple conditions,
+annotation editing/backdating/attachments and derived views, catalogue/discovery, restart recovery/arbitrary
 historical browsing, TX/Interact/console, Control, reconnect/handoff, service management,
 Enhanced production, MCP/AI and physical-hardware acceptance. Profile discovery/
 defaults/writing/migration/overlays/reload, durable Profile identity, session management,
@@ -419,11 +529,12 @@ forced abandonment is introduced.
 
 Phase 1 remains incomplete under
 [Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): follow,
-Interact, console, control, handoff, annotations, reconnect and real-DUT acceptance
-remain. Features 001–009 are committed software slices. Bounded Monitor is implemented
-in software-complete 009 after the T037 final gate; it does not establish physical
-Monitor acceptance. Nothing was pushed. Do not start another
-slice or access physical hardware automatically.
+Interact, console, control, handoff, reconnect and real-DUT acceptance remain.
+Feature010 annotation behavior, hardening, installed review and final T024 software
+closure and the separately authorized final pre-commit review/commit are verified.
+Features001–010 are committed software slices. Software-complete009 does not establish
+physical Monitor acceptance. Await human direction for the next Phase1 slice;
+do not access physical hardware or start another slice automatically.
 
 ## References
 

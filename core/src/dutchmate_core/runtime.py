@@ -15,6 +15,14 @@ from dutchmate_core.acquisition import (
     AcquisitionState,
     AcquisitionTerminalTrigger,
 )
+from dutchmate_core.annotation import (
+    AnnotationReceipt,
+    AnnotationRejected,
+    AnnotationRequest,
+    PreparedAnnotationAccess,
+    _AnnotationBudget,
+    _preflight_annotation,
+)
 from dutchmate_core.backend import Backend, BackendFailureKind
 from dutchmate_core.evidence import (
     EvidenceRecorder,
@@ -357,6 +365,7 @@ class PreparedObservationRun:
     backend: Backend
     evidence_access: PreparedEvidenceAccess | None = None
     monitor_access: PreparedMonitorAccess | None = None
+    annotation_access: PreparedAnnotationAccess | None = None
 
 
 def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | None:
@@ -427,6 +436,27 @@ def _monitor_access_matches(
     return True
 
 
+def _annotation_access_matches(
+    access: PreparedAnnotationAccess | None,
+    recorder: ObservationRecorder,
+    session_id: SessionId,
+    policy: SessionPolicy,
+) -> bool:
+    if access is None:
+        return True
+    if not isinstance(access, PreparedAnnotationAccess):
+        return False
+    try:
+        replace(access)
+        return (
+            access.coordinator is recorder
+            and access.session_id == session_id
+            and access.policy == policy
+        )
+    except Exception:
+        return False
+
+
 @dataclass(slots=True)
 class _EvidenceAssociation:
     run_id: RunId
@@ -450,6 +480,13 @@ class _MonitorRun:
 
 
 @dataclass(slots=True)
+class _AnnotationRun:
+    access: PreparedAnnotationAccess
+    request: AnnotationRequest
+    owner: asyncio.Task[AnnotationReceipt] | None = None
+
+
+@dataclass(slots=True)
 class _ObservationGeneration:
     ready: asyncio.Future[RuntimeStatus]
     evidence: _EvidenceAssociation
@@ -461,6 +498,9 @@ class _ObservationGeneration:
     monitor_access: PreparedMonitorAccess | None = None
     monitor_sealed: bool = False
     monitor: _MonitorRun | None = None
+    annotation_access: PreparedAnnotationAccess | None = None
+    annotation_sealed: bool = False
+    annotation: _AnnotationRun | None = None
 
 
 def _running_loop() -> asyncio.AbstractEventLoop:
@@ -491,6 +531,8 @@ class ObservationRuntime:
         self._reads: set[asyncio.Task[RunEvidencePage]] = set()
         self._evidence_read_cleanup_confirmed = True
         self._monitors_sealed = False
+        self._annotations_sealed = False
+        self._annotation_budget = _AnnotationBudget()
 
     @property
     def evidence_read_cleanup_confirmed(self) -> bool:
@@ -697,6 +739,116 @@ class ObservationRuntime:
             await asyncio.gather(asyncio.shield(pending.owner), return_exceptions=True)
         generation.monitor_access = None
 
+    def _annotation_access(
+        self, generation: _ObservationGeneration
+    ) -> tuple[PreparedAnnotationAccess, str]:
+        access = generation.annotation_access
+        if not isinstance(access, PreparedAnnotationAccess):
+            raise AnnotationRejected("annotation_unavailable")
+        try:
+            replace(access)
+            if (
+                access.session_id != generation.evidence.session_id
+                or access.policy != generation.evidence.policy
+                or access.coordinator.current_provenance is None
+                or not callable(access.coordinator.append_client_annotation)
+                or not callable(access.clock.now_ns)
+                or not callable(access.clock.wait_until)
+            ):
+                raise ValueError("unusable annotation access")
+            origin_id = access.clock.origin_id
+            self._annotation_budget.check_origin(origin_id)
+        except Exception:
+            raise AnnotationRejected("annotation_unavailable") from None
+        return access, origin_id
+
+    async def annotate(self, request: AnnotationRequest) -> AnnotationReceipt:
+        self._guard_context()
+        if not isinstance(request, AnnotationRequest):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        if self._annotations_sealed:
+            raise AnnotationRejected("annotation_unavailable")
+        association = self._evidence_association
+        if association is None or association.session_id is None:
+            raise AnnotationRejected("no_associated_session")
+        if request.session_id != association.session_id:
+            raise AnnotationRejected("session_not_associated")
+        generation = self._generation
+        if (
+            generation is None
+            or self.status().state is not RuntimeState.ACTIVE
+            or generation.annotation_sealed
+        ):
+            raise AnnotationRejected("not_active")
+        access, origin_id = self._annotation_access(generation)
+        _preflight_annotation(access, request, origin_id)
+        if generation.annotation is not None:
+            raise AnnotationRejected("busy")
+        self._annotation_budget.admit(access.clock, origin_id)
+        # No await separates admission accounting from strong owner registration.
+        pending = _AnnotationRun(access, request)
+        generation.annotation = pending
+        owner = asyncio.create_task(
+            self._own_annotation(generation, pending),
+            name=f"dutchmate-annotation-{association.run_id.value}",
+        )
+        pending.owner = owner
+        owner.add_done_callback(self._annotation_settled)
+        try:
+            return await asyncio.shield(owner)
+        except asyncio.CancelledError:
+            while not owner.done():
+                try:
+                    await asyncio.shield(owner)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not owner.cancelled():
+                owner.exception()
+            raise
+
+    def _annotation_settled(self, owner: asyncio.Task[AnnotationReceipt]) -> None:
+        self._guard_context()
+        if not owner.cancelled():
+            owner.exception()
+
+    async def _own_annotation(
+        self, generation: _ObservationGeneration, pending: _AnnotationRun
+    ) -> AnnotationReceipt:
+        try:
+            # Already admitted session context survives ACTIVE/segment sealing.
+            record = await pending.access.coordinator.append_client_annotation(
+                pending.request.client_surface, pending.request.text
+            )
+            return AnnotationReceipt(
+                generation.evidence.run_id.value,
+                pending.request.session_id,
+                EvidenceReference(pending.request.session_id, record.sequence),
+                record,
+            )
+        except JournalFailure:
+            raise
+        except Exception:
+            raise RuntimeError("annotation internal failure") from None
+        finally:
+            if generation.annotation is pending:
+                generation.annotation = None
+
+    def _seal_annotations(self) -> None:
+        """Permanently seal new incarnation admission, without cancelling owners."""
+        self._guard_context()
+        self._annotations_sealed = True
+        if self._generation is not None:
+            self._generation.annotation_sealed = True
+
+    async def _join_annotation(self, generation: _ObservationGeneration) -> None:
+        pending = generation.annotation
+        if pending is not None:
+            assert pending.owner is not None
+            await asyncio.gather(asyncio.shield(pending.owner), return_exceptions=True)
+        generation.annotation_access = None
+
     async def read_record(self, reference: EvidenceReference) -> RunEvidencePage:
         self._guard_context()
         if not isinstance(reference, EvidenceReference):
@@ -888,6 +1040,7 @@ class ObservationRuntime:
         if self._generation is not generation:
             return
         generation.monitor_sealed = True
+        generation.annotation_sealed = True
         self._latch_monitor_stop(generation, MonitorOutcome.DETACHED)
         if self._summary.stop_intent is RuntimeStopIntent.NONE:
             self._summary = replace(
@@ -1035,6 +1188,12 @@ class ObservationRuntime:
                                 session_id,
                                 policy,
                             )
+                            or not _annotation_access_matches(
+                                prepared.annotation_access,
+                                prepared.recorder,
+                                session_id,
+                                policy,
+                            )
                         ):
                             self._startup_failure(
                                 generation,
@@ -1045,6 +1204,7 @@ class ObservationRuntime:
                             )
                         else:
                             generation.monitor_access = prepared.monitor_access
+                            generation.annotation_access = prepared.annotation_access
                             if prepared.evidence_access is not None:
                                 association.live_reader = (
                                     prepared.evidence_access.live_reader
@@ -1091,6 +1251,7 @@ class ObservationRuntime:
         async with self._lock:
             self._summary = replace(self.status(), state=RuntimeState.DETACHING)
             generation.monitor_sealed = True
+            generation.annotation_sealed = True
         joined_snapshot: AcquisitionSnapshot | None = None
         if generation.acquisition is not None:
             try:
@@ -1116,7 +1277,8 @@ class ObservationRuntime:
             # before the recorder is closed. No direct second backend close.
             joined_snapshot = await generation.acquisition.join_terminated()
         await self._join_monitor(generation, joined_snapshot)
-        # Acquisition and Monitor are joined. Seal before awaiting pinned reads;
+        await self._join_annotation(generation)
+        # Acquisition, Monitor and annotations joined. Seal before pinned reads;
         # no lifecycle lock spans these joins or recorder close. Terminal access
         # retains only opaque target metadata for its separately planned reader.
         association = generation.evidence

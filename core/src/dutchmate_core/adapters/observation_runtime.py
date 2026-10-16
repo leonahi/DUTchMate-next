@@ -9,6 +9,7 @@ from dutchmate_core.adapters.basic_serial import BasicSerialBackend
 from dutchmate_core.adapters.monotonic_clock import MonotonicMonitorClock
 from dutchmate_core.adapters.sqlite_evidence import (
     SqliteEvidenceJournal,
+    charge_client_annotation,
     charge_monitor_markers,
 )
 from dutchmate_core.adapters.terminal_evidence import (
@@ -16,6 +17,7 @@ from dutchmate_core.adapters.terminal_evidence import (
     open_terminal_reader,
 )
 from dutchmate_core.adapters.toml_profile import resolve_profile
+from dutchmate_core.annotation import PreparedAnnotationAccess
 from dutchmate_core.backend import NormalizedBackendFailure
 from dutchmate_core.evidence import JournalFailure, JournalFailureKind, JournalOperation
 from dutchmate_core.evidence_access import PreparedEvidenceAccess
@@ -55,7 +57,7 @@ async def attach_basic_observation(
 
     async def prepare(profile: ResolvedDutProfile) -> PreparedObservationRun:
         try:
-            journal = await SqliteEvidenceJournal.create_v2(
+            journal = await SqliteEvidenceJournal.create_v3(
                 explicit_journal_path, profile.session_policy
             )
         except Exception as error:
@@ -78,7 +80,7 @@ async def attach_basic_observation(
                     explicit_journal_path,
                     session_id=journal.session_id,
                     policy=journal.policy,
-                    expected_schema_version=2,
+                    expected_schema_version=3,
                 )
             except Exception:
                 target = None
@@ -110,6 +112,13 @@ async def attach_basic_observation(
                         coordinator=coordinator,
                         clock=clock,
                         charge_markers=charge_monitor_markers,
+                    ),
+                    annotation_access=PreparedAnnotationAccess(
+                        session_id=journal.session_id,
+                        policy=journal.policy,
+                        coordinator=coordinator,
+                        clock=clock,
+                        charge_annotation=charge_client_annotation,
                     ),
                 )
             except Exception as error:

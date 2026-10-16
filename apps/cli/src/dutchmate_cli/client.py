@@ -11,7 +11,7 @@ from typing import Literal, NoReturn, cast
 
 import httpx
 
-from dutchmate_cli import evidence, monitor
+from dutchmate_cli import annotation, evidence, monitor
 from dutchmate_cli.context import AttachPaths, CliFailure, CliFailureKind, Endpoint
 
 type RequestOutcome = Literal["not_submitted", "unknown", "report_received"]
@@ -418,6 +418,43 @@ async def exchange_monitor(
         delivery=delivery,
         validate=_monitor_reply,
         reject=_monitor_error,
+    )
+
+
+def _annotation_reply(value: object) -> object:
+    try:
+        return annotation.reply(value)
+    except ValueError, TypeError, RecursionError:
+        pass
+    _invalid()
+
+
+def _annotation_error(value: object, status: int) -> object:
+    try:
+        if not annotation.recognized_error(value, status):
+            _remote_error(value, status)
+    except ValueError, TypeError, RecursionError:
+        _invalid()
+    error = _object(_object(value, {"error"})["error"], {"source", "code"})
+    return {"error": {"source": error["source"], "code": error["code"]}}
+
+
+async def exchange_annotation(
+    *,
+    endpoint: Endpoint,
+    request_body: dict[str, object],
+    credential: str,
+    delivery: DeliveryState,
+) -> tuple[int, bytes]:
+    return await _deliver(
+        endpoint=endpoint,
+        method="POST",
+        route="/v1/observation/annotations",
+        request_body=request_body,
+        credential=credential,
+        delivery=delivery,
+        validate=_annotation_reply,
+        reject=_annotation_error,
     )
 
 

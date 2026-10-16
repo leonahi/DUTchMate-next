@@ -3,6 +3,1613 @@
 Completed slice records are kept newest first. Current status and next work live
 only in `docs/development_status.md`.
 
+## 2026-10-16 — Feature 010 final pre-commit review and implementation commit
+
+Completed the separately authorized final pre-commit review and commit only.
+Reviewed the complete47-file010 change set against governing Core14–18/22.2/23,
+active spec/plan/contracts/model/completed24 tasks, completed003/005–009 contracts
+and current status. No genuine defect was found; no production/test/configuration,
+dependency/lock, schema, architecture or governing-contract correction was needed.
+Feature010 is software-complete. Phase1 remains incomplete; no next slice selected.
+
+Committed scope:16 production modules,20 tests and11 spec/status/configuration files.
+Core exact attributed client assertions, narrow gated insertion and incarnation
+limiter/strong ownership; explicitv3 journal/terminal support preserving strictv1/v2
+and oldsix codecs/charges; authenticated literal service route/shared mutation slot/
+stop sealing; thin annotate command and one closed evidence variant; focused/
+backend-neutral/retention/lifetime/security/installed tests and010 artifacts.
+Eight legacy codec/charge/JSON AST bodies and29 existing CLI transport definitions
+remain unchanged from009.219 old test functions retain coverage, including the
+documented production-composition test rename fromv2 tov3. Acquisition, normalized
+backend/Basic/Profile/bootstrap/server/credential paths, all package declarations
+and uv.lock remain unchanged. No deferred workflow or new dependency was included.
+
+Staged exactly47 reviewed paths, inspected staged names/stat/diff and ran
+git diff --cached --check. No unrelated/generated/runtime/credential/Graphify/
+local-tooling file is included. Exported all236 index blobs into /private/tmp/dutchmate-010-precommit-q_r9_4w8/staged/;
+blob/content hashes match the index and working tree. Fresh verification runs from
+this isolated staged snapshot with existing physical/account tripwires. Initial
+offline environment setup lacked the locked mypy wheel and stopped before tests;
+approved uv sync --locked fetched existing locked dependencies, without a lockfile
+or version change. The resumed gate runs offline, RTK/uv --locked --no-sync.
+
+Fresh staged gate: Ruff clean; mypy107 source files clean; import-linter70 files/
+249 dependencies, seven kept/zero broken; pytest6951 passed in471.58s, zero
+failures/errors/skips (Core2517/service1903/CLI2531). Includes529 installed-process
+cases:153 annotation/112 CLI/111 evidence/153 Monitor, wheel/sdist, both backend
+shapes and numeric IPv4/IPv6. No production correction or extra full-gate rerun.
+
+Independent staged artifact/privacy audit passes20 fresh archives (ten wheels/ten
+sdists):eight CLI/six Core/six service archives, all package/format combinations.
+Exact all33 product module bytes/sets, metadata/dependencies/Python bounds/entry
+points, wheel RECORD and sdist contents agree. Fresh guarded outside-cwd imports
+pass in six full-stack installs (three wheel/three sdist) and two CLI-only installs
+(one each format). Dependencies match uv.lock; no mandatory editable/checkout import,
+machine path, runtime/database/credential/private-key/generated/Graphify/tooling
+member or recognized secret pattern. No resource/credential/network/hardware work
+from guarded import probes. Evidence/scripts/logs/XML/hashes and initial setup
+failure remain under /private/tmp/dutchmate-010-precommit-q_r9_4w8/.
+
+Reconciled current status and six010 artifact progress annotations with completed
+review/commit evidence. Title-based implementation reference `:/^Implement client annotations`,
+message **Implement client annotations**, accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569`
+(Feature009), avoids embedding a self-referential commit hash. Prior history,
+completed001–009 records,24 task definitions/checkboxes, normative requirements/
+contracts/model rules and quickstart validation commands are unchanged. Final
+working/staged diff, documentation/link/progress/privacy and all236 index-blob
+checks pass; all228 non-documentation-closure blobs retain their validated bytes.
+Resume Here remains below40 lines. Documentation-only result/baseline recording
+follows AGENTS8.3 without another full gate. T023's update/warnings remain recorded;
+no Graphify command or hook ran during this commit task.
+
+No push, next slice, physical hardware/device discovery or real-account credential
+access. macOS/arm64 Python3.14.3 software evidence only. Native Linux/Windows,
+active-DUT, physical/electrical/safe-open DTR/RTS and Enhanced hardware acceptance
+remain unexecuted; actual Windows commands remain unsupported. Simulated Enhanced
+proves software neutrality only. Phase1 still requires Follow, Interact/console,
+Control, handoff/reconnect and real-DUT acceptance. Stopped after the authorized
+implementation commit; no native/physical acceptance was automatically selected.
+
+## 2026-10-16 — Feature 010 T024 fresh final software verification complete
+
+Completed only T024;24/24 tasks complete. Feature010 is software-complete and
+uncommitted, ready for separately authorized final pre-commit review. Phase1 remains
+incomplete. Reviewed governing Core14–18/22.2/23, active010 spec/plan/model/contract/
+quickstart/tasks, completed003/005–009 compatibility contracts, full intended diff
+and current status. Applied verification-before-completion. No genuine010 defect
+was found; no production/test/shared-fake/configuration/dependency/architecture or
+governing-contract correction, no full-gate rerun and no Graphify rerun.
+
+Fresh final gate, through RTK and uv run --locked --no-sync with UV_OFFLINE=1:
+
+- ruff check .: all checks passed.
+- mypy .: no issues in107 source files.
+- lint-imports:70 files/249 dependencies, seven kept/zero broken; no weakened rule.
+- pytest -q --basetemp=/private/tmp/dutchmate-010-t024-96i7fh5x/full
+  --junitxml=/private/tmp/dutchmate-010-t024-96i7fh5x/full.xml:6951 passed in464.54s
+  (terminal summary), zero failures/errors/skips. XML confirms Core2517/service1903/
+  CLI2531 and6951 cases; XML suite time464.454s, command wall465.931s.
+- git diff --check: passed before and after observed-evidence documentation closure.
+
+The initial sandbox launch stopped before Ruff initialized: uv could not open
+/Users/nahitpawar/.cache/uv/sdists-v9/.git (Operation not permitted). No software gate
+tool ran in that launch. The approved elevated invocation used the populated cache
+offline and completed the single final full gate above. This was an infrastructure
+access issue, not a product failure or corrective executable change. Original failure
+evidence remains /private/tmp/dutchmate-010-t024-8avsu1jo/; successful final evidence
+is /private/tmp/dutchmate-010-t024-96i7fh5x/.
+
+All529 guarded installed-process regressions passed within that same full run:
+153 annotation,112 existing CLI,111 evidence and153 Monitor. These are a subset of
+6951, not another run. They build non-editable wheel/sdist stacks, run outside the
+checkout using test-owned account/DUT/journal/loopback fixtures, and cover both
+backend shapes/IPv4/IPv6, static help, one authenticated annotate, exact Unicode/
+attribution/host-time/reference, active/confirmed-close terminal retrieval/expiry,
+ambient binary RX, fixed limits/private errors, response loss/no retry, SIGINT/
+closed pipes and strongly owned joined shutdown. Existing real-account and physical
+serial/discovery tripwires stayed active. No manual service/DUT command was run.
+
+Fresh artifact/privacy/installability audit reviewed all20 produced archives:
+ten wheels/ten sdists, eight CLI/six Core/six service archives across duplicated
+fixture builds, covering all six package/format combinations. Exact all33 product
+module bytes, complete annotation modules, package names/version/Python/dependency
+metadata, CLI entry point, wheel RECORD hashes/sizes and every sdist member match
+the intended source/configuration. No editable/checkout path assumption, undeclared
+source import, machine path, runtime/database/credential/private-key/generated/
+Graphify/tooling member or recognized secret pattern was found. All installed
+dependencies match uv.lock.
+
+Fresh guarded import probes passed in eight non-editable environments: six full
+stacks (three wheel/three sdist) import all33 exact-byte product modules, two CLI-only
+installs (one each format) import all seven CLI modules. All module paths are inside
+their installed environment, direct_url metadata is non-editable artifact-based,
+and outside-cwd probes perform no account credential read/network/hardware work.
+No extra process-test rerun was necessary; these audits use the full gate's fresh
+artifacts/environments. Scripts, XML, logs, archive hashes/metadata, import-probe
+results, commands and review/scope evidence remain outside checkout at the path above.
+
+Final Core/contract review confirms exact attributed client assertions without
+truth/action/identity promotion; host insertion time distinct from admission/commit/
+backend time; ordinary sequence/retention/expiry/bounded retrieval; explicitv3 and
+strict v1/v2/Profile-v1; shared gate/clock/writer/RX; bounded incarnation limiter and
+one owned insertion; seal/join before close without lifecycle-lock waits; unchanged
+005 facts/008 read-cleanup uncertainty/009 fresh post-ACK Monitor publication.
+Service security/readiness-before-body, no-store/private fixed errors, shared eight
+mutation jobs/independent reads/Monitor and thin one-request/no-retry CLI remain.
+Backend neutrality stays fixture-proven only; no new backend method/identity branch,
+Enhanced implementation, external-program execution, MCP/AI or other deferred work.
+
+Eight legacy codec/charge/canonical-JSON function AST bodies and ten acquisition/
+backend/Profile/bootstrap/server/credential/lock/Core baseline files are unchanged
+from committed009. All236 nonignored entry files were unchanged through the gate
+and final source/privacy review. Closure changes only eight documentation files:
+current status/history plus010 spec/plan/tasks/model/contract/quickstart progress.
+All109 source/configuration hashes remain identical. Only T024 is newly checked;
+normative requirements/contracts, task definitions, validation requirements and
+quickstart commands remain unchanged. Prior history and committed001–009 baseline/
+completed008/009 records are preserved. Documentation progress/link/whitespace/diff
+and scope checks pass, with Resume Here below40 lines. AGENTS8.3 permits this
+observed-evidence closure without repeating the successful gate.
+
+Stopped after T024. No staging, commit, push, next slice, Graphify operation, physical
+hardware/device discovery or real-account credential access. Native Linux/Windows,
+active-DUT, physical/electrical/safe-open DTR/RTS and Enhanced hardware acceptance
+remain unexecuted; actual Windows commands remain unsupported. Simulated Enhanced
+proves software neutrality only. Phase1 still requires Follow, Interact/console,
+Control, handoff/reconnect and real-DUT acceptance. Final pre-commit review/commit
+needs separate authorization; no native/physical acceptance was automatically selected.
+
+## 2026-10-16 — Feature 010 T023 final code-only incremental Graphify reconciliation
+
+Completed only T023;23/24 tasks complete. Read docs/agent_tooling.md, the local
+Graphify skill/update runbook and verification-before-completion skill. Final010
+adds Core annotation, service annotation_http and CLI annotation modules, plus
+shared evidence unions/v3 codecs, prepared access, coordinator/runtime ownership
+and delivery interfaces. These satisfy the structural/shared-interface trigger.
+The completed009 run was not treated as010 evidence. No production/test/configuration,
+governing contract, architecture, dependency or package change was made.
+
+Verified installed Graphify0.9.48 through its existing uv-tool interpreter. Fresh
+AST incremental preflight found236 files/447085 words:123 code/configuration and
+113 documents, no paper/image/video,55 changed inputs (37 code/configuration and
+18 documents), zero deletions and zero skipped-sensitive files. Selected exactly
+37 changed code/configuration paths:16 production modules,20 tests and root
+pyproject.toml. Documents were excluded from extraction; unchanged code remained
+read-only resolution context. Existing ignore rules remained active.
+
+Ran one outer _rebuild_code(Path('.'), changed_paths=selected, force=False,
+block_on_lock=True) invocation, using the installed incremental updater and normal
+locking/shrink safeguards, as in the prior repository workflow. No full rebuild,
+semantic extraction, sub-agent, LLM/API, force override, cluster-only/relabel run,
+second invocation or retry. The observer restores the original build function
+during diagnostics, avoiding the previous009 observer recursion; a pure in-memory
+check preceded the update. It produced one merged pre-cluster diagnostic pass and
+one graph/report/HTML publication. Actual run13:15:20–13:15:26 UTC,5.853s, success=True.
+
+The temporary file-based launcher lacked an if __name__ == '__main__' guard.
+macOS multiprocessing workers re-imported it and failed its existing-lock assertion;
+Graphify reported BrokenProcessPool and used its built-in sequential extraction
+fallback within that same invocation. The update then completed successfully; no
+new outer attempt or repaired-launcher retry was run. The in-memory observer check
+also emitted a missing-source_file warning for its synthetic one-node fixture;
+this was not repository extraction. No installed tooling was patched. Both actual
+extraction and the cost record consumed zero LLM tokens. The launcher and audits
+remain outside checkout under /private/tmp/dutchmate-010-t023-*.
+
+Report counts changed from4947 nodes/16016 edges/207 communities to5436 nodes/
+18055 edges/246 communities (+489/+2039/+39). Graph-health diagnostics:19092 raw
+edges,18700 valid candidates,392 dangling-endpoint candidates,115 exact duplicates,
+682 directed and690 undirected same-endpoint collapsed edges across559 groups.
+Missing endpoints, self-loops and unverified code nodes are all0. These are graph
+navigation integrity limits; inferred relationships require source verification.
+No product correctness or architecture conclusion is inferred from these links.
+All36 selected Python sources have exact current-content AST stamps. Root
+pyproject.toml again yields zero nodes and remains unstamped; no retry conceals it.
+
+The report shows190 of246 communities, omitting56 thin communities. Its corpus
+count is234 versus detector236; these tool counts are recorded separately, neither
+means document extraction occurred. Reported cohesion ranges0.02–0.67; extraction
+is87% EXTRACTED/13% INFERRED,2266 inferred edges averaging0.92 confidence. Graphify
+renamed79 stale community labels by deterministic hubs; no LLM label refresh. The
+>5000-node warning preceded HTML rendering, which uses246 community nodes and577
+cross-community edges. Generated graph/report/HTML/labels/signatures/manifest/cost
+and five curated backups under ignored graphify-out/2026-10-16 remain excluded.
+The required old-graph backup was copied without parsing and removed after success;
+the process lock/pending queue are absent. No graph.json was read directly by the
+agent, and no graph query/export/update beyond this invocation was run.
+
+Fresh verification through RTK/uv: output existence, exact36 AST content hashes,
+ignored/untracked generated outputs/backups/local tooling, source/configuration
+hashes, progress/task definitions, normative contract/model bodies, quickstart
+commands, history/baselines, local documentation links and git diff --check pass.
+All109 source/configuration files match task entry; only eight documentation files
+change progress/history/result annotations. Prior history and committed001–009
+baseline/completed008/009 sections remain unchanged. Resume Here remains below40
+lines. Evidence/entry copies/preflight/result/diagnostics/consistency audit:
+/private/tmp/dutchmate-010-t023-d0s74niw/.
+
+No focused pytest/full gate was rerun: this task changes tooling outputs and
+observed-evidence documentation only, without executable/governing-contract or
+validation-requirement changes. T019's6798 full passes remain historical evidence;
+T024's fresh final full gate/installability/artifact/privacy review is unstarted.
+Only T023 is newly checked; Feature010 and Phase1 remain incomplete. No commit,
+push, next slice, real-account credential/device access or physical-hardware action.
+Native Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced hardware
+acceptance remain unexecuted; actual Windows commands remain unsupported. Stopped
+after T023, before T024.
+
+## 2026-10-16 — Feature 010 T022 completed-evidence documentation and Core16 conformance
+
+Completed only T022;22/24 tasks complete. T023/T024 remain unchecked and unstarted;
+Feature010 and Phase1 remain incomplete. No final software-readiness, commit/release,
+native or physical acceptance claim. All committed001–009 feature references were
+resolved and verified as ancestors of unchanged main/HEAD2fdebaf4aa3df815be9f2ce223c832e70c739569.
+Repository Baseline and completed008/009 sections are byte-identical to T022 entry.
+
+Reconciled docs/development_status.md and active010 spec/plan/tasks/contract/model/
+research/quickstart progress annotations with actually completed evidence. Replaced
+current010's repeated detailed task chronology with a compact checkpoint summary;
+all prior RED/GREEN, correction, compatibility-consumer and validation records remain
+unaltered in this history. Resume Here stays below40 lines and names only T023 as
+the next authorized-scope boundary. Fixed stale spec/plan hardening-pending wording,
+qualified research findings as their committed001–009 planning snapshot, and removed
+status wording that still treated010 as planning-only or annotations as unimplemented.
+The quality checklist already identifies its boxes as specification review only;
+it was reviewed and left unchanged. Normative requirements/contracts, task definitions,
+validation obligations, quickstart commands and product behavior are unchanged.
+
+Recorded evidence remains historical, not new test runs: T019 full6798 passed in
+334.30s; T020 installed529 passed in356.01s; T021 focused1276 passed in9.29s and
+installed44 passed in37.55s, each zero failures/errors/skips. Read their saved XML
+and cross-checked counts; T021's archive/import evidence covers14 archives, four
+non-editable full stacks and two CLI-only installs, all33 product modules and
+locked dependencies/private-artifact exclusion. T024 fresh final gate has not run.
+T016's four genuine provenance failures are corrected; no unresolved production
+defect is demonstrated. Prior initial RED/harness/cache failures remain honestly
+recorded with their subsequent resolutions rather than erased.
+
+Core16 conformance review confirms deterministic annotation policy/admission/rate/
+ordering/evidence in Core; service ownership and FastAPI/local HTTP composition;
+unchanged caller authentication/browser rejection; and a thin CLI with no Core/
+service imports, DUT reader, policy duplication or retry. Existing sole RX/journal/
+clock and005/008/009 ownership/cleanup semantics remain. No MCP, AI or external-
+program behavior. Core16 delivery/ownership/dependency-direction relationships are
+unchanged; internal annotation module additions are documented in active010
+artifacts. Existing Core/rationale architecture documentation remains unchanged
+and no new design or architecture document was created.
+
+Fresh validation: uv run --locked --no-sync lint-imports kept all seven contracts,
+zero broken (70 modules/249 dependencies); documentation links/progress/task-boundary/
+evidence consistency, final diff/whitespace and scope audits passed. All109 Python/
+configuration hashes match T022 entry; no production/test/shared-fake/dependency edit.
+No focused pytest or full gate rerun: documentation-only observed-evidence updates
+follow AGENTS8.3; no executable/governing-contract or validation requirement changed.
+Evidence/commands/entry copies and consistency/scope audit are outside checkout:
+/private/tmp/dutchmate-010-t022-omskozq4/.
+
+Stopped after T022, before T023; no Graphify query/update/evaluation task was run,
+and no output/tooling artifact was added. No commit/push, next slice, physical
+hardware/device discovery, real-account credential access or native acceptance.
+macOS/arm64 software evidence only. Native Linux/Windows, active-DUT, physical/
+electrical/safe-open and Enhanced hardware acceptance remain unexecuted; actual
+Windows commands remain unsupported. All Follow/TX/Interact/console/Control/
+handoff/reconnect and other010 deferrals remain deferred.
+
+## 2026-10-16 — Feature 010 T021 complete-diff, artifact and guarded quickstart review
+
+Completed only T021;21/24 tasks complete and T022–T024 remain unchecked. Review
+against governing Core, active010 artifacts, completed003/005–009 contracts and
+current status found no genuine Feature010 production defect. All109 pre-existing
+Python/config files match T021 entry; no production, test, shared-helper/fake,
+dependency/lock, schema or normative-contract correction. Feature010 and Phase1
+remain incomplete. Architecture/import contracts were not weakened.
+
+Reviewed complete production diff and all three new annotation modules, affected
+consumers/test changes and the new test matrix. Confirmed explicit v3 plus strict
+v1/v2 and exact oldsix codecs/charges; one bounded committed segment descriptor
+preserving retention timestamp provenance; ordinary quotas/expiry/pages/ceilings;
+exact attributed client assertions and insertion-boundary host time/sequence;
+bounded admission/rate state and no refunds; same coordinator/writer/RX/clock;
+strong per-run ownership and shield/join/seal order, with005 lifecycle/008 permanent
+read-cleanup facts and009 fresh post-ACK Monitor time preserved. Exact route,
+security/readiness-before-body/no-store/private errors, closed bounded projections,
+eight shared mutations versus independent reads/Monitor and final bootstrap order
+remain intact. CLI validates locally, fixes cli attribution and submits once without
+Core imports, retries, transport ownership or duplicated runtime policy.
+Eight legacy codec/charge/JSON functions are AST-identical to committed009;
+acquisition/backend/Profile/bootstrap/server/credential code, lockfile and Core
+remain unchanged. Full scope/compatibility review notes are saved with evidence.
+
+Fresh guarded validation through RTK/uv --locked --no-sync:
+
+- Focused values/codec/journal/terminal/coordinator/runtime/retention/lifetime/
+  integration/service/CLI selection: **1276 passed in9.29s**
+  (Core713/service262/CLI301), zero failures/errors/skips.
+- Fresh non-editable wheel/sdist package metadata/help/exact annotation/ambient RX/
+  active/terminal retained/expired flows: **44 passed in37.55s**, zero failures/
+  errors/skips. Both backend shapes and IPv4/IPv6; test-owned accounts/journals/DUT
+  fixtures and independent parent/child physical/discovery/account guards.
+- Fresh repository Ruff passed, mypy107 source files passed, all seven import
+  contracts kept (70 modules/249 dependencies); final diff/whitespace/scope and
+  quickstart command/path/node/observed-result consistency checks pass.
+
+Artifact/privacy review passed14 fresh archives (CLI3 wheel/3 sdist, Core2/2,
+service2/2): complete source member sets/bytes, Name/Version/Python/dependency
+metadata, CLI entry point, wheel RECORD hashes/sizes and safe archive membership.
+Hatchling canonicalizes requirement ordering and uv includes the root.gitignore
+in package sdists; review compares those established representations correctly.
+Sdists intentionally include repository test source/configuration. No private,
+credential, runtime, generated cache, Graphify or hardcoded local-path artifact.
+Four isolated non-editable stack installs (two wheel/two sdist) import all33 product
+modules outside checkout with matching bytes; two CLI-only installs import seven
+CLI modules. Every installed dependency version matches uv.lock. Import probes use
+child guards and forbid physical/discovery/account/network/bind/listen side effects.
+Packaging used the populated offline uv cache; artifacts/import audits stayed outside
+checkout. No installability correction or source-path/editable fallback.
+
+Reconciled quickstart.md to executable guarded pytest selections and observed
+results, removing accumulated historical task prose and the placeholder manual
+service/CLI invocation. Defined full checkpoints/safety/deferrals remain unchanged;
+T020's529-test installed run is historical, T019 remains the last full gate and
+fresh final T024 is pending. Reconciled only completed progress/status introductions
+and this record. No corrective executable/governing-contract change required a full
+repository gate rerun; T021 did not claim one. No new test or requirement was added.
+Evidence/logs/XML/commands/archive manifests/import/compatibility/scope review:
+/private/tmp/dutchmate-010-t021-68qs1cdr/.
+
+Stopped before T022 status/architecture reconciliation; it remains unexecuted.
+No Graphify, commit/push, physical hardware/device discovery, real account credential
+access, native acceptance or other slice. macOS/arm64 software evidence only;
+native Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced hardware
+acceptance remain unexecuted, and actual Windows commands remain unsupported.
+
+## 2026-10-16 — Feature 010 T020 guarded installed annotation validation
+
+Completed only T020;20/24 tasks complete, T021–T024 unchecked. Added only
+apps/cli/tests/test_cli_annotations_process.py (153 cases). All108 pre-existing
+Python/config files match T020 entry; no production/shared-helper/fake/dependency/
+configuration or normative-contract change. Feature010 and Phase1 remain incomplete.
+
+Reused007/008 non-editable wheel/sdist artifacts/installed-stack helpers, outside-cwd
+CLI/native-loopback service children and independent parent/child physical/account
+guards. All three packages import from the isolated install; the thin CLI never
+imports Core. Test-only clock retains the real origin and controls exact rate time;
+append gates retain real SQLite commits/ACK semantics and existing strong owners.
+Only fake DUT, nondeterministic clock and intentional failure/delivery boundaries
+are controlled. Both Basic/Enhanced-shaped fixtures and IPv4/IPv6 run identically.
+
+Coverage catches resource access during static root/annotate help or invalid inputs;
+exact1024-byte Unicode/decomposed accent/CR/LF/tab and one-byte tab receipts;
+closed client_assertion/cli/client_asserted attribution, host-origin/time/reference
+identity and canonical JSON+LF; one authenticated POST without ancillary requests;
+active/confirmed-close read-only terminal record/page retrieval and ordinary expiry;
+unchanged binary ambient RX/sole owner/reader; ten admissions, fixed429/no retry and
+exact oldest+one-second admission; real auth/Host/browser rejection before insertion;
+private journal/unexpected errors, ambiguous append failure and retained record;
+closed/malformed/oversized/exact-bound replies; SIGINT before/pending/after receipt,
+repeated cancellation, busy while ACK pending, closed stdout/stderr and actual
+response loss after one exchange; committed record retrieval without rollback or
+retry; disconnected client plus repeated service signals retains credentials and
+bootstrap/recorder ownership until ACK, then joined clean close.
+
+Fresh validation through RTK/uv --locked --no-sync:
+
+- Initial guarded smoke:10 pass,2 test-harness failures,141 deselected in14.60s.
+  Annotation fault names remained active when inherited evidence peer injection
+  ran; reset controls before explicit reads. Corrected two-case smoke:2 pass,
+  151 deselected in6.84s. No product correction or weakened guard/assertion.
+  Focused mypy caught new-test string/int variable reuse; renamed the string
+  variable, preserving strict typing.
+- Full required installed selection: **529 passed in 356.01s**, zero failures/errors/skips;
+  153 new annotation cases plus376 existing test_cli_process.py,
+  test_cli_evidence_process.py and test_cli_monitor_process.py regressions.
+  Populated UV_CACHE_DIR=/Users/nahitpawar/.cache/uv, UV_OFFLINE=1; approved cache/
+  test-owned loopback access. No network dependency resolution or real service state.
+- Focused Ruff check/format check and mypy (one new source file) passed; final
+  git diff --check, untracked whitespace, protected-file hashes and task/doc/scope
+  checks pass. Existing helpers and architecture/configuration remain unchanged.
+  No broader cross-cutting issue; full repository gate is not required for T020.
+  Last full checkpoint is T019, fresh final verification remains T024.
+
+Reconciled actually completed markers/status introductions and observed results
+in spec/plan/tasks/quickstart/contract/model plus current status and this record;
+no task definition or normative body changed. Complete-feature/archive review at
+T021 was not performed. Logs/XML/commands/test review/scope evidence live outside
+the checkout at /private/tmp/dutchmate-010-t020-_g17u6r5/.
+
+Stopped before T021. No Graphify, commit/push, physical device/discovery/real account
+credential access or native acceptance. macOS/arm64 software fixtures establish
+contracts only; native Linux/Windows, active-DUT, physical/electrical/safe-open and
+Enhanced hardware acceptance remain unexecuted; actual Windows commands unsupported.
+
+## 2026-10-16 — Feature 010 T019 combined US2/US3 hardening checkpoint
+
+Completed only T019;19/24 tasks complete and T020–T024 remain unchecked.
+T017/T018 and fresh validation expose no genuine production defect. Recorded the
+required no-change result: all108 existing Python/config files match T019 entry,
+with no production, test, shared-fake, dependency, schema or public-contract edit.
+No new implementation or test file. Feature010 and Phase1 remain incomplete.
+
+Fresh validation through RTK/uv --locked --no-sync:
+
+- Required annotation lifetime/runtime/recording/retention and focused005/006/008/009
+  lifecycle/read/Monitor/security/composition regressions: **3181 passed in49.67s**
+  (Core1406/service1775), including all56 Core T017 and44 service T018 new cases;
+  zero failures/errors/skips and no unexpected passing/failing case.
+- Full combined US2/US3 repository gate: **6798 passed in334.30s**
+  (Core2517/service1903/CLI2378), zero failures/errors/skips. This includes the
+  existing guarded007/008/009 installed wheel/sdist/outside-cwd regressions.
+  Populated UV_CACHE_DIR=/Users/nahitpawar/.cache/uv with UV_OFFLINE=1 allowed
+  existing isolated builds without network/cache churn; focused/static commands
+  used /private/tmp/dutchmate-uv-cache. Approved sandbox access permits test-owned
+  loopback subprocesses and cache reads; no real device/account/discovery access.
+- Repository Ruff passed; mypy passed106 source files; import-linter kept all seven
+  contracts (70 modules/249 dependencies); git diff --check passed. Full production,
+  affected-consumer/test, quickstart and final artifact/privacy/diff review is clean.
+
+Review confirms sole RX/coordinator/journal, same-journal active reads and read-only
+terminal readers; strict v1/v2/v3 dispatch, old codec/charge and retention semantics;
+exact attributed assertions and honest committed-segment provenance; bounded rate
+state and strong owned insertion; cancellation/delivery-loss joins, synchronous stop
+seal and preserved005/008 cleanup facts; unchanged009 post-ACK timing; strict
+HTTP/CLI projections, security-before-body/no-store/private errors, independent
+read/Monitor limits and shared mutation ownership. Thin CLI remains one request
+without retry or transport ownership. Architecture contracts were not weakened.
+No unrelated/generated/runtime/credential/Graphify file is in the intended change set.
+
+Reconciled completed markers and observed evidence only in status/history, spec,
+plan, tasks and quickstart. Corrected stale implementation-status introductions in
+the annotation contract and data model; their normative bodies remain byte-identical.
+Removed stale current-status wording about already-corrected retention gaps. Final
+document consistency, task boundary, protected-file hashes and diff checks follow
+the successful executable gate; AGENTS8.3 does not require rerunning it for this
+observed-result bookkeeping. Evidence/commands/logs and scope review are outside
+the checkout at /private/tmp/dutchmate-010-t019-4gn_j13b/.
+
+T020's new installed annotation flows were not authored or run; its file remains
+absent. That task covers guarded non-editable wheel/sdist outside-cwd annotate/
+retrieval/expiry/rate/error/signal/output/response-loss flows with fake DUT/journal/
+account roots and existing007/008/009 installed regressions. No automatic continuation.
+No Graphify, commit/push, native acceptance or physical hardware action. Native
+Linux/Windows, active-DUT, electrical/safe-open and Enhanced hardware acceptance
+remain unexecuted; software fixtures demonstrate contracts only.
+
+## 2026-10-16 — Feature 010 T018 service lifetime/security test hardening
+
+Completed only T018 test authoring;18/24 tasks complete, T019–T024 unchecked.
+Added five parameterized functions/44 cases to
+apps/service/tests/test_annotation_lifetime.py, with the necessary test-helper
+imports and existing t011_composition fixture re-export. Original helpers/tests
+retain identical ASTs and body bytes. No production, shared fake, other existing
+test, configuration/dependency or public-contract change. No new Python file.
+All44 cases are already GREEN; no genuine production defect or artificial RED.
+Feature010 and Phase1 remain incomplete; combined full checkpoint is T019.
+
+Added coverage:
+
+- Twelve full-pool shutdown cases (IPv4/IPv6 × cancelled/disconnected deliveries
+  × three release orders) hold four annotations/four lifecycle mutations/eight
+  reads/one Monitor. Ninth shared mutation and independent read/Monitor overflow
+  reject; authentication still precedes body/capacity. Shutdown joins every
+  admitted kind, survives repeated lifespan-waiter cancellation, keeps final
+  detach unpublished while any pool is pending and retains bootstrap ownership.
+- Four service-registered/pre-Core races use a real active runtime and temporary
+  v3 journal. Stop seals annotation synchronously before any further await; a
+  delayed, already registered service job then rejects annotation_unavailable
+  without admission samples/preflight/append. Lost delivery cannot skip this
+  check or make final detach overtake the job. Exactly one normal backend/journal
+  cleanup follows; no fabricated annotation or input echo.
+- Eight late-error cases combine client loss with a journal IO error or unknown
+  failure carrying private content/token/path/SQL in detail, notes and cause.
+  Seven pending sibling lifecycle jobs remain owned; only the failed annotation's
+  shared slot is reused. An alive caller sees the exact fixed private envelope,
+  successful reuse works, and no content/credential/unhandled task error is logged.
+- Sixteen launcher cases use actual service/Core/production explicitv3 composition,
+  both backend-shaped fixtures, commit/ACK gates, cancellation/disconnect and an
+  optional prior terminal-reader close failure. Repeated signals only request
+  orderly stop; pending annotations keep credentials/bootstrap owned until ACK,
+  final detach and joined writer close. Exact acknowledged records survive
+  read-only terminal readback. Old008 read-cleanup uncertainty survives a fresh
+  attach and successful annotation, leaves capture/attach facts honest and blocks
+  a clean owner marker; ordinary confirmed cleanup permits the clean marker.
+  Credential invalidation, socket close and guard release retain006 ordering.
+- Four real CLI stdout cases use the existing guarded CLI/ASGI bridge, both
+  backend shapes and OSError/BrokenPipeError outputs. The actual authenticated
+  service commits once and returns200/no-store before local output_failed with
+  report_received. One request/receipt output attempt, no rollback/retry, exact
+  client_assertion/client_asserted text is retrievable and acquisition stays active
+  with one backend open/RX consumer. No duplicate transport/annotation policy.
+
+All backends, sockets and accounts are test-owned. Real hardware/discovery and
+real-account guards remain active; the CLI bridge additionally forbids real
+socket connections. Launcher sockets/signals are existing controlled fixtures,
+not native/physical acceptance or signals to the pytest process.
+
+Fresh validation through RTK/uv --locked --no-sync and the temporary cache:
+
+- Initial three-group selection:24 pass. First complete matrix:28 pass/16 test-
+  authoring failures from inspecting a loop-bound runtime property after its
+  launcher loop had closed. The guard correctly rejected wrong_execution_context.
+  Corrected only the new assertion to use the existing final fact captured on
+  the owner loop; no guard bypass or production change.
+- Final new selection: **44 passed**,22 prior cases deselected in0.92s, zero
+  failures/errors/skips. Existing annotation lifetime cases were left intact.
+- Required service006/008/009 shutdown/security/evidence/Monitor/lifecycle tests,
+  plus existing CLI stdout/stderr compatibility cases: **1906 passed in55.06s**,
+  service1903/CLI3, zero failures/errors/skips. All1862 selected existing cases pass.
+- Focused Ruff check, Ruff format --check and mypy(assigned test file) pass.
+  Final test/diff/privacy, working/new-file whitespace, scope and progress checks
+  pass. Of108 protected Python/config hashes, only the assigned test file differs;
+  no other Python file changed or was created. Exact commands, logs/XML, original
+  snapshot and added-test diff: /private/tmp/dutchmate-010-t018-78ukicr9/.
+
+Updated only completed task/spec/plan/quickstart/current status/history markers;
+no normative contract or architecture change. No full repository gate: T018 is
+bounded test authoring, exposes no broader issue and stops before T019's combined
+US2/US3 full checkpoint. No Graphify, physical hardware, native acceptance, commit
+or push. Native Linux/Windows, active-DUT, physical/electrical and Enhanced hardware
+acceptance remain outstanding.
+
+T019 scope was reported, not executed: correct only defects demonstrated by
+T017/T018 in Core runtime.py/monitor.py/annotation.py and service app.py or
+annotation_http.py as proven necessary; otherwise record no-change. Neither task
+currently demonstrates a genuine production defect. Preserve005 lifecycle/008
+cleanup/009 post-ACK timing and honest capture/release facts. Run new lifetime
+cases, required focused lifecycle/read/Monitor/security regressions, the full
+combined US2/US3 gate and final diff review; record the hardening checkpoint.
+Stopped after T018, before T019.
+
+## 2026-10-16 — Feature 010 T017 Core lifetime/race test hardening
+
+Completed only T017 test authoring;17/24 tasks complete, T018–T024 unchecked.
+Added core/tests/contract/test_annotation_lifetime.py:56 cases across both backend
+shapes, all already GREEN after test-harness corrections. No newly exposed
+production failure, artificial RED, skip, xfail or weakened contract. Production,
+configuration/dependencies, shared fakes and all existing tests remain unchanged.
+Feature010 and Phase1 remain incomplete; full hardening checkpoint remains T019.
+
+Tests use the existing Case/RuntimeJournal/SampledClock/backend fixtures, actual
+runtime/coordinator and real temporaryv3 journal. Test-owned gates pause real
+boundaries and always release during cleanup; no test implements admission,
+lifecycle, limiter or Monitor policy. Added coverage:
+
+- Two cases cancel the actual caller Task before its first coroutine step. No
+  preflight/sample/append, terminal evidence has only segment boundaries, and a
+  subsequent session on the same runtime still admits ten annotations.
+- Thirty-two cases pause admitted owners before insertion or after actual ACK;
+  combine detach/autonomous disconnect, repeated cancelled or retained waiters,
+  synchronous permanent seal, and before-/after-commit failures. Segment-end can
+  precede an already admitted assertion; close waits for the owner. Success pins
+  the original run/session/sequence and insertion-boundary time. A failed or
+  cancelled delivery never returns a fabricated receipt; after-commit ambiguity
+  may retain one real record, while before-commit failure retains none. No retry.
+- Eight native SQLite worker cases pause before/after commit on the journal's
+  real executor thread. Repeated waiter loss does not abandon submitted work;
+  concurrent same-journal reads and detach/autonomous disconnect join before
+  writer close. Active/terminal readback preserves the actual annotation and
+  segment boundaries with one backend open/RX consumer. Terminal opener asserts
+  confirmed writer close; no alternate live connection/physical reader is added.
+- Four cases hold a real read operation pending while annotation and segment-end
+  settle. Normal/repeatedly cancelled read waiters remain joined; newly sealed
+  reads and a competing attach reject promptly while cleanup waits, proving no
+  lifecycle lock is held across the read join and close cannot overtake it.
+- Six cases combine a pending annotation with uncertain writer close, transport
+  release or terminal-reader close. Existing005/008 independent facts remain:
+  unconfirmed writer close blocks terminal access; uncertain physical release
+  permits confirmed-close evidence without attach eligibility; terminal-reader
+  cleanup uncertainty discards delivery and permanently seals future reads without
+  rewriting capture status or attach eligibility.
+- Four cases combine a cancelled annotation waiter and ACK/lost-ACK with an
+  existing Monitor RX prefix. Positive publication independently observes a fresh
+  post-ACK time beyond the sleeping deadline; failed ACK publishes nothing until
+  the existing timer wakes. No timeout extension, false match/loss/RX accounting
+  or ambient-byte removal; exact PA and SS+binary output remain evidence.
+
+Fresh validation using RTK/uv --locked --no-sync and the temporary cache:
+
+- New file: **56 passed in0.41s**, zero failures/errors/skips. Initial run had
+ 48 test-authoring failures/eight passes from a read limit exceeding the existing
+  fixture policy and invalid Core-versus-wire type/field assumptions. Corrected
+  only the new helper/assertions/imports/types; no production fix was warranted.
+- Required15-file focused005/008/009 lifetime/read/Monitor/composition plus
+  annotation runtime/recording/live/terminal regressions: **1355 passed in5.96s**,
+  zero failures/errors/skips. All1299 existing selected cases pass.
+- Ruff check, Ruff format --check and mypy(new file) pass. Final test/diff review,
+  new-file whitespace, scope and task/status consistency checks pass. All107
+  pre-task protected Python/config hashes match; the new lifetime test is the
+  only new Python file. Logs/XML, exact commands and scope snapshot remain outside
+  the checkout at /private/tmp/dutchmate-010-t017-aiatljwk/.
+
+Updated only actually completed task/spec/plan/quickstart/current status/history
+markers; no governing-contract or architecture change. No full repository gate:
+test-only T017 exposed no broader issue; the combined checkpoint is T019. No
+Graphify, physical hardware, native acceptance, commit or push. Native Linux/
+Windows, active-DUT, physical/electrical and Enhanced acceptance remain outstanding.
+
+T018 scope was reported, not executed: add service stop/security/privacy races in
+apps/service/tests/test_annotation_lifetime.py: shared mutation overflow, jobs
+registered before Core admission, synchronous stop seal, owned work after HTTP
+disconnect and unavailable stdout, private normalized errors/no content/credential/
+path/SQL logging, unchanged read/Monitor slots and final bootstrap ownership.
+Run focused006/008/009 shutdown/security regressions; no production edits.
+Stopped after T017, before T018.
+
+## 2026-10-16 — Feature 010 T016 retention timestamp-provenance correction
+
+Completed only T016;16/24 tasks complete, T017–T024 unchecked. Corrected the four
+T014 failures without changing their assertions; T015 exposed no delivery defect
+and its files remain unchanged. Feature010 and Phase1 remain incomplete; the
+combined US2/US3 full checkpoint remains T019.
+
+Reproduced the exact T014 baseline:45 retention cases,41 pass/four RED. On both
+backend shapes, record quota1 with host-only markers and byte quota allowing a
+maximum annotation to evict SegmentStarted before RX left no retained provenance
+anchor. _timestamp_endpoint_for_candidate then returned NULL for later RX rows,
+so rolling expiry lost their known backend descriptors despite correct counts/
+charges/bytes. Core14.5 and003 contract6 require these timestamp endpoints with
+provenance;010 introduces no exception.
+
+Minimal correction and affected-consumer inventory:
+
+- core/src/dutchmate_core/adapters/sqlite_evidence.py is the only production file
+  changed. Explicitv3 writers hold one private worker-owned connection/segment
+  identity plus timestamp descriptor, independent of the rolling retained tail.
+  Only committed SegmentStarted changes it; an append after reopen may seed it
+  from an actually retained descriptor before eviction. A timestamped candidate
+  can use the descriptor only for its matching stream identity. The ordinary RX/
+  observer-loss row cache persists it, and ordinary coalesced markers retain the
+  exact first/last discarded observations with separate origins/domains.
+- core/tests/contract/test_annotation_retention.py appends two parameterized
+  functions/six cases. They cover both backend shapes, reopen before anchor
+  eviction, different segment origins even with the same domain ID, no false
+  origin on another stream, failed segment insertion after mutation rolling back
+  both evidence and descriptor state, and durable reopen/read-only terminal marker
+  equality. Existing45 cases/bytes/assertions remain an unchanged prefix. Expected
+  endpoints use fixture descriptors and literal observation values, not the
+  production lookup algorithm. Corrected a test-only literal byte total23 and
+  allowed honest absent/known-old provenance rather than requiring a cache layout.
+- core/tests/integration/test_monitor.py: its existing
+  test_old_active_read_api_and_marker_appends_share_actual_journal_worker wrapper
+  and the worker pause wrapper in the shutdown race now accept/forward the
+  optional private timestamp_context argument. Their original ownership/timing/
+  shutdown assertions remain intact; no cast/Any/typing weakening or new behavior.
+- Unchanged consumers: normalized values/codecs/evidence unions, acquisition,
+  coordinator/runtime/composition, read-only terminal adapter and service/CLI.
+  No schema/table/column/record-byte/charge/quota/public API change, no annotation
+  backend timestamps, no added journal/reader, no v1/v2 factory broadening.
+  No recovery/migration or guessing descriptors absent from retained evidence.
+
+The new six cases fail against the uncorrected adapter (six failures/45 deselected
+in0.17s), and pass with the fixed adapter. A controlled reverse/restore check
+verified this with byte-identical restoration of the fixed production file.
+Fresh final retention run: **51 passed**. Focused retention plus existing live
+Monitor integration:137 passed in0.88s. No failures were skipped or xfailed.
+
+Required003/005–009 and annotation compatibility selection, using all Core tests
+plus focused service/CLI evidence/security/read/Monitor/lifecycle/annotation
+regressions: **6194 passed in90.88s**, Core2461/service1731/CLI2002, zero failures,
+errors or skips. This includes all T014/T015 cases and old v1/v2/recovery/terminal/
+worker-cancellation/read-cleanup/lifecycle contracts. Existing test-owned loopback
+and hardware/discovery/real-account guards remained active. No installed/native/
+physical acceptance was selected. Exact selection/commands, logs/XML, entry
+snapshot and correction diff: /private/tmp/dutchmate-010-t016-5bbpt0kr/.
+
+Repository Ruff check., mypy105 files and all seven import contracts (70 files,
+249 dependencies) pass. Focused test formatting, final correction/consumer review,
+working/new-file whitespace and scope/progress checks pass. Of107 protected
+Python/config files, only the adapter and two listed test files changed. No
+shared fake/config/dependency/delivery production change. Unrelated formatting
+introduced by a whole-file formatter was removed before final verification.
+
+Updated only actually completed task/spec/plan/quickstart/status/history markers;
+no normative contract revision or architecture change. No full repository pytest
+or installability gate: this is the narrow, private v3 correction assigned to
+T016, with no broader issue exposed; the full combined checkpoint remains T019.
+No Graphify, physical hardware, commit, push or next task. Native Linux/Windows,
+active-DUT, physical/electrical and Enhanced hardware acceptance remain outstanding.
+
+T017 scope was reported, not executed: add Core ownership/cleanup race tests in
+core/tests/contract/test_annotation_lifetime.py for cancellation before/after
+admission/submission/ACK, repeated cancelled waiters, ambiguous append/no fabricated
+reference, segment_end before bound insertion settles, detach/autonomous-stop
+join order, no post-seal admission, cleanup uncertainty, same-journal reads and
+delayed-append Monitor timing. Run focused005/008/009 lifetime/read regressions;
+no production behavior changes. Stopped after T016, before T017.
+
+## 2026-10-16 — Feature 010 T015 service/CLI edge-test hardening
+
+Completed only T015 test authoring;15/24 tasks complete, T016–T024 unchecked.
+Appended39 parameter cases to apps/service/tests/test_annotation_http.py and40
+cases to apps/cli/tests/test_cli_annotations.py. Existing bytes remain unchanged
+prefixes; all original helper/test ASTs are identical. No production/configuration,
+dependency, shared fake or Core test change. All79 new cases were already GREEN;
+no newly exposed failure, artificial RED, skip, xfail or weakened assertion.
+
+Coverage added:
+
+- Composed/decomposed Unicode, whitespace/CR/LF/tab, JSON-looking identity/time
+  claims and external-action/path/shell-looking assertions preserve exact text.
+  Fixed client_assertion/client_asserted facts never promote truth or identity;
+  HTTP accepts declaredcli/http without attesting a process or principal.
+- Plausible caller timestamp/origin/class/basis/version/principal/PID overrides
+  reject before Core; CLI exposes no identity/time override. Confusable/mixed-case/
+  NUL surface spellings reject rather than normalize. Retrieved core assertions
+  reject extra identity/time/provenance/version fields through both read commands.
+- Maximum legal escaped session256/text1024 UTF-8 fields, split inside an escape,
+  exercise actual16384/16385-byte body limits against misleading Content-Length.
+  Maximum1024-control text plus large valid run identifiers exercise independent
+ 1048575/1048576/1048577-byte whole receipt limits: HTTP whole413 and CLI private
+  invalid_response, without trimming, refetch, retry or mutating acknowledged facts.
+- Annotation pages across all three surfaces preserve snapshot/charges and exact
+  canonical1024-byte cursors, reject oversized canonical1026 replies as whole413,
+  and reject1025-byte input before Core. CLI forwards opaque1024-byte input and
+  rejects an oversized reply. Explicit smaller-budget continuation after remote413
+  reuses the same cursor; every invocation submits exactly one request.
+- Four real-v3 joined Core/ASGI/CLI cases (both backend shapes × IPv4/IPv6) insert
+  a direct-Core assertion, then retrieve its exact text/core surface/host origin/
+  insertion time through authenticated record/page commands while active and after
+  confirmed writer close. Active reads use the same journal; terminal reads use
+  fresh read-only connections. One backend open/RX consumer, no HTTP annotation
+  submission or extra reader, no verified author/action/time inferred from text.
+
+Fresh validation (RTK/uv --locked --no-sync, temporary uv cache):
+
+- New T015 selection: **79 passed**,418 deselected in1.18s, zero failures/errors/skips.
+- Required18-file annotation/service/bootstrap/security/read/Monitor/lifecycle and
+  CLI command/context/transport/evidence/Monitor/lifecycle selection:
+  **3861 passed in81.88s**, zero failures/errors/skips. All3782 selected prior
+  regressions pass. Test-owned loopback process checks used the authorized sandbox
+  exception; hardware/discovery/real-account guards remained active.
+- Ruff check, Ruff format --check and mypy(two test files) pass. Working/new-file
+  whitespace checks, final added-test review and progress/scope consistency pass.
+  Of107 protected Python/config hashes, only the two assigned test files differ;
+  original bytes and all previous definitions are preserved. Exact test commands,
+  logs and scope snapshot remain outside the checkout at
+  /private/tmp/dutchmate-010-t015-3bc0gyfy/.
+
+Four known T014 retention-provenance failures remain unchanged and deferred to
+T016; they were not rerun or hidden by this delivery-only selection. No full gate:
+T015 is test-only, exposed no broader issue, and the combined checkpoint is T019.
+T013's full gate remains historical evidence, not a claim that current Core is
+GREEN. Updated task/spec/plan/quickstart progress and current status/history only;
+no governing-contract change. No Graphify, physical hardware, native acceptance,
+commit or push. Feature010 and Phase1 remain incomplete.
+
+T016 scope was reported, not executed: correct only genuine T014/T015 defects in
+corresponding annotation values/runtime/coordinator/journal/terminal/service/CLI
+files listed in plan.md; no change where no defect is demonstrated. Current
+known scope is the four T014 retention timestamp-provenance failures; T015 adds
+none. Add focused evidence per correction, inventory changed consumers, rerun
+affected003/005–009 regressions and record bounded/retention results in history.
+No unrelated refactor/new feature; combined full checkpoint follows at T019.
+Stopped after T015, before T016.
+
+## 2026-10-16 — Feature 010 T014 Core boundary/retention test hardening
+
+Completed only T014 test authoring;14/24 tasks complete, T015–T024 unchecked.
+Added core/tests/contract/test_annotation_retention.py (45 cases) and appended
+three parameterized functions to test_annotation_runtime.py (16 cases). All prior
+runtime bytes remain an unchanged prefix; existing assertions/helpers are intact.
+No production, configuration, dependency, shared fake, service or CLI change.
+
+All61 new cases ran: **57 already GREEN, four genuine retention RED**. This is
+test-hardening completion, not a GREEN implementation checkpoint or feature
+readiness claim. Retained failures belong to separately authorized T016 correction.
+
+Already-GREEN cases:
+
+- 14 exact text cases: valid1/1024 UTF-8 ASCII/multibyte/emoji/escaped/control/
+  combining forms preserve bytes through realv3 BLOB/charge and confirmed-close
+  read-only terminal retrieval;1025-byte/empty/NUL/surrogate requests/drafts reject.
+- 12 mixed rolling suffix/reopen cases (retained count2..7, both backend shapes)
+  preserve RX bytes, annotation/marker order, exact coalesced counters, backend
+  timestamp provenance and selected-v3 retained Monitor-pair validation. A following
+  timestamped RX remains valid across close/reopen with host-only annotations.
+- Two byte-quota cases prove annotations evict RX without pins; three retained
+  annotation charge cases accept exact two-record equality/one-byte-over budget
+  and evict another record when one byte short. Exact ordinary charges and no RX/
+  backend timestamp telemetry are attributed to host-only records.
+- Eight zero-record shortage cases preserve expired/partial/complete/not_found
+  outcomes, frozen high-water, range identity, exact next-record charge and
+  continuation positions. Two snapshot cases exclude later annotations, report
+  snapshot expiry honestly and reject another session's cursor without chasing
+  the new head.
+- Four runtime cases use the real v3 maximum-width timestamp charge, not a
+  replacement charge callback: conservative one-byte shortage rejects before
+  clock/admission, equality accepts1024-byte text, no rejected-attempt budget loss.
+- Eight runtime cases use staggered admissions near signed64 maximum, then
+  backwards/bool/overflow/changed-origin checks: preserve history, prune exactly
+  nine old samples at equality, retain the tenth sample and admit only nine more.
+- Four runtime cases combine before/after-commit tenth-attempt failure with a new
+  session/reattach and all three surfaces: no budget refund/reset, ambiguous
+  committed evidence remains distinguishable and exact rolling equality reopens
+  ten slots. Existing capture/lifecycle/read-cleanup facts remain unchanged.
+
+Four preserved failing parameter cases (two scenarios, both backend shapes):
+
+- test_every_mixed_suffix_reopens_with_exact_expiry_and_host_only_annotations
+  with max_retained_records=1: markers evict the segment anchor before RX.
+  Expired prefix0..6 includes RX timestamps11/12 and19 exact RX bytes, but both
+  marker timestamp endpoints are None rather than their known backend domains.
+- test_byte_quota_has_no_annotation_pinning_and_coalesces_mixed_expiry with
+  annotation_first=True: a legal1024-byte annotation evicts SegmentStarted before
+  RX. Repeated mixed rolling expiry keeps exact counts/bytes but loses timestamp123
+  and its descriptor. The reverse RX-first order is already GREEN.
+
+Source/contract diagnosis: _timestamp_endpoint_for_candidate scans retained
+records, skips operation/annotation records and returns None after the last
+segment/RX provenance anchor is gone. Core14.5 and003 FR-019/contract6 require the
+first/last discarded timestamped observation with provenance when present;010
+adds no retention exception. Assertions were not weakened, skipped or xfailed.
+No production fix or new persistence contract was attempted. These are the only
+final failures and are recorded for T016 alongside any later T015 findings.
+
+Fresh validation, RTK/uv --locked --no-sync with the temporary cache:
+
+- New+existing runtime selection:155 passed/four known RED in4.41s. During authoring,
+  corrected test-only insertion placement, an out-of-policy read bound and its
+  paginated readback range; old test bytes restored and all old bodies preserved.
+- Required new plus focused003/008/009 codec/journal/terminal/read/runtime/
+  recording/recovery/live regressions: **1497 passed/four known RED in6.31s**,
+  zero errors/skips. XML classification:57 new pass/four new RED; all1440 existing
+  cases pass. The exact selected24-file command and XML/logs are retained outside
+  the checkout at /private/tmp/dutchmate-010-t014-bq3rf859/.
+- Ruff check, Ruff format --check and mypy(two test files) clean; working/new-file
+  diff checks, unchanged-prefix/scope audit and marker consistency checks pass.
+  Of106 protected Python/config hashes, only test_annotation_runtime.py differs;
+  test_annotation_retention.py is the only new Python file. All production and
+  shared fakes/config match task entry.
+
+Updated observed progress in task/spec/plan/quickstart/current status/history;
+no normative contract change. No full repository gate: T014 is the bounded
+test-only hardening step; no correction is authorized here and the known RED
+cases must remain visible for T016. T013's6552-pass gate is historical evidence,
+not a claim that the expanded current suite is GREEN. No Graphify, physical
+hardware, native acceptance, commit or push. Feature010 and Phase1 incomplete.
+
+T015 scope was reported, not executed: service test_annotation_http.py and CLI
+test_cli_annotations.py delivery-limit/attribution/retrieval edge matrices; no
+normalization or truth/identity promotion, wrong surfaces/fields/time overrides,
+escaped-body boundary, whole-response413/cursor behavior and core-origin assertion
+retrieval. Required focused service/CLI plus006–009 evidence/security regressions;
+no production edits. Stopped before T015; T016 remains the separate correction task.
+
+## 2026-10-16 — Feature 010 T013 thin CLI/US1 MVP GREEN
+
+Completed only T013;13/24 tasks complete, T014–T024 unchecked. US1 software MVP
+is verified through Core/authenticated service/thin CLI, including active and
+confirmed-close terminal retrieval. Feature010 and Phase1 remain incomplete.
+
+Production changes are limited to four CLI files:
+
+- New annotation.py: bounded exact session/text inputs, fixed cli declaration,
+  canonical closed receipt/reference/annotation projection, session/sequence
+  identity checks and annotation-only fixed errors including429. It imports only
+  existing CLI wire/context helpers, never Core/service, rate or retention policy.
+- main.py: required annotate --session/--text command; local validation before
+  credentials, one exchange, existing output/exit/SIGINT handling and static help.
+- client.py: annotation-specific reply/error wrappers and literal POST route over
+  the unchanged private007 finite transport: credential once, HTTP/1/numeric
+  Host/Bearer, no proxy/redirect/retry,5s phases/one10s total, bounded raw/JSON+LF
+  output and private request-outcome/error behavior. Existing handlers unchanged.
+- evidence.py: one new client_annotation variant/shared exact UTF-8 text checker;
+  strict class/basis/surface/host UUID/counters. Core surface allowed on retrieved
+  evidence only, no invented backend provenance/verified identity. AST comparison
+  confirms the old six branches are unchanged after excluding the additive branch.
+
+Extended only test_cli_annotations.py with four joined US1 backend/family cases,
+one composition helper and three receipt-session regressions. The original T012
+function/class bodies are AST-identical. Actual console/Typer/HTTPX delivery is
+bridged solely at the external HTTP hop to the real authenticated ASGI service
+and Core runtime/coordinator with one temporary explicitv3 journal. Both Basic and
+Enhanced-shaped fixtures, identically over IPv4/IPv6, prove exact Unicode/CR/LF
+assertion facts/order/host insertion time, binary ambient RX preserved, one POST/
+no implicit fetch, same-journal active reads, writer-close ACK before fresh private
+mode=ro terminal connections and unchanged lifecycle/read-cleanup facts. Backend
+open/RX-consumer tripwires prevent another owner; physical/account guards remain.
+
+Focused review caught receipt session bounds missing from the initial projection
+when session and reference matched. Three NUL/ASCII/multibyte overflow cases were
+observed RED, then made GREEN by reusing the existing bounded session validator
+in the new receipt only. No old evidence/Monitor/session validator was broadened.
+No Core, service, acquisition/backend/Profile, dependency/lock, shared fake or
+architecture-contract change during T013. Package-level contracts cover the new
+CLI module without configuration changes or exemptions.
+
+Fresh RTK/uv --locked --no-sync evidence:
+
+- Reproduced original T012 RED:202 expected failures/600 passes in4.81s.
+- Initial CLI/evidence GREEN:802 passed in3.97s; joined US1 matrix:4 passed in0.38s.
+- Broader007/008/009 CLI command/lifecycle/context/transport/evidence/Monitor
+  selection:1959 passed in28.01s (before the three extra receipt cases).
+- Final CLI/evidence selection:809 passed in3.41s, including all300 T012 cases,
+  502 existing evidence cases, four joined US1 and three receipt regressions.
+- Full Ruff clean; mypy104 source files clean; import-linter7 kept/0 broken,
+  70 modules/249 dependencies. New module/test formatting and diff/scope checks clean.
+- First full pytest:6180 passed/372 setup errors in104.86s, zero product test
+  failures/skips. All errors came from existing installed fixtures' offline build:
+  temporary UV_CACHE_DIR=/private/tmp/dutchmate-uv-cache lacked Hatchling. Confirmed
+  through JUnit grouping and t018-uv-error.txt, as previously documented at T005.
+- Same offline CLI build succeeded using existing /Users/nahitpawar/.cache/uv.
+  Wheel and sdist include annotation.py, with no runtime/credential/Graphify entries
+  in the reviewed sdist. Moved the test-owned build diagnostic outside the checkout.
+  No code, test, lock/dependency, build rule or validation requirement changed.
+- Fresh required full rerun with the populated cache and isolated loopback/account/
+  hardware guards: **6552 passed in320.16s**, zero failures/errors/skips;
+  Core2394/service1820/CLI2338. This includes existing installed007/008/009 flows.
+  No skipped hardware test is counted as passed.
+
+Full gate commands: uv run ruff check ., uv run mypy ., uv run lint-imports,
+uv run pytest -q --tb=short, git diff --check; RTK wrappers and uv locked/no-sync
+were used. The successful full pytest used the populated cache; earlier focused
+and static checks used the temporary cache. Logs/XML/source snapshots/build probe:
+/private/tmp/dutchmate-010-t013-7meqka6b/ (initial RED XML/log also in /private/tmp).
+
+Diff review/scope audit: of105 pre-task Python/config hashes, only main.py,
+client.py, evidence.py and test_cli_annotations.py differ; annotation.py is the
+only new Python file. Existing command/transport function bodies and old evidence
+branches are unchanged. No unrelated/generated/runtime/credential/Graphify file
+was added. Updated observed task/spec/plan/quickstart/status/history markers only;
+no governing contract change. Documentation-only recording follows AGENTS8.3
+without repeating the successful full gate. No Graphify, physical hardware,
+native Linux/Windows/active-DUT/physical/electrical/Enhanced hardware acceptance,
+commit or push. Annotation installed-process workflow acceptance remains T020;
+its future scope is not satisfied by old installed-flow compatibility tests.
+
+T014 scope was reported, not executed: add test_annotation_retention.py and extend
+test_annotation_runtime.py only as needed. Cover multibyte/escaped/control text
+1/1024/1025, exact rate/pruning/backwards/origin/int64 edges, no refund after admitted
+failure, budget across reattach, max-width charge rejection, marker/RX/annotation
+eviction, coalesced expiry, zero-shortage pages/snapshots/cursor bounds and
+selected-codec retained Monitor pairs. Run new plus003/008/009 focused regressions;
+record already-GREEN cases honestly. Stopped before T014.
+
+## 2026-10-16 — Feature 010 T012 thin-CLI contracts RED
+
+Completed only T012 RED authoring;12/24 tasks complete, T013–T024 unchecked.
+Added apps/cli/tests/test_cli_annotations.py (254 cases) and appended46 additive
+annotation-evidence cases to test_cli_evidence.py. Existing evidence test bytes,
+assertions and helpers are unchanged. No production, configuration, dependency,
+shared fake, runtime/service delivery or CLI implementation change.
+
+Tests exercise actual console/Typer/HTTPX/JSON/output boundaries with the existing
+isolated credential and external transport fixture, hardware/account tripwires
+and Core/service import guard. No command, validator, limiter or policy is supplied
+by a test helper; receipt and evidence fixtures are independent golden wire data.
+
+Coverage: required annotate --session/--text, fixed cli declaration and exact
+one-request literal POST /v1/observation/annotations with canonical body ordering;
+static root/command help on supported/unsupported mocked platforms; no extra
+surface/author/time/file/stdin/follow/output/run options. Invalid grammar and exact
+session/text UTF-8 byte bounds precede platform/account/credential/network I/O.
+Legal whitespace, CR/LF/tab, combining characters, emoji and escaped controls are
+preserved. Response tests cover canonical receipt/reference/annotation fields,
+required/closed nested objects, class/basis/surface/UUID/counter/text domains and
+reference identity. Counter faults preserve matching reference values so identity
+rejection does not mask type validation. Core surfaces are accepted only on
+retrieved evidence; old six variants and the new annotation share one exact page.
+
+New/common/all twenty journal error pairs, including429, use fixed private exit4;
+wrong status/source/code/shape remain invalid_response and old command validators
+reject new annotation errors. Independent1048576-byte raw/output JSON(+one LF)
+boundaries use valid large run identifiers, unrelated to the1024-byte text bound.
+Strict JSON/media/identity,5s phases/one10s absolute budget, one credential read,
+no retry/refetch/cleanup, pre/post-submission SIGINT/faults, output/closed-pipe and
+unusable stderr retain007 outcomes. No receipt claims truth or exactly-once action.
+
+Fresh validation (rtk proxy, env UV_CACHE_DIR=/private/tmp/dutchmate-uv-cache,
+uv run --locked --no-sync):
+
+- Initial pytest test_cli_annotations.py + test_cli_evidence.py:197 expected RED/
+  600 passed in4.67s. Resolved a test-only reused-loop-variable typing diagnostic;
+  strengthened direct counter/surrogate cases and added four legal byte edges plus
+  the single inherited delivery-budget case before final verification.
+- Final pytest apps/cli/tests/test_cli_{annotations,commands,lifecycle,context,
+  transport,evidence,monitor}.py -q --tb=short:1741 passed/214 failed in10.81s,
+  zero errors/skips. XML audit:202 expected new RED (188 absent command/help and14
+  missing annotation evidence acceptance), plus12 pre-existing transport cases
+  denied at test-owned loopback bind by sandbox EPERM. Other1643 existing cases
+  and98 new compatibility guards passed.
+- Unchanged test_cli_transport.py::test_t010_native_status_uses_actual_006_authentication_and_lifespan
+  and ::test_t016_native_default_phase_and_total_limits_end_waiting, with loopback
+  permission:12 passed in19.93s. Thus all1655 selected existing007/008/009
+  regressions pass. No final unexpected failure/error/skip. All300 new cases ran:
+  202 RED/98 passing guards; no artificial RED, xfail or skip.
+- Ruff check and mypy(two changed/new test files) clean; new file and appended
+  evidence code formatting clean; tracked/new-file diff and scope checks clean.
+  Of104 pre-task Python/config hashes, only the append-only evidence test file
+  differs. All production/config/shared fake files match task entry; only new
+  Python file is test_cli_annotations.py.
+
+Logs/XML/source/hash snapshot: /private/tmp/dutchmate-010-t012-0g45bwj_/.
+Recorded observed progress in task/spec/plan/quickstart/current status/history;
+no normative contract change. No full repository or installed-artifact gate:
+T012 is the focused RED checkpoint, no broader product issue was exposed, and
+the task-defined full MVP checkpoint is T013. No Graphify, hardware, real account
+credentials, native Linux/Windows acceptance, commit or push. The loopback cases
+are isolated local software evidence. Feature010 and Phase1 remain incomplete.
+CLI annotation behavior remains unimplemented. Stopped before T013.
+
+T013 scope was reported, not executed: thin command/closed reply and error
+validation/single evidence variant in new CLI annotation.py plus existing
+main.py/client.py/evidence.py. No Core import, client limiter, transport opening,
+status/attach/read loop or retry. Prove US1 with Core/ASGI/CLI fixtures and realv3
+journal on both backend shapes, including active and confirmed-close terminal
+retrieval. Required focused007/008/009 regressions, full gate and diff review;
+record MVP completion without declaring Feature010 complete.
+
+## 2026-10-16 — Feature 010 T011 authenticated service GREEN
+
+Completed only T011;11/24 tasks complete, T012–T024 unchecked. Fresh T010 baseline
+reproduced156 expected RED/23 passes in5.64s before implementation. Made all179
+cases GREEN, preserving006/008/009 behavior and keeping CLI work unimplemented.
+
+Production changes are limited to four service files:
+
+- New annotation_http.py: closed exact session_id/text/client_surface request,
+  HTTP cli/http only, reused strict JSON/media/16384-byte reader and Core content
+  validation. Projects immutable acknowledged receipt/reference/annotation facts
+  with the existing compact bound+1 encoder and1048576-byte whole response cap.
+  Fixed private seven-kind annotation mappings including429; delegates all twenty
+  journal and established runtime mappings, returns annotation/delivery_too_large
+  for receipt overflow and service/internal_failure for unexpected faults.
+- app.py: literal annotation route with readiness before body; extend the existing
+  concrete mutation value union/owner branch so annotations share attach/detach's
+  eight registered jobs. No new pool/queue/registry/framework. Existing retained
+  owner normalization, shield/disconnect semantics and shutdown joins are reused.
+  Install/call/clear the synchronous Core annotation seal with Monitor sealing,
+  before finite shutdown snapshots and final detach.
+- http.py: add only literal POST route and readiness-before-body allowlist entry;
+  security/authentication, old body replay and server/bootstrap policy unchanged.
+- evidence_http.py: one client_annotation branch with exact ordered closed fields;
+  old six projection branches are AST-identical. Existing page/receipt encoders,
+  snapshot/cursor/expiry/charge facts and evidence overflow source stay unchanged.
+
+One test correction was necessary: the first implementation run passed171/failed8
+because T010's shared-capacity attach fixture used relative profile/journal paths.
+Existing006 correctly returned422 before job-capacity admission. Corrected only
+those two values in test_annotation_lifetime.py to absolute test-account-home paths;
+all original assertions are unchanged. The test-only correction preserves006
+validation order rather than accepting malformed input or weakening assertions.
+No other existing test or shared fake changed.
+
+Fresh validation (rtk proxy, env UV_CACHE_DIR=/private/tmp/dutchmate-uv-cache,
+uv run --locked --no-sync):
+
+- pytest apps/service/tests/test_annotation_http.py
+  apps/service/tests/test_annotation_lifetime.py -q --tb=short:179 passed in2.01s.
+- pytest apps/service/tests -q --tb=short:1820 passed in47.18s, zero failures/errors/
+  skips; includes all179 annotation cases plus1641 old service/Monitor/evidence/
+  security regressions. Test-owned loopback access was permitted for the38 guarded
+  process cases, avoiding T010's diagnosed sandbox EPERM. No test or guard bypass.
+- Ruff check across service source and both annotation test files clean; Ruff
+  format --check on four changed source/two annotation test files clean; mypy on
+  service source and both annotation tests clean (10 files).
+- lint-imports:7 kept/0 broken,69 modules/245 dependencies. Existing package-level
+  contracts already cover the new service module; no configuration/exemption change.
+- Working/new-file diff checks and scope audit clean. Of103 existing Python/config
+  hashes, only app.py/http.py/evidence_http.py and the two-value fixture correction
+  differ. Only new Python file is annotation_http.py. Core/CLI, other tests,
+  pyproject/lock/bootstrap/server and shared fakes match task entry.
+
+Evidence/logs/XML/source snapshots: /private/tmp/dutchmate-010-t011-1ak6g94f/.
+Updated only observed task/status/history/progress markers and quickstart's
+implemented-service boundary. No governing contract or architecture decision
+changed. No full repository/CLI/installability gate: focused T011 delivery scope
+exposed no broader cross-cutting defect; the next full checkpoint remains T013.
+No Graphify, physical hardware, native acceptance, commit or push. Feature010
+and Phase1 remain incomplete. Stopped before T012.
+
+T012 scope was reported, not executed: RED thin-CLI annotation tests and additive
+evidence-variant coverage, required grammar/local bounds before credentials, fixed
+cli/static help/one request/no retry, strict receipts/reference/UUID/int/class/basis,
+core surface on retrieved records only,429/fixed errors, bounded canonical JSON+LF
+and existing exit/SIGINT/closed-pipe behavior. Required007/008/009 command/transport/
+evidence regressions; no CLI production implementation.
+
+## 2026-10-16 — Feature 010 T010 service contracts RED
+
+Completed only T010 RED test authoring;10/24 tasks complete, T011–T024 unchecked.
+Added only apps/service/tests/test_annotation_http.py and
+apps/service/tests/test_annotation_lifetime.py (179 cases). No existing test,
+shared fake, production, dependency or configuration change during this task.
+Reused the real app/bootstrap/security path with isolated credentials and hardware
+tripwires; injected only Core result/failure and scheduling boundaries. No HTTP,
+admission, capacity, rate or stop policy is implemented by test helpers.
+
+Coverage: literal POST /v1/observation/annotations and method/raw-path aliases;
+security before stopping/body/Core, no-store and private fixed envelopes; exact
+closed session_id/text/client_surface with cli/http inputs, UTF-8 byte edges and
+unchanged whitespace/CR/LF/combining characters; missing/extra/coerced/invalid
+fields, strict UTF-8/JSON/duplicates/nonfinite/surrogates/media; actual chunked
+16384/16385-byte body independent of Content-Length; seven annotation rejections
+including429, both runtime errors, all twenty JournalFailure mappings and unknown
+faults. Receipt uses acknowledged facts, exact ordered shape and no auto-fetch;
+independent1048575/1048576/1048577 UTF-8 receipt/evidence delivery boundaries.
+Existing record/page routes must project the exact annotation variant, including
+Core-created core surfaces and signed64 sequence/time edges, without invented
+provenance or changing the page envelope.
+
+Lifetime tests cover the existing eight shared annotation/attach/detach mutation
+slots, independent eight reads/one Monitor, cancelled/disconnected delivery with
+strong ownership and reusable capacity, pre-admission delivery loss, synchronous
+incarnation stop seal, registered-before-stop but not Core-admitted calls, and
+joining cancelled-client owners (including late private faults) before final
+detach/bootstrap release. Shutdown assertions use actual service job ownership;
+the immediate stop-seal test calls actual Core rather than replacing its policy.
+
+Fresh evidence (commands prefixed rtk proxy and env
+UV_CACHE_DIR=/private/tmp/dutchmate-uv-cache, uv run --locked --no-sync):
+
+- pytest apps/service/tests -q --tb=short:1630 passed/190 failed in42.89s,
+  zero errors/skips. This includes156 expected T010 RED plus34 existing process
+  failures, all PermissionError EPERM at test-owned loopback port allocation
+  before service startup. All1603 existing non-process regressions passed.
+- Unchanged pytest apps/service/tests/test_service_process.py -q --tb=short,
+  with loopback sandbox access:38 passed in10.47s, zero failures/errors/skips.
+  Thus all1641 existing service/Monitor/evidence/security regressions passed.
+- Final pytest apps/service/tests/test_annotation_http.py
+  apps/service/tests/test_annotation_lifetime.py -q --tb=short:156 expected RED/
+  23 passed in5.74s, zero errors/skips. XML audit attributes134 failures to absent
+  literal route/readiness admission,21 to missing evidence projection and one to
+  the missing synchronous service annotation stop seal. The23 passes are the18
+  already-enforced security cases and five alias rejections; no artificial RED.
+  No unexplained final passing/failing cases. Earlier test-only typing and
+  lifetime setup corrections were resolved without production changes.
+- Focused Ruff check, Ruff format --check, mypy(two new files), tracked and new-file
+  diff checks pass. All101 pre-task Python/config hashes match entry. Only these
+  two new Python files were added. Logs/XML/scope snapshot remain outside the
+  repository: /private/tmp/dutchmate-010-t010-czfbyaoi/.
+
+Recorded only observed completion/status markers in tasks/spec/plan and current
+status/history; no normative contract change. No full repository gate: this is
+the bounded T010 RED checkpoint, with no broader product defect exposed. The
+process EPERM was an environment restriction resolved by the unchanged rerun.
+No Graphify, physical hardware, native acceptance, commit or push. Service/CLI
+annotation delivery remains unimplemented; Feature010 and Phase1 remain incomplete.
+
+T011 scope, not executed: make these tests GREEN in new service annotation_http.py
+and existing app.py/http.py/evidence_http.py: literal route/readiness allowlist,
+strict body/closed receipt/fixed errors, existing shared mutation registration/
+ownership, synchronous annotation stop seal, exactly one evidence variant. Preserve
+old six shapes and006/008/009 semantics; no new pool/queue/job framework,
+credential/server-policy change or CLI. Required focused annotation/service/
+Monitor/evidence/security regressions belong to that separately authorized task.
+Stopped after T010.
+
+## 2026-10-16 — Feature 010 T009 runtime/composition GREEN
+
+Completed only T009;9/24 tasks complete. Production changes are confined to:
+
+- core/src/dutchmate_core/runtime.py: trailing optional annotation_access=None,
+  transfer revalidation, exact synchronous admission precedence, one strong owner/run,
+  shielded/repeated-cancellation settlement, permanent incarnation/per-run seals and
+  join before writer close without lifecycle-lock waits. Already admitted work uses
+  its captured run/access/request and never rechecks ACTIVE/segment state. Annotation
+  failures preserve capture/physical-release/read-cleanup/Monitor facts.
+- core/src/dutchmate_core/annotation.py: pure exact-codec maximum-shape charge
+  preflight and private bounded budget. At most ten admission samples plus last
+  valid check and canonical bound origin. Exact rolling-window equality, valid
+  rejected checks update last-check time; malformed/backwards clocks do not mutate
+  history. Origin binds only on admission; surfaces/reattach/failure/cancellation do
+  not reset/refund it. No queue/sleep/result history.
+- core/src/dutchmate_core/adapters/observation_runtime.py: explicit create_v3 and
+  terminal expected3; annotation/evidence/Monitor capabilities share the existing
+  runtime clock, sole journal/coordinator and actual pure charge helper.
+
+Fresh RED reproduction had101 expected failures/48 existing composition passes.
+First implementation made all101 T008 cases GREEN;31 old composition cases still
+targeted create_v2 hooks. Systematic inspection traced every failure to the explicit
+new production selector, not changed lifecycle behavior. A pre-admission cancellation
+test warning came from cancelling its wrapper before it awaited an already-created
+inner coroutine. The test now cancels the actual runtime coroutine Task. Full mypy
+also required a Callable[[],object] test variable to assert synchronous None after
+the formerly missing seal gained its real None return type; production typing was
+not weakened. No T008 behavioral assertion was removed or relaxed.
+
+Seven necessary test compatibility/harness files, with reasons:
+
+- core/tests/contract/test_annotation_runtime.py: the two coroutine/typing fixes
+  above;98 cases and their admission/lifetime/accounting assertions unchanged.
+- core/tests/contract/test_observation_composition.py: real-create/readback/failure
+  injection hooks select v3; additive v3 no-preparation/no-reopen guards retain old
+  guards and the same failure/cleanup assertions.
+- core/tests/integration/test_live_evidence_composition.py: shared-journal capture
+  spy hooks the production v3 factory; identity/active-read assertions unchanged.
+- core/tests/integration/test_monitor.py: production-format case names/expects3;
+  manually composed explicit-v2 Monitor workflows remain unchanged.
+- core/tests/integration/test_observation_runtime.py: four post-close reopen calls
+  and one metadata expectation select3 for production-created files; binary RX,
+  retention, fixed snapshots, effective provenance and Profile privacy checks stay.
+- apps/service/tests/test_service_http.py: existing production preparation fixture
+  captures v3 creation; adds v3 prohibition guards and retains explicit custom-v1
+  hooks, authentication/lifecycle/status and no-reopen assertions.
+- apps/service/tests/test_service_runtime.py: production create fault/cancellation
+  gates and matching post-close readback select3; custom-v1 readback and all existing
+  ownership/cleanup/shutdown facts stay. No service production code changed.
+
+Two targeted service probes reproduced the missed v2 capture/gate before updates
+(one IndexError and one harness timeout). Initial broadened run:2715 passed/five
+stale open_v2 readback failures; next2719 passed/one stale PRAGMA-v2 expectation.
+All were the documented format revision's test compatibility fallout, not genuine
+Core/delivery defects. No unrelated source, shared fake, config/dependency/lock,
+profile/schema/legacy codec, architecture contract or security relaxation.
+
+Final RTK/uv --locked --no-sync verification, with temporary UV cache and unchanged
+hardware/account guards:
+
+- `pytest core/tests apps/service/tests/test_service_http.py apps/service/tests/test_service_runtime.py`:
+  **2720 passed in12.06s** (Core2394/service326), including all101 T008 cases;
+  zero failures/errors/skips/warnings. Covers003/005/008/009 journal, lifetime,
+  active/terminal read cleanup, Monitor, composition and existing service semantics.
+- `ruff check .` clean; `mypy .` clean for99 files; `lint-imports`:7 kept/0 broken,
+  68 modules/236 dependencies. Production/changed runtime-test formatting and diff
+  checks pass. Reviewed final production and compatibility diffs against governing
+  Core/010 contracts. Bounded accounting and protected-source scope checked.
+
+No full repository pytest/installability gate was required/run at this task;
+the format revision and test updates stayed within planned T009 compatibility.
+Required next full checkpoint remains T013. Progress/spec/model/contract/quickstart
+summaries and status/history reconciled without changing governing decisions.
+Evidence: /private/tmp/dutchmate-010-t009-q_j9v109/. No physical hardware, Graphify,
+commit/push or later task. Core annotation is implemented; service/CLI annotation
+delivery and full Feature010/Phase1 readiness remain incomplete.
+
+## 2026-10-16 — Feature 010 T008 runtime/composition RED tests
+
+Completed only T008 test authoring;8/24 tasks complete. Added
+core/tests/contract/test_annotation_runtime.py (98 cases), and three annotation/v3
+preparation cases plus local helpers/imports in test_observation_composition.py.
+Existing composition tests/helpers retain their behavior; no shared fake or
+production/configuration change. Real temporary explicit journals, existing
+runtime/T007 coordinator and both receive-only fixture shapes; no admission,
+limiter or lifecycle owner is implemented in test code.
+
+Coverage includes context/type/global-seal/association/state/access/policy/busy/rate
+precedence; optional old constructors and v1/v2/v3 preparations without support;
+malformed present capability transfer cleanup before open; immutable acknowledged
+run/session/reference/assertion facts; exact maximum-shaped charge and captured
+ceilings. Rolling-budget scenarios exercise ten attempts, exact one-second ageing,
+staggered pruning across windows, surfaces/reattaches/fresh incarnations, origin
+binding only on admission, changed origins after a fully aged window, last-check
+updates even after rate rejection, invalid/backwards time and failure accounting.
+Tests use observable accounting/ordering, without inventing private limiter fields.
+
+Lifetime cases cover concurrent registration before first yield, pre-admission
+cancellation, repeated waiter cancellation during gate wait/ACK, failed/cancelled
+attempts consuming budget once, detach/disconnect/incarnation seals and ACK-before-
+close joins. An admitted insertion can follow SegmentEnded without ACTIVE recheck.
+Annotation faults leave capture, independent Monitor/read behavior and permanent008
+dirty-reader cleanup uncertainty intact. Preparation tests require explicit v3,
+matching terminal format, sole shared writer/coordinator/charge callback and the
+same host clock across attaches. `_seal_annotations` is a provisional internal
+synchronous seam following existing `_seal_monitors`, not a public delivery API.
+
+Initial two-file run:89 failed,48 passed;85 missing-feature failures were expected.
+Four new charge fixtures accidentally violated SessionPolicy's existing requirement
+that max_record fit both retained/page ceilings. Corrected those test policies;
+no production defect or contract change was involved. Static authoring checks also
+caught and corrected a misplaced test tail before final verification.
+
+Final required selection through RTK/uv --locked --no-sync (temporary UV cache):
+**101 expected RED failures,1039 existing regressions passed**, zero errors/skips.
+RED breakdown:95 absent ObservationRuntime.annotate, three absent optional
+annotation_access defaults, two absent production annotation capabilities and one
+actual production schema-v2 selection. No unexpected passes/failures remain.
+The13-file selection includes new runtime/composition tests, existing005 runtime/
+008 read/009 Monitor contracts and integration, live composition, T006 recording/
+live annotation and pure annotation-value regressions; all48 legacy composition
+cases pass. Focused Ruff/format and mypy (two files), diff, protected-input and
+old-test consistency checks pass. No full repository gate was required/run; no
+broader cross-cutting issue was exposed. Evidence: /private/tmp/dutchmate-010-t008-5kgz3s3p/.
+
+Updated completed task/status/history markers and spec/plan progress only. Runtime
+annotation admission, rate state and production v3/optional capability composition
+remain unimplemented; production still chooses v2. No physical hardware, Graphify,
+commit/push or later task. Feature010/Phase1/software-readiness limits remain unchanged.
+
+## 2026-10-16 — Feature 010 T007 coordinator GREEN
+
+Completed only T007;7/24 tasks complete. Changed only
+core/src/dutchmate_core/monitor.py for production behavior: narrow
+append_client_annotation(client_surface,text), existing gate/host clock and sole
+journal append. The immutable pending record validates text/surface/canonical
+origin; existing _now validates exact monotonic0..9223372036854775807 insertion
+time after gate acquisition. Return the real positively acknowledged annotation;
+JournalFailure propagates with no retry or fabricated reference.
+
+Extracted the original synchronous publication body into private _publish for both
+ordinary acquisition and annotations, preserving provenance updates, fresh post-ACK
+Monitor clock sampling and operation-only fault handling without an intervening
+await. Matcher/window/deadline/close behavior remains unchanged. No normalized draft
+fix, new capability/reader/writer, rate/admission state or schema/composition change.
+Production still selects v2; public runtime/service/CLI annotation admission remains
+unimplemented. All T006 tests and other existing tests are unchanged.
+
+Fresh RTK/uv --locked --no-sync evidence (temporary UV cache, hardware-free guards):
+
+- Before implementation, both T006 files: **29 expected failures in0.18s**, all
+  missing append_client_annotation; zero errors/skips.
+- After implementation, the same files: **29 passed in0.25s**.
+- Combined21-file focused selection: **1264 passed in6.32s**, zero failures/errors/
+  skips. Includes both T006 files, existing monitor_recording/live Monitor/live
+  evidence composition; sqlite/Monitor/annotation journal/terminal contracts;
+  durable acquisition/crash recovery; active/terminal read access; observation
+  composition/runtime and Monitor runtime; clock, legacy/v2/v3 codecs and matcher.
+- Focused Ruff/format and mypy (three files) pass. Import-linter: **7 kept,0 broken**,
+  68 modules/234 dependencies; no rule/exemption/configuration change.
+
+Reviewed the production diff against Core14/18 and010 receipt/publication rules.
+Scope/hash and AST checks preserve all other code/configuration/tests and the
+original publication statements/other coordinator and Monitor methods. Updated
+only completed task/status/history markers and artifact progress summaries; no
+governing contract decision or architecture change. No full repository test gate
+was required/run: T007 remains inside the specified focused checkpoint and exposed
+no broader cross-cutting issue. Evidence: /private/tmp/dutchmate-010-t007-txkil20i/.
+No physical hardware, Graphify, commit/push or later task. Feature010/Phase1 remain
+incomplete; software/hardware readiness claims are unchanged.
+
+## 2026-10-16 — Feature 010 T006 coordinator/live RED tests
+
+Completed only T006 test authoring;6/24 tasks complete. Added
+core/tests/contract/test_annotation_recording.py (23 cases) and
+core/tests/integration/test_annotations.py (six cases). All29 cases fail at the
+intentional missing MonitorRecordingCoordinator.append_client_annotation seam.
+No unexpected passing/failing cases or collection/setup/teardown errors. These
+are executable behavioral assertions following that entry, not placeholder failures.
+
+Manually composed the existing coordinator/host clock over explicit real temporary
+v3 journals; old preparation plus existing same-journal evidence access drives
+active/confirmed-close terminal reads. Both receive-only fixture shapes run the
+same live tests. Test-owned gates surround actual append/ACK; no insertion,
+matching, admission, runtime capability or composition logic is reproduced.
+Coverage: exact Unicode/whitespace/attribution, receipt samples0/MAX and ordinary
+sequence ordering, gate-delayed sampling, positive ACK before subsequent RX,
+invalid/backwards insertion clocks, precommit/ambiguous postcommit failures without
+retry, exact ambient binary RX, active/reference/terminal retrieval, one open/RX
+consumer, no annotation-created operation markers. Fixtures expose no TX/control.
+Monitor cases preserve RX prefix across annotation, ignore text for matching/byte/
+loss counts, include acknowledged non-RX sequence positions and exclude unacknowledged
+records. Delayed-ACK tests leave the deadline timer asleep so publication must
+independently use fresh post-ACK time, not the earlier receipt sample.
+
+Executed through RTK/uv --locked --no-sync with the temporary UV cache:
+
+- pytest core/tests/contract/test_annotation_recording.py core/tests/integration/test_annotations.py:
+  **29 expected failures in0.48s**, all missing coordinator entry.
+- pytest core/tests/contract/test_monitor_recording.py core/tests/integration/test_monitor.py
+  core/tests/integration/test_live_evidence_composition.py: **242 passed in0.99s**.
+- Final combined run of those five files: **29 expected failures,242 passed
+  in1.05s**, no errors/skips. JUnit verifies every failure is the missing insertion
+  seam and every existing regression passes.
+- Focused Ruff check/format and mypy (two files) pass; diff/marker/scope checks pass.
+
+Test-authoring checks corrected existing API member names, captured-policy page
+limits and test-only structural narrowing; no production defect or requirement
+change was found. Required full gates remain T005/T013/T019/T024; no full gate
+was run for this RED-only task. All98 existing Python/configuration inputs match
+the turn-entry hashes; production/configuration/old-test bytes are preserved.
+Updated only progress markers/spec-plan status and status/history
+alongside the two tests. Logs/JUnit/hash evidence: /private/tmp/dutchmate-010-t006-e28gtcl4/.
+No hardware, Graphify, commit/push or later task was executed. Live coordinator
+insertion, production v3 composition and public runtime/service/CLI annotation
+behavior remain unimplemented. Phase1/Feature010 remain incomplete.
+
+## 2026-10-16 — Feature 010 T005 foundation GREEN and full gate
+
+Completed only authorized T001–T005; foundation5/24, later tasks unchecked.
+Implemented explicit SqliteEvidenceJournal.create_v3/open_v3, strict schema3
+header/table validation and selected1/2/3 encode/decode/worker/read-only terminal
+dispatch in sqlite_evidence.py/terminal_evidence.py. Defaultv1 and explicitv2 keep
+their formats and behavior. Old acquisition-v1/operation-v2 rows and exact charges
+remain unchanged; no migration or format guessing. Retained operation-pair decoding
+uses the selected codec so annotations between RX chunks are valid; backend timestamp
+scans skip host-only annotations. Ordinary acknowledgement, worker/gate ownership,
+quota/rolling expiry/coalesced markers/cursors/snapshots/counters/physical ceiling.
+
+T005 changed only the two adapter files for behavior. Test fixture corrections:
+the mixed journal seed initially used a nonexistent segment-end member; changed
+to existing EXPLICIT_STOP, without changing lifecycle code. The terminal trace
+wrapper takes the real connector's str signature and obtains the original connector
+from its defining module, resolving mypy's explicit-export check. Codec malformed-
+BLOB tests now adjust charge independently so UTF-8/text rejection is tested rather
+than merely charge mismatch. No contract requirement/gate was weakened or expanded.
+
+Focused final new+003/008/009 values/codec/journal/terminal regressions: **592 passed
+in2.16s**, including107 new pure cases,29 new journal cases and17 selected-format
+terminal cases. Both backend fixture shapes cover host-only annotation between RX
+match endpoints, read-only terminal retrieval and following timestamped RX. No
+physical transport, simulated Enhanced protocol or new coordinator insertion API.
+
+Full-gate environment diagnosis under systematic-debugging: first run **5564
+passed,372 setup errors in102.61s**, all in existing CLI/evidence/Monitor installed
+fixtures because the chosen temporary UV cache lacked Hatchling for offline builds.
+Read t018-uv-error.txt, bucketed JUnit errors to the three fixture groups and reproduced
+the same offline CLI build successfully with the existing /Users/nahitpawar/.cache/uv
+cache. Two guarded installed wheel/sdist probes then passed in2.06s. No source,
+test, dependency/lock or validation-rule change was needed. Moved that test-owned
+diagnostic out of the checkout. An initial probe selector selected no tests (exit5);
+used the exact installed artifact node for the successful two-case probe.
+
+Fresh required full rerun, RTK/uv --locked --no-sync, existing cache, isolated
+basetemp/loopback/build/install fixtures and unchanged physical/account guards:
+
+- **5936 passed in329.90s**, no failures/errors/skips; Core2264/service1641/CLI2031.
+- Ruff clean; mypy **96 source files** clean; import-linter **7 kept,0 broken**,
+  68 modules/234 dependencies. Only two additive annotation membership entries;
+  no exemption or architecture weakening.
+- Working diff checks pass; final scope/artifact/progress checks also cover new
+  untracked files. No runtime/private/generated/credential or Graphify output added.
+
+The original001–009 baseline has48 protected acquisition/runtime/coordinator/clock/
+composition/Profile/backend/delivery/dependency/fake files byte-identical. Twelve
+legacy codec/charge/provenance/timestamp helper ASTs were independently checked
+unchanged; row-level byte/charge compatibility passed. **No existing consumer
+narrowing was required**, so no service/CLI or extra strict-union test file changed.
+All98 executable/validation inputs remained unchanged through final verification.
+Five Core source files, four focused test files, pyproject memberships and current
+status/history/progress annotations make up this foundation; no unrelated refactor.
+
+Reconciled only completed progress/status markers after the successful gate;
+functional requirements/contracts/gate definitions stay unchanged. Documentation
+result recording follows AGENTS8.3 consistency/diff checks, without another full
+run. No architecture-document rewrite warranted: inward ownership boundaries are
+preserved. No Graphify update (deferred toT023), commit, push, physical device or
+real credential access. Native Linux/Windows/active-DUT/physical/electrical/Enhanced
+acceptance remain unexecuted; actual Windows commands remain unsupported. Phase1
+and Feature010 remain incomplete. Logs/JUnit/baseline/input hashes/build/install
+evidence remain in /private/tmp/dutchmate-010-foundation-ko6cbuc5/ outside repository.
+
+## 2026-10-16 — Feature 010 T004 explicit v3 journal/terminal contracts RED
+
+Authored core/tests/contract/test_annotation_journal.py and added only selected-
+format cases to existing test_terminal_evidence_reader.py. Real temporary journals
+exercise explicit v1/v2/v3 factory/expected-format matrices, strict schema/metadata/
+blob validation, byte-identical old rows/charges, ordinary quota/retention/expiry/
+snapshot/zero-shortage/sequence/database limits and read-only terminal access.
+Both backend-shaped fixtures prove mixed RX→annotation→RX retained Monitor pair
+validation and annotation-skipping backend timestamp scans. No live coordinator,
+runtime admission, production composition, service or CLI annotation behavior.
+
+Actual RED with required journal/terminal003/008/009 regressions: **30 failed,
+272 passed in2.13s**, no collection error. Failures are missing create_v3/open_v3;
+old-format refusal/mismatch guards and existing regressions already pass, as
+expected. No artificial failure introduced for passing compatibility behavior.
+Logs/JUnit: /private/tmp/dutchmate-010-foundation-ko6cbuc5/t004-red.*. No production
+journal change during RED authoring, hardware/credential access, Graphify, commit
+or push. T005 now owns explicit selected-format implementation and the full gate.
+
+## 2026-10-16 — Feature 010 T003 pure annotation values/codecs GREEN
+
+Implemented only pure normalized ClientAnnotationEvidence/pending materialization
+in model.py/evidence.py; new annotation.py request/receipt/sealed rejection/prepared-
+access values; pure v3 encode/decode/exact charge helpers in sqlite_evidence.py;
+and actual annotation module membership in pyproject.toml inward/adapter contracts.
+Fixed assertion/attribution properties cannot be supplied as arbitrary observations.
+Text/time/UUID/sequence validation and canonical strict metadata/UTF-8 BLOB preserve
+declared assertions without timing, append submission, rate state or delivery.
+All six old codecs remain delegated unchanged; no factory/worker/version3 execution
+yet. Runtime/preparation constructor/composition/coordinator/service/CLI untouched.
+
+Added one focused defensive regression while reviewing codec boundaries: forged
+pending time initially escaped charge preflight as TypeError. Observed1 failure,
+then normalized it as journal encode/invalid_input without changing old helpers.
+Expected static errors in intentionally-invalid test arguments received targeted
+arg-type ignores only; production typing was not weakened. Full mypy showed **no
+existing union consumer fallout**, so no additional consumer/test file was edited.
+
+RTK/uv focused new+legacy values/evidence/codec/operation/Monitor regression result:
+**290 passed in0.22s** (107 new plus183 legacy). Ruff clean; mypy **95 files** clean;
+import-linter **7 kept,0 broken**,68 modules/234 dependencies. Focused checks only
+at this RED/GREEN step; required foundation full gate remains T005. No hardware/
+real credential access, Graphify, dependency/lock change, commit or push.
+
+## 2026-10-16 — Feature 010 T002 pure annotation contracts RED
+
+Authored only core/tests/unit/test_annotation_values.py and test_annotation_codec.py.
+New assertions cover exact Unicode/text/surface/time/sequence boundaries, fixed
+client-assertion classification, materialization, receipt identity, sealed exception
+facts with writable transport metadata, pure prepared-access identity, strictv3
+canonical metadata/UTF-8 BLOB/charge, maximum-width timestamp and legacy six variants.
+No runtime/preparation constructor, journal factory, coordinator or delivery behavior.
+
+First collection attempt exposed an incorrectly ordered positional SessionPolicy
+in the test recorder; changed that fixture to explicit existing keyword fields.
+Actual RED then collected normally: **106 failed in0.34s**, expected missing
+annotation module/model/pending values/v3 codec helpers; zero collection errors.
+Directly affected existing evidence/old codec/operation/Monitor-value tests:
+**183 passed in0.14s**. RTK/uv --locked --no-sync; logs/JUnit outside repository at
+/private/tmp/dutchmate-010-foundation-ko6cbuc5/t002-red.*. No production changes,
+hardware/real credentials, Graphify, commit or push.
+
+## 2026-10-16 — Feature 010 T001 foundation baseline and consumer inventory
+
+Completed T001 only at this checkpoint; authorized group is T001–T005, stopping
+before T006. Baseline main/HEAD2fdebaf4aa3df815be9f2ce223c832e70c739569 has completed
+001–009 software; pre-existing workspace changes are010 planning artifacts and
+status/history only. Reviewed Core §§14–18/22.2/23,010 spec/plan/model/contracts and
+003/005–009 lifecycle/persistence/security/thin-delivery contracts. No product rule
+change or unresolved interpretation. Preserved the accepted planning artifacts.
+
+Inventory: model.py/evidence.py closed unions and assignment; new annotation.py
+pure values; sqlite_evidence.py strict codecs, selected workers/schema/operation-
+pair validation/timestamp scans; terminal_evidence.py expected-format read-only
+dispatch; pyproject.toml actual inward application membership. Existing strict-
+union consumers include service evidence projection and Core codec/lifecycle
+tests; any additional edits require demonstrated typing fallout and exhaustive
+narrowing, without implementing annotation delivery. Production composition,
+coordinator/clock/runtime/backend/acquisition/Profile, service routes/jobs and
+CLI remain out of this foundation group's behavioral scope.
+
+Invariants: one authoritative RX/coordinator/journal; ordinary charge/retention/
+expiry/snapshot/cursor/ceiling; strict defaultv1/explicitv2 and byte-identical six
+old variants; no timestamp-domain conflation; same-journal active reads and fresh
+read-only terminal access with008 cleanup uncertainty; unchanged005 lifecycle,
+006 security-before-body,007 thin client and009 Monitor ownership/post-ACK timing.
+Foundation checkpoint is T005 full uv/Ruff/mypy/imports/pytest/diff gate after
+focused RED/GREEN checks. No full suite run for this inventory alone.
+
+Captured tracked-file SHA256 and codec AST baseline outside the repository at
+/private/tmp/dutchmate-010-foundation-ko6cbuc5/baseline.json. No production/test
+change, physical device/credential access, Graphify update, commit or push.
+
+## 2026-10-15 — Feature 010 specify → plan → tasks (planning only)
+
+Completed the explicitly authorized lean Spec Kit specify/plan/tasks workflow for
+bounded attributed client annotations through Core, authenticated service and thin
+CLI. Assigned `010-client-annotations` using the configured sequential numbering
+after001–009. Resolved repository templates, ran setup-plan.sh/setup-tasks.sh and
+checked pre/post hooks: .specify/extensions.yml does not exist, so no hook or branch
+creation ran. Git remains main; the ignored .specify/feature.json selects010.
+The constitution is an unpopulated scaffold; governing Core and existing contracts
+remain authoritative. No Core rule or existing001–009 artifact was rewritten.
+
+Created eight narrowly scoped Markdown artifacts: spec, quality checklist, plan,
+research, data model, annotations contract, quickstart validation guide and24-task
+breakdown. Two read-only plan research agents checked persistence/retention and
+runtime/delivery dependencies; findings were verified in source. No additional
+Spec Kit clarification/analyze/converge/implementation workflow was invoked.
+
+Settled planned decisions:
+
+- Short exact text1..1024 UTF-8 bytes, no NUL/surrogates or normalization; fixed
+  client_assertion/client_asserted classification and declaredcli/http/core surface.
+  HTTP acceptscli/http and CLI fixescli. Shared authentication authorizes access;
+  it cannot attest the executable, OS principal, process or asserted action.
+- Explicit schema3/annotation record_version3; old acquisition-v1 and operation-v2
+  bytes/charges and strict old factories/read-only expectations remain unchanged.
+  No migration, format guessing, Profile revision, separate store or new dependency.
+- Sole coordinator gate/worker/order; host receipt sample at insertion boundary,
+  distinct from limiter admission and commit time. Fresh post-ACK Monitor publication
+  is preserved. Annotation text cannot satisfy/reset RX matching or count as RX.
+- One pending owned insertion/run; ten admitted attempts/rolling second/incarnation,
+  shared across surfaces/reattach, bounded history and stable existing host clock.
+  Admitted failures consume budget; no queue/refund/automatic retry. Existing eight
+  mutation jobs are shared with annotation; reads and Monitor remain independent.
+- Ordinary charge/rolling retention/expiry/reference/page/cursor/whole413 behavior.
+  Explicit regression coverage for annotations between RX chunks in retained Monitor
+  pairs and host-only records in backend timestamp endpoint scans.
+- Optional preparation capability; old constructors remain valid. Admitted writes
+  survive waiter loss and may settle after segment_end as session context; seal new
+  admission and join before close, preserving005/008/009 lifetime/cleanup facts.
+
+Updated current status to distinguish planned010 from committed009 software.
+Fresh planning validation: eight artifacts have valid local links/balanced fences
+and no unresolved template/clarification markers;24 sequential unchecked task IDs,
+correct story labels (US1 eight/US2 three/US3 three, plus five foundation/five final),
+33-line Resume Here, expected selector/logical feature and actual main branch.
+Protected production/test/package/dependency/AGENTS/managed-scaffold paths are
+unchanged. Final diff/whitespace/scope review is recorded by this planning run;
+no production tests/full repository gate were run because this change contains
+planning/status/history documentation only. Prior009 gate counts remain historical
+evidence, not010 verification. All24 implementation tasks remain unchecked.
+
+No unresolved design decision, implementation, physical device or real credential
+access, Graphify update, commit or push. No native Linux/Windows/active-DUT/physical/
+electrical/Enhanced acceptance selected or claimed. Phase1 remains incomplete.
+The task breakdown records future checkpoints without authorizing their execution;
+current next action remains solely in docs/development_status.md.
+
 ## 2026-10-15 — Feature 009 final pre-commit review and implementation commit
 
 Completed the separately authorized final pre-commit review and implementation

@@ -242,7 +242,10 @@ class _TerminalReader:
                 self._executor,
                 _resolve_record_on_worker
                 if self._target.expected_schema_version == 1
-                else partial(_resolve_record_on_worker, schema_version=2),
+                else partial(
+                    _resolve_record_on_worker,
+                    schema_version=self._target.expected_schema_version,
+                ),
                 self._open_connection(),
                 reference,
             )
@@ -258,7 +261,10 @@ class _TerminalReader:
                 self._executor,
                 _retrieve_page_on_worker
                 if self._target.expected_schema_version == 1
-                else partial(_retrieve_page_on_worker, schema_version=2),
+                else partial(
+                    _retrieve_page_on_worker,
+                    schema_version=self._target.expected_schema_version,
+                ),
                 self._open_connection(),
                 self.policy,
                 request,

@@ -2470,3 +2470,125 @@ def test_t023_remote413_has_no_automatic_retry_and_user_smaller_budget_keeps_opa
         for request in delivery.wire.requests
     )
     assert delivery.imports == []
+
+
+def _t012_annotation(**changes: Any) -> dict[str, Any]:
+    """010's additive wire record; no Core or production validator dependency."""
+    return {
+        "kind": "client_annotation",
+        "sequence": 0,
+        "assertion_class": "client_assertion",
+        "client_surface": "core",
+        "attribution_basis": "client_asserted",
+        "clock_origin_id": "abcdefab-1234-4234-8234-123456789abc",
+        "received_at_ns": 100,
+        "text": " external flash asserted; e\u0301\r\n\t ",
+        **changes,
+    }
+
+
+@pytest.mark.parametrize("args", [_RECORD_ARGS, _PAGE_ARGS], ids=["record", "page"])
+@pytest.mark.parametrize("surface", ["cli", "http", "core"])
+@pytest.mark.parametrize(
+    "sequence,received,text", [(0, 0, " "), (_MAX - 1, _MAX, "é" * 512)]
+)
+def test_010_t012_annotation_record_all_surfaces_and_counter_edges_are_wire_facts(
+    args: list[str],
+    surface: str,
+    sequence: int,
+    received: int,
+    text: str,
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    record = _t012_annotation(
+        sequence=sequence, client_surface=surface, received_at_ns=received, text=text
+    )
+    report = _report(
+        records=[record], snapshot_end_exclusive=sequence + 1, charged_bytes=321
+    )
+    reversed_report = _helpers("test_cli_monitor")._reverse_objects(report)
+    delivery = Delivery(account_home, monkeypatch, body=_json(reversed_report))
+    assert delivery.invoke(args) == 0
+    assert tuple(capsys.readouterr()) == ((_json(report) + b"\n").decode(), "")
+    assert len(delivery.wire.requests) == 1
+    assert delivery.reads == ["credential"] and delivery.imports == []
+
+
+@pytest.mark.parametrize("device", [False, True], ids=["basic", "enhanced-shaped"])
+def test_010_t012_annotation_and_old_six_variants_share_an_unchanged_page(
+    device: bool,
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = _full_report(device)
+    records = report["page"]["records"]
+    start, end = _helpers("test_cli_monitor")._markers("timeout", device=device)
+    first = len(records)
+    start["sequence"], end["sequence"], end["start_sequence"] = first, first + 1, first
+    end["window"] = {"start_inclusive": first + 1, "end_exclusive": first + 1}
+    records.extend((start, end, _t012_annotation(sequence=first + 2)))
+    report["page"]["snapshot_end_exclusive"] = len(records)
+    delivery = Delivery(account_home, monkeypatch, body=_json(report))
+    assert delivery.invoke(_PAGE_ARGS) == 0
+    assert tuple(capsys.readouterr()) == ((_json(report) + b"\n").decode(), "")
+    assert len(delivery.wire.requests) == 1
+
+
+@pytest.mark.parametrize("key", list(_t012_annotation()))
+@pytest.mark.parametrize("mutation", ["missing", "extra"])
+def test_010_t012_annotation_variant_is_closed_and_never_defaults_fields(
+    key: str,
+    mutation: str,
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    record = _t012_annotation()
+    if mutation == "missing":
+        del record[key]
+    else:
+        record["unexpected-" + key] = _PRIVATE
+    delivery = Delivery(
+        account_home, monkeypatch, body=_json(_report(records=[record]))
+    )
+    assert delivery.invoke(_PAGE_ARGS) == 5
+    _local(capsys.readouterr(), "invalid_response", phase="unknown")
+    assert len(delivery.wire.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "key,bad",
+    [
+        ("assertion_class", "dut_observation"),
+        ("attribution_basis", "verified"),
+        ("client_surface", "CORE"),
+        ("client_surface", None),
+        ("clock_origin_id", "ABCDEFAB-1234-4234-8234-123456789ABC"),
+        ("clock_origin_id", "abcdefab123442348234123456789abc"),
+        ("clock_origin_id", "not-a-uuid"),
+        ("received_at_ns", True),
+        ("received_at_ns", -1),
+        ("received_at_ns", _MAX + 1),
+        ("sequence", True),
+        ("sequence", _MAX),
+        ("text", ""),
+        ("text", "\0"),
+        ("text", "é" * 513),
+        ("text", True),
+    ],
+)
+def test_010_t012_annotation_types_literals_host_uuid_and_bounds_are_strict(
+    key: str,
+    bad: object,
+    account_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = _report(records=[_t012_annotation(**{key: bad})])
+    delivery = Delivery(account_home, monkeypatch, body=_json(report))
+    assert delivery.invoke(_PAGE_ARGS) == 5
+    _local(capsys.readouterr(), "invalid_response", phase="unknown")
+    assert len(delivery.wire.requests) == 1

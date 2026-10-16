@@ -8,6 +8,7 @@ from typing import Final, Literal, Protocol
 from dutchmate_core.model import (
     SQLITE_INTEGER_MAX,
     BackendObservationTimestamp,
+    ClientAnnotationEvidence,
     ConnectionInstanceId,
     EvidenceRangeReference,
     EvidenceRecord,
@@ -247,6 +248,7 @@ type PendingEvidenceRecord = (
     | PendingSegmentEndedEvidence
     | PendingOperationStartedEvidence
     | PendingOperationEndedEvidence
+    | PendingClientAnnotationEvidence
 )
 
 
@@ -347,6 +349,14 @@ def _assign_sequence(
                 observer_loss_records=draft.observer_loss_records,
                 match=draft.match,
                 clock=draft.clock,
+            )
+        case PendingClientAnnotationEvidence():
+            return ClientAnnotationEvidence(
+                sequence=sequence,
+                text=draft.text,
+                client_surface=draft.client_surface,
+                clock_origin_id=draft.clock_origin_id,
+                received_at_ns=draft.received_at_ns,
             )
         case _:
             raise TypeError(f"unsupported evidence draft: {type(draft).__name__}")
@@ -450,3 +460,24 @@ def monitor_marker_charges_fit(policy: SessionPolicy, charges: tuple[int, int]) 
             policy.max_retrieval_page_charged_bytes,
         )
     )
+
+
+@dataclass(frozen=True, slots=True)
+class PendingClientAnnotationEvidence:
+    text: str
+    client_surface: str
+    clock_origin_id: str
+    received_at_ns: int
+
+    def __post_init__(self) -> None:
+        ClientAnnotationEvidence(
+            0, self.text, self.client_surface, self.clock_origin_id, self.received_at_ns
+        )
+
+    @property
+    def assertion_class(self) -> Literal["client_assertion"]:
+        return "client_assertion"
+
+    @property
+    def attribution_basis(self) -> Literal["client_asserted"]:
+        return "client_asserted"
