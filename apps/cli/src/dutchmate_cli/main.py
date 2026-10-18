@@ -11,6 +11,7 @@ import typer
 
 from dutchmate_cli import annotation as annotation_wire
 from dutchmate_cli import client, context, evidence
+from dutchmate_cli import follow as follow_wire
 from dutchmate_cli import monitor as monitor_wire
 
 app = typer.Typer(
@@ -121,6 +122,25 @@ def detach(ctx: typer.Context) -> int:
         delivery=invocation.delivery,
     ))
     _write(record, error=code != 0)
+    return code
+
+
+@app.command("follow")
+def follow(
+    ctx: typer.Context,
+    session: Annotated[str, typer.Option("--session", help="Explicit active session ID.")],
+) -> int:
+    """Follow new evidence; exit 0 means a valid terminal, including failure or unknown tail."""
+    invocation = cast(_Invocation, ctx.obj)
+    body = follow_wire.request(session)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange_follow(
+        endpoint=endpoint, request_body=body, credential=credential,
+        delivery=invocation.delivery, emit=lambda frame: _write(frame, error=False),
+    ))
+    if record is not None:
+        _write(record, error=True)
     return code
 
 

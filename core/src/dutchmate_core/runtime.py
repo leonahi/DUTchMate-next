@@ -25,6 +25,7 @@ from dutchmate_core.annotation import (
 )
 from dutchmate_core.backend import Backend, BackendFailureKind
 from dutchmate_core.evidence import (
+    EvidencePage,
     EvidenceRecorder,
     EvidenceRetrievalRequest,
     JournalFailure,
@@ -38,6 +39,16 @@ from dutchmate_core.evidence_access import (
     PreparedEvidenceAccess,
     RunEvidencePage,
 )
+from dutchmate_core.follow import (
+    FollowBatch,
+    FollowEnd,
+    FollowEndReason,
+    FollowRejected,
+    FollowRequest,
+    FollowStart,
+    _follow_head_request,
+    _FollowSubscription,
+)
 from dutchmate_core.model import (
     BackendCapability,
     EvidenceReference,
@@ -47,6 +58,7 @@ from dutchmate_core.model import (
     SessionPolicy,
 )
 from dutchmate_core.monitor import (
+    MonitorRecordingCoordinator,
     MonitorRejected,
     MonitorReport,
     MonitorRequest,
@@ -358,6 +370,30 @@ class ObservationRecorder(EvidenceRecorder, Protocol):
 
 
 @dataclass(frozen=True, slots=True)
+class PreparedFollowAccess:
+    """Follow uses the transferred coordinator and its existing live journal."""
+
+    session_id: SessionId
+    policy: SessionPolicy
+    coordinator: MonitorRecordingCoordinator
+    live_reader: EvidenceReadPort
+
+    def __post_init__(self) -> None:
+        FollowRequest(self.session_id)
+        if (
+            not isinstance(self.policy, SessionPolicy)
+            or not isinstance(self.coordinator, MonitorRecordingCoordinator)
+            or self.coordinator.session_id != self.session_id
+            or self.coordinator.policy != self.policy
+            or self.live_reader.session_id != self.session_id
+            or self.live_reader.policy != self.policy
+            or not callable(self.live_reader.retrieve)
+            or not callable(self.live_reader.resolve_record)
+        ):
+            raise ValueError("invalid Follow preparation")
+
+
+@dataclass(frozen=True, slots=True)
 class PreparedObservationRun:
     """One recorder and unopened backend; receiver checks Profile policy by value."""
 
@@ -366,6 +402,7 @@ class PreparedObservationRun:
     evidence_access: PreparedEvidenceAccess | None = None
     monitor_access: PreparedMonitorAccess | None = None
     annotation_access: PreparedAnnotationAccess | None = None
+    follow_access: PreparedFollowAccess | None = None
 
 
 def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | None:
@@ -457,6 +494,30 @@ def _annotation_access_matches(
         return False
 
 
+def _follow_access_matches(
+    access: PreparedFollowAccess | None,
+    recorder: ObservationRecorder,
+    read_access: PreparedEvidenceAccess | None,
+    session_id: SessionId,
+    policy: SessionPolicy,
+) -> bool:
+    if access is None:
+        return True
+    if not isinstance(access, PreparedFollowAccess):
+        return False
+    try:
+        replace(access)
+        return (
+            access.coordinator is recorder
+            and read_access is not None
+            and access.live_reader is read_access.live_reader
+            and access.session_id == session_id
+            and access.policy == policy
+        )
+    except Exception:
+        return False
+
+
 @dataclass(slots=True)
 class _EvidenceAssociation:
     run_id: RunId
@@ -501,6 +562,173 @@ class _ObservationGeneration:
     annotation_access: PreparedAnnotationAccess | None = None
     annotation_sealed: bool = False
     annotation: _AnnotationRun | None = None
+    follow_access: PreparedFollowAccess | None = None
+    follow_sealed: bool = False
+    follow: FollowSubscription | None = None
+    follow_start: asyncio.Task[FollowSubscription] | None = None
+
+
+class _FollowSealed(Exception):
+    """An internal wake/settlement signal; never a public rejection category."""
+
+
+@dataclass(frozen=True, slots=True)
+class _FollowQueries:
+    """Bridge the coordinator's reader callback to captured runtime read leases."""
+
+    session_id: SessionId
+    policy: SessionPolicy
+    retrieve: Callable[[EvidenceRetrievalRequest], Awaitable[EvidencePage]]
+
+
+async def _wait_follow_owner[T](owner: asyncio.Task[T]) -> T:
+    """Join strongly owned Follow admission/cleanup despite waiter cancellation."""
+    try:
+        return await asyncio.shield(owner)
+    except asyncio.CancelledError:
+        while not owner.done():
+            try:
+                await asyncio.shield(owner)
+            except asyncio.CancelledError:
+                continue
+            except Exception:
+                break
+        if not owner.cancelled():
+            owner.exception()
+        raise
+
+
+def _follow_owner_settled[T](owner: asyncio.Task[T]) -> None:
+    if not owner.cancelled():
+        owner.exception()
+
+
+class FollowSubscription:
+    """Generation-bound subscriber; only submitted queries hold read leases.
+
+    The coordinator registration owns the existing bounded state and wake signal.
+    This runtime owner supplies context guards, captured read ownership and seals.
+    """
+
+    def __init__(
+        self,
+        runtime: ObservationRuntime,
+        generation: _ObservationGeneration,
+        access: PreparedFollowAccess,
+    ) -> None:
+        self._runtime = runtime
+        self._generation: _ObservationGeneration | None = generation
+        self._access: PreparedFollowAccess | None = access
+        self._registration: _FollowSubscription | None = None
+        self._start: FollowStart | None = None
+        self._end: FollowEnd | None = None
+        self._sealed = False
+        self._closed = False
+        self._pull_settled: asyncio.Future[None] | None = None
+        self._close_owner: asyncio.Task[None] | None = None
+
+    @property
+    def start(self) -> FollowStart:
+        assert self._start is not None
+        return self._start
+
+    async def _retrieve(self, request: EvidenceRetrievalRequest) -> EvidencePage:
+        if self._sealed or self._closed:
+            raise _FollowSealed
+        assert self._generation is not None and self._access is not None
+        page = await self._runtime._follow_query(
+            self._generation, self._access, request
+        )
+        # A submitted query must settle before a seal is observed. Its payload
+        # may be discarded; never submit the next payload query after sealing.
+        if self._sealed or self._closed:
+            raise _FollowSealed
+        return page
+
+    def _seal(self, reason: FollowEndReason, cutoff: int | None = None) -> None:
+        self._sealed = True
+        if self._registration is not None:
+            self._registration._state.seal(reason, cutoff)
+            self._registration.notify()
+
+    def _take_end(self) -> FollowEnd:
+        if self._end is None and self._registration is not None:
+            self._end = self._registration._state.end()
+        if self._end is None:
+            raise FollowRejected("not_active")
+        return self._end
+
+    async def pull(self) -> FollowBatch | FollowEnd:
+        self._runtime._guard_context()
+        if self._pull_settled is not None:
+            raise FollowRejected("busy")
+        if self._end is not None:
+            return self._end
+        if self._closed:
+            raise FollowRejected("not_active")
+        assert self._registration is not None
+        settled = self._runtime._loop.create_future()
+        self._pull_settled = settled
+        cancelled = False
+        try:
+            result = await self._registration.pull()
+            if self._sealed:
+                return self._take_end()
+            if isinstance(result, FollowEnd):
+                self._end = result
+            return result
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+        except _FollowSealed:
+            return self._take_end()
+        except FollowRejected as failure:
+            if self._sealed or self._end is not None:
+                return self._take_end()
+            if failure.kind == "busy":
+                raise
+            self._seal(
+                "read_capacity" if failure.kind == "read_capacity" else "source_failed"
+            )
+            return self._take_end()
+        except Exception:
+            self._seal("source_failed")
+            return self._take_end()
+        finally:
+            self._pull_settled = None
+            settled.set_result(None)
+            if cancelled or self._end is not None:
+                await self.close()
+
+    async def close(self) -> None:
+        self._runtime._guard_context()
+        if self._close_owner is None:
+            self._closed = True
+            if self._registration is not None:
+                self._registration.notify()
+            self._close_owner = asyncio.create_task(self._own_close())
+            self._close_owner.add_done_callback(_follow_owner_settled)
+        await _wait_follow_owner(self._close_owner)
+
+    async def _own_close(self) -> None:
+        pending = self._pull_settled
+        if pending is not None:
+            await asyncio.shield(pending)
+        await self._release()
+
+    async def _release(self) -> None:
+        """Release source references without waiting for an idle public pull."""
+        self._closed = True
+        registration, self._registration = self._registration, None
+        if registration is not None:
+            # End facts survive unregister/close, which discards live state.
+            if self._sealed and self._end is None:
+                self._end = registration._state.end()
+            await registration.close()
+        generation, self._generation = self._generation, None
+        if generation is not None and generation.follow is self:
+            generation.follow = None
+        self._access = None
 
 
 def _running_loop() -> asyncio.AbstractEventLoop:
@@ -532,6 +760,7 @@ class ObservationRuntime:
         self._evidence_read_cleanup_confirmed = True
         self._monitors_sealed = False
         self._annotations_sealed = False
+        self._follows_sealed = False
         self._annotation_budget = _AnnotationBudget()
 
     @property
@@ -584,6 +813,169 @@ class ObservationRuntime:
             cleanup_issues=((acquisition_cleanup,) if acquisition_cleanup else ())
             + recorder_cleanup,
         )
+
+    def _follow_access(
+        self, generation: _ObservationGeneration
+    ) -> PreparedFollowAccess:
+        access = generation.follow_access
+        association = generation.evidence
+        if not isinstance(access, PreparedFollowAccess):
+            raise FollowRejected("follow_unavailable")
+        try:
+            replace(access)
+            if (
+                not self._evidence_read_cleanup_confirmed
+                or not association.live_reads_open
+                or access.live_reader is not association.live_reader
+                or access.session_id != association.session_id
+                or access.policy != association.policy
+                or access.coordinator.current_provenance is None
+            ):
+                raise ValueError("unusable Follow access")
+        except Exception:
+            raise FollowRejected("follow_unavailable") from None
+        return access
+
+    async def start_follow(self, request: FollowRequest) -> FollowSubscription:
+        self._guard_context()
+        if not isinstance(request, FollowRequest):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        try:
+            replace(request)
+        except Exception:
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST) from None
+        if self._follows_sealed:
+            raise FollowRejected("not_active")
+        association = self._evidence_association
+        if association is None or association.session_id is None:
+            raise FollowRejected("no_associated_session")
+        if request.session_id != association.session_id:
+            raise FollowRejected("session_not_associated")
+        generation = self._generation
+        if (
+            generation is None
+            or self._summary.state is not RuntimeState.ACTIVE
+            or generation.follow_sealed
+        ):
+            raise FollowRejected("not_active")
+        access = self._follow_access(generation)
+        if generation.follow is not None:
+            raise FollowRejected("busy")
+        if len(self._reads) >= 8:
+            raise FollowRejected("read_capacity")
+        # No await before this generation, slot and strong admission owner bind.
+        subscription = FollowSubscription(self, generation, access)
+        generation.follow = subscription
+        owner = asyncio.create_task(
+            self._own_follow(generation, subscription, access, request)
+        )
+        generation.follow_start = owner
+        owner.add_done_callback(_follow_owner_settled)
+        try:
+            return await _wait_follow_owner(owner)
+        except asyncio.CancelledError:
+            # A late result belongs to this captured registration, never a later
+            # run. Joining the submitted head precedes slot release/unregister.
+            await subscription.close()
+            raise
+
+    async def _own_follow(
+        self,
+        generation: _ObservationGeneration,
+        subscription: FollowSubscription,
+        access: PreparedFollowAccess,
+        request: FollowRequest,
+    ) -> FollowSubscription:
+        def revalidate() -> None:
+            self._guard_context()
+            if (
+                self._follows_sealed
+                or self._generation is not generation
+                or generation.follow_sealed
+                or self._summary.state is not RuntimeState.ACTIVE
+            ):
+                raise FollowRejected("not_active")
+            if self._follow_access(generation) is not access:
+                raise FollowRejected("follow_unavailable")
+
+        try:
+            subscription._registration = await access.coordinator.start_follow(
+                request,
+                run_id=generation.evidence.run_id.value,
+                reader=_FollowQueries(
+                    access.session_id, access.policy, subscription._retrieve
+                ),
+                revalidate=revalidate,
+            )
+            subscription._start = subscription._registration.start
+            return subscription
+        except BaseException as failure:
+            await subscription._release()
+            if isinstance(failure, _FollowSealed):
+                raise FollowRejected("not_active") from None
+            raise
+        finally:
+            generation.follow_start = None
+
+    async def _follow_query(
+        self,
+        generation: _ObservationGeneration,
+        access: PreparedFollowAccess,
+        query: EvidenceRetrievalRequest,
+        *,
+        final: bool = False,
+    ) -> EvidencePage:
+        if not final and (
+            self._generation is not generation
+            or generation.follow_sealed
+            or self._follows_sealed
+        ):
+            raise _FollowSealed
+        association = generation.evidence
+        if not association.live_reads_open or not self._evidence_read_cleanup_confirmed:
+            raise FollowRejected("follow_unavailable")
+        if len(self._reads) >= 8:
+            raise FollowRejected("read_capacity")
+        owner = self._submit_read(association, access.live_reader, None, query)
+        return (await self._wait_read(owner)).page
+
+    def _seal_follow(
+        self, generation: _ObservationGeneration, reason: FollowEndReason
+    ) -> None:
+        generation.follow_sealed = True
+        if generation.follow is not None:
+            generation.follow._seal(reason)
+
+    def _seal_follows(self) -> None:
+        """Synchronous service-stop latch, callable before HTTP drain/detach."""
+        self._guard_context()
+        self._follows_sealed = True
+        if self._generation is not None:
+            self._seal_follow(self._generation, "service_stopping")
+
+    async def _final_follow_head(self, generation: _ObservationGeneration) -> None:
+        # Join admission, not an idle subscriber or its delivery task. The source
+        # is now final: acquisition/Monitor/annotation owners have all settled.
+        if generation.follow_start is not None:
+            await asyncio.gather(
+                asyncio.shield(generation.follow_start), return_exceptions=True
+            )
+        subscription = generation.follow
+        if subscription is not None and not subscription._closed:
+            access = subscription._access
+            assert access is not None
+            try:
+                page = await self._follow_query(
+                    generation,
+                    access,
+                    _follow_head_request(access.session_id, access.policy),
+                    final=True,
+                )
+            except Exception:
+                pass  # Unknown cutoff; never change008 read/release certainty.
+            else:
+                subscription._seal("source_ended", page.snapshot_end_exclusive)
+        generation.follow_access = None
 
     def _monitor_access(
         self, generation: _ObservationGeneration
@@ -887,6 +1279,17 @@ class ObservationRuntime:
             raise EvidenceReadRejected("read_unavailable")
         if len(self._reads) >= 8:
             raise EvidenceReadRejected("read_capacity")
+        return self._submit_read(association, reader, opener, query)
+
+    def _submit_read(
+        self,
+        association: _EvidenceAssociation,
+        reader: EvidenceReadPort | None,
+        opener: Callable[[], Awaitable[OwnedEvidenceReadPort]] | None,
+        query: EvidenceReference | EvidenceRetrievalRequest,
+    ) -> asyncio.Task[RunEvidencePage]:
+        session_id = association.session_id
+        assert session_id is not None
         work = (
             self._own_read(association.run_id, session_id, reader, query)
             if reader is not None
@@ -1041,6 +1444,7 @@ class ObservationRuntime:
             return
         generation.monitor_sealed = True
         generation.annotation_sealed = True
+        self._seal_follow(generation, "detached")
         self._latch_monitor_stop(generation, MonitorOutcome.DETACHED)
         if self._summary.stop_intent is RuntimeStopIntent.NONE:
             self._summary = replace(
@@ -1104,6 +1508,10 @@ class ObservationRuntime:
             self._guard_context()
             async with self._lock:
                 self._summary = replace(self.status(), state=RuntimeState.DETACHING)
+                self._seal_follow(
+                    generation,
+                    "source_failed" if self._summary.primary_issue else "source_ended",
+                )
         finally:
             # These are Event notification waits, never startup, RX, backend
             # close, or join work. Drain both before this generation can settle.
@@ -1194,6 +1602,13 @@ class ObservationRuntime:
                                 session_id,
                                 policy,
                             )
+                            or not _follow_access_matches(
+                                prepared.follow_access,
+                                prepared.recorder,
+                                prepared.evidence_access,
+                                session_id,
+                                policy,
+                            )
                         ):
                             self._startup_failure(
                                 generation,
@@ -1205,6 +1620,7 @@ class ObservationRuntime:
                         else:
                             generation.monitor_access = prepared.monitor_access
                             generation.annotation_access = prepared.annotation_access
+                            generation.follow_access = prepared.follow_access
                             if prepared.evidence_access is not None:
                                 association.live_reader = (
                                     prepared.evidence_access.live_reader
@@ -1252,6 +1668,10 @@ class ObservationRuntime:
             self._summary = replace(self.status(), state=RuntimeState.DETACHING)
             generation.monitor_sealed = True
             generation.annotation_sealed = True
+            self._seal_follow(
+                generation,
+                "source_failed" if self._summary.primary_issue else "source_ended",
+            )
         joined_snapshot: AcquisitionSnapshot | None = None
         if generation.acquisition is not None:
             try:
@@ -1278,6 +1698,7 @@ class ObservationRuntime:
             joined_snapshot = await generation.acquisition.join_terminated()
         await self._join_monitor(generation, joined_snapshot)
         await self._join_annotation(generation)
+        await self._final_follow_head(generation)
         # Acquisition, Monitor and annotations joined. Seal before pinned reads;
         # no lifecycle lock spans these joins or recorder close. Terminal access
         # retains only opaque target metadata for its separately planned reader.
@@ -1289,6 +1710,8 @@ class ObservationRuntime:
                 return_exceptions=True,
             )
         association.live_reader = None
+        if generation.follow is not None:
+            await generation.follow._release()
         if prepared is not None:
             try:
                 await prepared.recorder.close()

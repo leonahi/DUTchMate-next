@@ -7,37 +7,36 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 ## Resume Here
 
-- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 remains incomplete.
-- **Committed baseline**: Features001–010 are software-complete on main.
-  Feature010: `:/^Implement client annotations` (`Implement client annotations`),
-  accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569` (Feature009).
-- **Current checkpoint**: Feature010 T001–T024 complete,24/24, with separately
-  authorized final pre-commit review and implementation commit complete.
-  No next implementation slice is selected or authorized.
-- **Implemented010**: Exact bounded attributed client assertions through Core,
-  authenticated service and thin CLI; explicitv3 and ordinary evidence retrieval.
-- **Preserved**: Strictv1/v2/Profile-v1 and oldsix codecs/charges; sole RX/journal/
-  coordinator/clock,005 lifecycle/008 cleanup/009 Monitor timing and security.
-- **Fresh staged gate**:6951 passed in471.58s, zero failures/errors/skips;
-  Ruff/mypy107/seven import contracts, working/staged diff checks clean.
-- **Installed evidence**:529 process cases within that run:153 annotation and376
-  CLI/evidence/Monitor; wheel/sdist, both backend shapes and IPv4/IPv6.
-- **Staged artifact review**:20 archives, six full-stack/two CLI-only installs;
-  all33 module bytes/imports/locked dependencies/metadata/private exclusions pass.
-- **Review/scope**: No defect or product correction;47 intended files only.
-  All236 index blobs exported/checked; executable and governing inputs unchanged
-  during final documentation result recording. No extra full-gate rerun.
-- **Graphify**: T023's one code-only update/recorded warnings remain; no rerun.
-  Generated output/backups/local tooling stay ignored and outside the commit.
-- **Next action**: Await human direction for the next Phase1 slice. Do not start
-  implementation or native/physical acceptance automatically.
-- **Stop boundary**: Commit only completed; nothing pushed, no next slice/hardware.
-- **Acceptance limits**: macOS/arm64 Python3.14.3 software evidence only. Native
-  Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced hardware
-  acceptance remain unexecuted; actual Windows commands remain unsupported.
-- **Deferrals**: Follow, TX/Interact/console, Control, handoff/reconnect, text/regex,
-  annotation editing/backdating/attachments, catalogue/history/restart/service
-  management, verified identity, Enhanced production/MCP/AI.
+- **Active phase**: Phase1 — Basic backend through CLI; Phase1 remains incomplete.
+- **Committed baseline**: Features001–011 are software-complete on main.
+  Feature011: `:/^Implement live follow` (`Implement live follow`); Feature010: `b6b043c50d8536d6569bbc52579f11a9eda5aa5e`,
+  `Implement client annotations`; Feature009: `2fdebaf4aa3df815be9f2ce223c832e70c739569`.
+- **Selected slice**: Feature011 `live-follow`, receive-only live Follow through
+  Core, authenticated service and thin CLI, accepted by the human.
+- **Current checkpoint**: T001–T024 complete;24/24 tasks complete.
+  Feature011 is software-complete and committed; final pre-commit review/gate passed.
+- **Design**: Atomic live-tail/provenance start, one independent subscriber/job,
+  coalesced wakeups and bounded same-journal pages; exact records/retention gaps.
+  Closed NDJSON with transport-only heartbeat and explicit terminal tail/uncertainty.
+- **Preserved**: Sole RX/journal/worker,003 evidence/retention,005 lifecycle,
+  006 security,007 thin client,008 read cleanup,009 Monitor and010 annotations.
+- **Next action**: Await human selection and authorization of the next Phase1 slice or acceptance activity.
+  No push, next slice, Graphify rerun or physical-hardware action is authorized.
+- **First group boundary**: No live coordinator registration, runtime/composition,
+  service or CLI Follow behavior inT001–T005. T006 is RED coordinator/real-journal
+  integration test authoring only.
+- **Validation**: Fresh pre-commit 8182 full passes, including625 guarded installed
+  Follow/007–010 cases; zero failures/errors/skips, warnings as errors. Ruff/mypy121/
+  seven import contracts/staged diff pass;32 archives/12 installs audited.
+- **Graphify**: T023 one code-only update passed:6095 nodes/20503 edges/254
+  communities, zero tokens; graph-health/zero-node limits recorded in history.
+- **Acceptance limits**: Existing macOS/arm64 Python3.14.3 software evidence only.
+  Native Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced
+  hardware acceptance remain unexecuted; actual Windows commands unsupported.
+- **Deferrals**: TX/Interact/console, Control, release/reacquire/handoff/reconnect,
+  text/line/regex, historical browsing, Enhanced production, MCP/AI and unrelated
+  Phase1 work. Follow software closure is verified; native/physical acceptance remains.
+- **Stop boundary**: Feature011 committed; stop. Nothing pushed; no next slice or hardware.
 
 ## Repository Baseline
 
@@ -53,6 +52,7 @@ Completed-slice evidence is kept in [development history](development_history.md
 | [008](../specs/008-evidence-retrieval/spec.md) | Bounded authenticated active/terminal evidence retrieval, exact binary pages and read-cleanup ownership | `11e9ce6d4b47fe8bfa7ecb99e174f4f469e53701` |
 | [009](../specs/009-receive-only-monitor/spec.md) | Bounded receive-only Monitor, explicit v2 markers, authenticated service/CLI and owned settlement | `:/^Implement receive-only monitor` |
 | [010](../specs/010-client-annotations/spec.md) | Bounded attributed client assertions, explicitv3 evidence, authenticated service/thin CLI and owned insertion | `:/^Implement client annotations` |
+| [011](../specs/011-live-follow/spec.md) | Receive-only live-tail Follow, bounded exact evidence/gaps, owned stop/cleanup, authenticated NDJSON and thin streaming CLI | `:/^Implement live follow` |
 
 All prior implementation commits remain ancestors of feature 007. Its accepted
 parent `c2c9ce3` records feature 006; `b4c5730` is the service implementation.
@@ -80,6 +80,508 @@ Feature010's implementation commit is `:/^Implement client annotations`, `Implem
 with accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569`. The title-based reference resolves to
 the implementation commit without a self-referential hash; prior baselines remain
 ancestors. Nothing was pushed.
+
+## Completed Feature: Receive-Only Live Follow (011; Software-Complete)
+
+Artifacts: [spec](../specs/011-live-follow/spec.md),
+[plan](../specs/011-live-follow/plan.md),
+[research](../specs/011-live-follow/research.md),
+[model](../specs/011-live-follow/data-model.md),
+[contract](../specs/011-live-follow/contracts/follow.md),
+[quickstart](../specs/011-live-follow/quickstart.md),
+[quality checklist](../specs/011-live-follow/checklists/requirements.md) and
+[tasks](../specs/011-live-follow/tasks.md).
+
+**Progress: T001–T024 complete (24/24); Feature011 is software-complete and committed.**
+Implementation commit: `:/^Implement live follow`, `Implement live follow`; accepted parent
+`b6b043c50d8536d6569bbc52579f11a9eda5aa5e`. Phase1 remains incomplete; nothing pushed.
+Task-specific notes below retain their historical checkpoint boundaries; current
+authorization/validation are in Resume Here and the final pre-commit record below.
+Sequential identifier follows010; no branch hook exists and Git remains main.
+The ignored local Spec Kit pointer selects011. Pure values/state and private
+coordinator registration/wakeup/pull are implemented in follow.py/monitor.py. One
+T006 guard-order correction awaits the existing first RX reader before forbidding
+extras. T009 adds runtime/composition only; no service/CLI, schema/Profile/backend/
+dependency/lock change or Graphify update. Existing import coverage remains unchanged.
+
+Foundation evidence:122 new pure tests (72 values/50 state),316 focused cases
+including directly affected value regressions, full7073-test gate, Ruff/mypy110,
+seven import contracts and diff/Markdown checks. Initial denied-loopback/empty
+offline-cache run is recorded as failed in history; the unchanged tree passed the
+full guarded rerun outside the sandbox with the populated uv cache. At foundation,
+no separate Follow installed/live acceptance existed; hardware/native acceptance remains
+unexecuted. Existing installed-process regressions are included in the full gate.
+
+Implemented T007 mechanics: one coordinator registration captures actual committed
+head and acknowledged provenance atomically under the append gate. One coalesced
+Event hints all four append paths, including ambiguous-ACK possibilities. The same
+live journal supplies fresh capped ranges to pure state; no copied RX queue,
+retention pin, idle worker/polling, extra evidence clock sample or reader. Exact
+records/gaps remain source facts, with no network-delivery position. Existing
+Monitor ACK/publication/clock order is preserved. Close is subscriber-only.
+
+At T007, T00654 passed, including all50 formerly missing-entry cases. Combined
+required Monitor/annotation/journal/integration and foundation regressions518 pass
+in1.92s; Ruff/mypy112/seven import contracts pass. Initial52-pass/2-fail run exposed
+a test guard armed before the first scheduled RX reader; the existing first-read
+checkpoint fixes only that test without weakening its extra-reader/connection guards.
+No new full repository pytest/installed gate at this focused task; T005 remains
+historical evidence. Tests prove only software behavior on this host.
+
+T008 added RED tests only in `core/tests/contract/test_follow_runtime.py` and existing
+`core/tests/contract/test_observation_composition.py`: optional capability default
+None/valid/malformed transfer, current ACTIVE session checks/rejection precedence,
+captured-generation revalidation, independent single subscriber/one pull/eight
+shared submitted-read leases/no idle lease, cancelled start/result cleanup,
+synchronous seal/wakeup, final cutoff/join-before-close, unchanged v1/v2 and explicit
+v3 preparation. T008 adds no production behavior. Its RED selection:89 expected
+missing-feature failures/8 prerequisite passes, no collection/teardown errors.
+Those failures identified missing runtime entry, optional transfer or production wiring.
+T009 now executes all deeper assertions GREEN. At T008, existing runtime/composition/
+read/Monitor/annotation and T006 regressions:760 pass. Targeted Ruff/mypy2 and seven
+import contracts pass. A new test-helper import cycle was corrected before this run.
+
+T009 adds immutable optional Follow access matched to the actual coordinator/live
+reader/session/policy. Admission captures the current generation before any await;
+one subscriber/pull uses the existing eight submitted-read leases and no idle lease.
+Cancellation joins query work and unregisters only the captured subscriber. Detach,
+natural termination and the exposed synchronous `_seal_follows()` stop latch seal
+and wake without waiting for delivery. After acquisition/Monitor/annotation join,
+one optional final metadata head precedes read joins/unregister and recorder close.
+Unknown/frozen end facts and permanent008 cleanup/release facts remain authoritative.
+Production adds the capability to its existing explicitv3 preparation; v1/v2 remain.
+One T008 helper cast retains its synchronous-None assertion after the real typed
+method exists. No other test/fake or T007 implementation change.
+
+T009 GREEN:97 T008 cases pass;857 required combined cases and1302 expanded focused
+cases pass, zero failures/errors/skips. Ruff/mypy113/seven import contracts pass;
+scope and diff checks are clean. These overlapping selections are not added.
+No new full repository pytest/installed gate at this focused task. T005 is historical.
+At T009, service stop wiring remained T011; exposing the latch was not HTTP acceptance.
+
+T010 added RED tests only in `apps/service/tests/test_follow_http.py`: literal route/
+readiness and16KiB closed request/session bounds, exact rejection/journal mappings,
+five frame/seven record projections/provenance/gaps, no-store/security-before-body,
+independent Follow job vs existing slots, pre-header oversize/post-header terminal/
+EOF,1s heartbeat/5s send bound, actual guarded loopback where ASGI buffers.
+The real app, auth/body gates and job owners are exercised with typed Core facts
+at runtime entry; no service behavior or Core policy is implemented by the tests.
+Six actual guarded Uvicorn/IPv4/IPv6 loopback cases author incremental/heartbeat
+expectations. Final160 cases:136 missing-route failures, one missing synchronous
+request_stop seal,23 planned existing security/alias passes; no errors/skips.
+At T010, deeper streaming/capacity/deadline assertions remained unreachable.
+Actual loopback received404 then; T011 now verifies successful Follow delivery.
+Ruff/mypy114/seven import contracts pass;1466 old service HTTP/runtime/read/Monitor/
+annotation regressions pass. Initial test-probe/Uvicorn setup defects were corrected
+before final RED measurement. All existing production/config/tests match entry.
+
+T011 adds only service Follow in new follow_http.py and existing app.py/http.py.
+The literal authenticated route strongly registers one independent stream owner
+before Core admission, preflights started before200, then projects the existing
+seven records/markers/provenance with the unchanged evidence encoder. It retains
+one bounded page/frame, one pending pull/send,1s delivery-only heartbeats and5s
+cooperative sends; failures preserve the offered prefix or close an unusable peer.
+Cancellation joins subscriber cleanup without detaching capture. request_stop
+synchronously seals/wakes Follow before HTTP drain through the existing launch
+context; server.py already invokes that hook and stays unchanged. Lifespan joins
+cancelled stream cleanup before the unchanged final detach/bootstrap release.
+
+Fresh T010 baseline:137 expected failures/23 planned passes. First implementation:
+116 pass/44 fail, exposing two T010 oracle mistakes: rewriting stdlib short control
+escapes contradicted008§6, and old read/Monitor overflow expected invented service
+codes instead of existing operation_capacity. Only that helper/two literals changed;
+reversing them reproduces T010 entry bytes exactly. All160 cases then passed.
+A focused diagnostic also reproduced/fixed cancellation before the new owner task's
+first step, ensuring its finally joins the receive observer and settles admission.
+
+Final T011 GREEN:1862 combined required service HTTP/runtime/process/evidence/
+Monitor/annotation plus directly affected existing lifetime cases pass in78.42s,
+zero failures/errors/skips. This includes all160 Follow and38 existing installed
+service-process cases. Ruff/mypy115/seven import contracts pass. No Core/CLI,
+evidence_http.py, server.py, old test/fixture, dependency or import configuration
+change at T011. T005's full7073 gate is historical; no new full repository or
+installed Follow gate is claimed. Full checkpoints remain T013/T019/T024.
+
+T012 adds only apps/cli/tests/test_cli_follow.py. The actual console/Typer/HTTPX
+path uses existing isolated credentials and test-owned external raw byte streams;
+no fake command, frame parser/validator, Core/service policy or capture behavior.
+Hand-declared existing golden fixtures supply seven records/provenance/markers.
+Coverage includes exact grammar/help/local validation, one credential/request,
+closed NDJSON/identity media/five frames, sequence/gap/terminal facts, all256 RX
+bytes, canonical output,1MiB+LF arbitrary chunk framing, bounded accumulators,
+incremental flush/no transcript,10s handshake/5s complete-frame trickle deadlines,
+no whole-session limit, clean terminal/abnormal EOF exits, Ctrl-C130 and broken
+pipe. A controlled loop monotonic source drives real asyncio timeout callbacks;
+an independent diagnostic confirms cumulative deadlines and fresh frame budgets.
+
+Final T012 RED:235 expected failures/38 planned local-input prerequisite passes
+in4.17s, zero collection/teardown errors/skips.233 failures identify missing Follow
+command/help and two identify its missing streaming module. The38 passes exercise
+existing private invalid-input/resource-free rejection; deeper Follow assertions
+were authored then and now reach GREEN at T013. Existing command/finite transport/
+evidence/Monitor/annotation regressions1775 pass in27.10s. Ruff/mypy116/seven import
+contracts pass. Before recording, all252 protected existing inputs match entry.
+No existing production/test/fixture/config/dependency changes, full repository
+pytest or installed Follow gate at this focused RED task; T005 remains historical.
+
+T013 implements only the narrow streaming command/validation in new CLI follow.py
+and additive main.py/client.py blocks. Existing evidence validators, JSON decoder/
+encoder, diagnostics and cooperative output are reused. One bounded partial frame
+and chunk offset feed closed started/record/gap/heartbeat/terminal validation with
+an independently checked received position. A10s absolute handshake ends at the
+first complete started frame; fresh5s complete-frame budgets exclude preceding
+output and cannot be extended by trickle bytes. Terminal requires clean EOF within
+its existing budget. No whole-session deadline, transcript, UART text decoding,
+retry/reconnect, Core/service import or finite-exchange relaxation.
+
+T013's four actual guarded Uvicorn IPv4/IPv6 cases run the real CLI/HTTPX client,
+authenticated app, runtime/coordinator/v3 journal and both backend fixtures.
+Monitor, annotation and active retrieval coexist with Follow; exact records/all256
+RX bytes, attributed assertion, reported loss and genuine origin boundaries agree
+with retrieval. A cooperative CLI interrupt closes the subscriber, capture stays
+ACTIVE and later RX commits; a replacement view starts at the fresh tail. Service
+stop delivers its unknown-cutoff terminal before HTTP drain/recorder teardown.
+No extra backend/RX reader/journal connection is permitted. OS-signal/installed
+Follow validation remains T020; these fixtures prove software neutrality only.
+
+Fresh T012 baseline235 RED/38 prerequisite passes became273 GREEN in2.57s;
+four US1 cases pass in5.37s. Combined required CLI selection2052 passes in33.78s.
+Full US1 gate:7661 pass in502.66s (Core2790/service2063/CLI2808), zero failures/
+errors/skips; includes529 existing CLI process-suite and38 service-process cases.
+Ruff/mypy117/seven import contracts/diff pass. The initial full run had7137 passes/
+524 setup errors solely because the temporary offline cache lacked Hatchling;
+two installed packaging probes passed with the populated cache, then the unchanged
+tree passed the full rerun. No production/test/dependency workaround was used.
+
+Only CLI follow.py and additive client.py/main.py plus appended US1 tests changed
+at T013. Removing the added blocks reproduces finite client, existing commands
+and all original T012 test bytes exactly. Core/service/old tests/fixtures/schema/
+Profile/backend/validators/dependency/import configuration remain unchanged.
+This is the US1 MVP checkpoint, not full011 or Phase1 closure.
+
+T014 adds only core/tests/contract/test_follow_retention.py:52 cases over realv3
+journals and both backend shapes. All are already GREEN: minimum active policies,
+record/page charge edges, eviction before/during/after materialization, repeated
+adjacent gaps, exact missed-range/head intersection, unchanged whole-prefix counts/
+charges and distinct timestamp domains, Monitor/annotation interleaving and no
+retention pinning. Exhausted-MAX and malformed zero-progress fault cases are
+explicitly injected; oversized-first-record cases use actual003 shortage pages.
+There is no production/old-test/shared-fixture change or genuine defect to defer
+from T014 to T016. An initial18 failures came solely from the new tests mixing
+direct append with the backend probe's queue; only those new sample calls changed.
+Fresh52 pass in5.41s; combined1777 pass in7.39s, zero failures/errors/skips;
+Ruff/mypy118/seven import contracts pass. No full repository gate was repeated at
+this focused test-only task; T013's7661 passes remain historical evidence.
+
+T015 appended163 delivery-edge cases only to apps/service/tests/test_follow_http.py
+and apps/cli/tests/test_cli_follow.py. All47 service cases pass, including four
+guarded IPv4/IPv6 actual-runtime/v3-journal worker-blocked heartbeat cases with
+both fake backends. At T015, CLI110 passed/six genuine cases were RED: Follow
+printed incoherent retention markers and accepted the subsequent valid terminal
+with exit0. All six are now corrected at T016 below. Cases
+cover mismatched/zero whole-prefix counts, non-prefix expired range, first-only/
+last-only endpoints and timestamp/domain ID mismatch. Contract§5 requires coherent
+whole-prefix facts; these checks do not rederive discarded byte counts or compare
+timestamp values across domains. Existing shape-only marker validation missed
+the relationships. No production/shared-validator/old-test fix was made at T015.
+
+All other new cap/escape/base64/seven-variant/nested duplicate/unknown/NaN/bool/
+sequence/delimiter/partial EOF/trailing/identity/framing/trickle/send/accumulator/
+private-diagnostic cases are GREEN. Opaque field-array order remains preserved
+under008; JSON object key reordering is accepted and canonicalized. Original
+T010/T012/T013 helpers/tests remain byte-identical after removing only three
+new service imports and appended T015 blocks. New harness mistakes were corrected
+only in those blocks; no failure was hidden with skip/xfail or weaker assertions.
+
+Focused delivery validation:4033 passed/six failed in126.81s; zero errors/skips,
+all3876 selected pre-existing cases passed. Ruff/mypy118/seven import contracts/
+format/diff pass. No full repository/installed Follow/native/hardware gate was
+rerun for this focused test-only task; T013's7661 passes remain historical.
+
+T016 changes only the gap branch in apps/cli/src/dutchmate_cli/follow.py's
+Position.accept. It requires an expired prefix starting at0, a matching whole-prefix
+record count, both timestamp endpoints present or both absent, and each timestamp's
+domain_id equal to its own descriptor. All checks precede received-position
+advancement/output. Nonempty missed-range containment remains required. No byte/
+charge count rederivation, cross-domain timestamp comparison, metadata rewrite,
+new public helper or Core/service/shared-validator/test change.
+
+Consumer inventory: client.exchange_follow creates Position and _follow_frame calls
+accept before encoding; its existing private invalid_response/exit5 path handles
+the new rejection. main.follow's output/diagnostic path is unchanged. Shared
+evidence._marker/_endpoint and primitive validators remain unchanged, including
+finite exchange_evidence -> _evidence_reply -> evidence.reply. Other Follow branches,
+framing/deadlines, opaque array order and valid gaps/terminal facts remain unchanged.
+Core/journal/service producers already supply coherent facts; no upstream fix.
+
+Fresh unchanged T015 coherence cases: six RED/six controls in0.18s became12 GREEN
+in0.19s. Combined full T014/T015 test files plus required003/008–010 regressions:
+5816 passed in155.04s (Core1777/service1871/CLI2168), zero failures/errors/skips.
+Edge-file counts:52 Core retention/207 service Follow/393 CLI Follow; all652 pass,
+plus5164 other regressions. Ruff/mypy118/seven import contracts/format/diff pass.
+Only Follow-local validation changed; the next planned full gate remainsT019,
+and T013's7661-test pass is historical. No full repository/installed/native/hardware
+gate was repeated at this focused correction.
+
+T017 adds only core/tests/contract/test_follow_lifetime.py:120 cases,60 per backend
+shape, with real journals and deterministic append/query/result gates. Coverage
+includes pre/post-registration cancellation, idle/submitted pull cancellation,
+reentrant pull/close waiter loss/read capacity, detach vs RX/Monitor/annotation/
+ordinary reads, synchronous seals and source/stop precedence, known/unknown immutable
+cutoffs, prefetched-tail discard without a Core delivery claim, uncertain writer/
+terminal-reader cleanup and old preparation/replacement-generation isolation.
+Native worker gates verify24 submitted/materialized start/head/page read races;
+teardown joins resource work before recorder close and finishes independently of
+a gated consumer return. No socket, delivery adapter or physical device is needed.
+
+All120 new cases pass in0.72s with warnings treated as errors. The combined23-file
+Core selection passes1844 cases in11.13s (1724 existing), zero failures/errors/skips;
+Ruff/mypy119/seven import contracts/format/diff pass. Initial112 passes/eight
+failures/two warnings exposed only new-test enum/cleanup/task-wrapper mistakes;
+those harness issues were corrected without production/shared-fixture changes.
+No genuine T017 defect is deferred to T019. Entry hashes protect all existing
+production/tests/configuration and governing contract bodies. No full repository,
+service/CLI/loopback/installed/native/hardware gate was run at this Core-only task;
+the next planned full checkpoint remains T019.
+
+T018 adds only apps/service/tests/test_follow_lifetime.py:90 cases covering client
+loss before/during admission, pending pulls and sends, strong registration/cleanup
+and slot release under repeated cancellation, native query joins before final
+detach, five-second send expiry despite progress, terminal offered-prefix/cutoff/
+EOF honesty and no-store/security-before-body while stopped cleanup owns the slot.
+Thirty-six cases use both actual normalized backend fixtures and real journals.
+Eight actual guarded IPv4/IPv6 loopback cases verify peer disappearance with
+continuing Monitor/annotation/read/RX and synchronous stop before controlled-server
+HTTP drain, heartbeat during a submitted native query, discarded unoffered payload,
+unknown terminal cutoff/clean EOF before app lifespan recorder cleanup.
+
+All90 cases already GREEN:82 local cases in21.27s and8 loopback cases in5.17s.
+Combined12-file service selection:2089 passed in132.49s (1999 existing), zero
+failures/errors/skips, warnings treated as errors. Includes006 HTTP/runtime/
+bootstrap/process,008 evidence HTTP/read,009 Monitor HTTP/lifetime,010 annotation
+HTTP/lifetime and prior011 Follow HTTP tests. Ruff/mypy120/seven import contracts/
+format/diff pass. Initial failures were new-test finite-response/annotation-input
+and borrowed-lifespan fixture mistakes; corrected only in the new test file.
+No genuine T018 defect is deferred to T019. Entry131 protected inputs prove all
+production, existing tests/shared fixtures/configuration/contracts unchanged.
+No repository-wide pytest or new installed Follow/native/hardware acceptance was
+run; T019 remains the next planned full gate. Existing guarded006 process tests
+are included, without claiming installed011 Follow acceptance ahead of T020.
+
+T019 is a no-change hardening checkpoint: no validation/review defect required
+production or test correction. Both lifetime suites pass all210 cases unchanged.
+Required43-file focused selection:6240 passed in188.46s (Core1895/service2089/
+CLI2256), zero failures/errors/skips. Covers005/006/008–010 lifecycle/read-cleanup/
+security/Monitor/annotation and existing Follow boundary/retention/finite CLI cases.
+The subsequent full combined US2/US3 gate passes8086 cases in567.03s
+(Core2962/service2200/CLI2924), zero failures/errors/skips, warnings treated as
+errors. Ruff/mypy120/seven import contracts/diff pass. Existing guarded installed
+service/finite CLI process tests were included; no new installed Follow test existed at T019.
+
+Final checkpoint diff review confirms existing single RX/journal/worker ownership,
+coalesced append hints and Monitor timing, captured-generation/read cleanup and
+seal/frozen-cutoff facts, independent service job/security/no-store/send behavior,
+and thin CLI framing/received-prefix validation. Finite client/main ASTs match
+the committed baseline after excluding only their Follow additions. Entry135
+protected inputs remain unchanged until documentation-only result recording;
+no executable/configuration or normative contract change. Progress headers only
+are reconciled in011 artifacts, including the model/contract/quickstart, with no
+new recipe, installed acceptance or future task implementation. The next planned
+full checkpoint is T024; T021 corrections still require their specified rerun.
+
+T020 adds only apps/cli/tests/test_cli_follow_process.py:96 guarded installed
+cases using unchanged non-editable wheel/sdist builders and outside-checkout
+service/CLI children. All workflows run on both backend fixtures/numericIPv4+IPv6:
+incremental exact RX with concurrent Monitor/annotation/ordinary reads,11 real
+heartbeats beyond the10s handshake bound, actual retention eviction/gap, independent
+Follow/read capacity, pre-header/source errors, policy-legal oversized RX, Ctrl-C,
+closed pipe, normalized disconnect, detach, abnormal EOF and joined service stop.
+Installed imports, one credential/request, private output and physical/account/
+discovery guards remain asserted. Shared helper/fake files are unchanged; all
+extensions and assertion-failure pipe cleanup are local to the new test module.
+
+Combined installed selection:625 passed in526.36s, zero failures/errors/skips,
+warnings as errors (Follow96, CLI112, evidence111, Monitor153, annotations153).
+Initial pilot9 passes/2 failures were new-harness defects: invalid6000ms Monitor
+test input and consequent unreaped-pipe warnings. Corrected only the new module
+to4000ms, bounded progress waits and local child cleanup; pilot11 passes, then the
+complete625-case run passes. No production defect/correction or shared-file edit.
+Ruff/mypy121/seven import contracts/format/diff pass. Entry135 existing inputs
+remained byte-identical until observed documentation/progress recording. No new
+repository-wide pytest was required/run; T019's8086 full pass remains historical.
+
+T021 reviewed the complete011 production/test/configuration/documentation diff
+against Core, active spec/plan/model/contract/tasks, completed003/005–010 contracts
+and current status. No production defect, correction or consumer migration was
+required. Same-journal ordering/provenance, four append paths/Monitor timing,
+generation/read-cleanup ownership, synchronous stop sealing and secured independent
+delivery remain coherent. AST comparison preserves finite CLI client/main code
+after excluding Follow additions and preserves the shared read-submission logic.
+Legacy codecs, package metadata, lockfile, backend fakes and old tests are intact.
+
+Fresh22-file focused selection:3444 passed in115.42s (Core979/service297/CLI2168).
+Fresh installed selection:625 passed in525.55s (Follow96/CLI112/evidence111/
+Monitor153/annotations153), both fixtures/numericIPv4+IPv6/wheel+sdist outside
+checkout. Both have zero failures/errors/skips, warnings as errors. Ruff/mypy121/
+seven import contracts/diff pass. Read-only inspection of26 fresh archive files
+and10 non-editable environments confirms exact module/source/test bytes, metadata/
+Python requirements, console entry, locked dependencies and private/generated
+exclusions. Wheels contain product modules/metadata; public Python tests remain
+in sdists. Existing builders/guards were reused unchanged.
+
+Quickstart now names the two actually executed guarded pytest selections and
+their observed coverage; test-only guard PYTHONPATH is distinguished from absent
+checkout product/editable fallback. No invented standalone fixture launch or
+manual credential/device step. Only documentation/progress changed at T021;
+all136 protected entry files matched until this recording. No executable or
+governing-contract correction required a full rerun; T0198086 full passes remain
+historical and T024 final validation remains unexecuted.
+
+T022 reconciles only completed evidence/progress and acceptance limits. Prior
+reports agree with the recorded results: T0198086 full, T020625 installed,
+T0213444 focused/625 process, zero failures/errors/skips; T02126 archive files/
+10 installations/196 wheel RECORD entries audited. These are historical results,
+not T022 reruns. The tested executable/configuration tree remains unchanged.
+
+Core§16 review confirms actual inward dependencies and ownership: deterministic
+Core owns generation/order/journal-query cleanup; the service owns its runtime,
+secured local HTTP and strong stream jobs; the thin CLI owns only its HTTP/output
+delivery. Follow uses the same live journal/coordinator/read leases and single RX
+path. Client exit is subscriber-only, and recorder cleanup does not depend on an
+idle socket. Existing authentication/browser rejection and no-store remain at
+the delivery boundary; MCP stays deferred. Fresh import-linter keeps all seven
+contracts (73 modules/274 dependencies). Source/ownership inspection agrees with
+Core§16 and the existing rationale§§6/15 explanation. That explanation remains
+accurate; no architecture document or Core/rationale/README change was needed.
+
+Updated only observed status/history and011 progress, including stale global
+footer stop/installed-acceptance references. Quickstart's executed commands and
+normative spec/plan/model/contract/task definitions remain unchanged. T022 ran
+documentation/link/scope/diff checks and import-linter only; no new pytest,
+installed process/artifact build or full gate. T024 fresh final verification is
+pending. Committed001–010 remain unchanged at the same010 HEAD; Phase1 and
+Feature011 remain incomplete. Software evidence is macOS/arm64 Python3.14.3 only;
+native Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced
+production/hardware acceptance remain unexecuted. Actual Windows commands remain
+unsupported; the Enhanced-shaped fixture proves software neutrality only.
+
+T023's separately authorized scope is to read agent tooling and the Graphify skill,
+evaluate the final011 structural/shared-interface trigger, and if triggered perform
+one code-only incremental update. Previous feature runs do not satisfy it. Keep
+outputs/backups/local tooling ignored/excluded; never read graph.json directly.
+If the run stalls/fails, stop/report without an unauthorized retry; record actual
+outcome/limits in history/status. At T022, T023–T024 remained unstarted. No T023 trigger
+decision, Graphify invocation, physical hardware, commit or push occurred at T022.
+
+T023 evaluated actual final011 code against agent tooling and the local Graphify
+skill. The trigger is met: new Core/service/CLI Follow modules and changed shared
+coordinator/preparation/runtime/service-job/client interfaces. One Graphify0.9.48
+code-only incremental update succeeded in5.478s, with normal lock/shrink guards,
+no force/full rebuild/semantic extraction/LLM:6095 nodes/20503 edges/254 communities
+(+659/+2448/+8 from010). Selected23 changed code/config files:22 Python (ten
+product/twelve test) plus pyproject.toml; all22 Python AST stamps match current
+bytes.16 changed documents were excluded from extraction; unchanged sources
+provided resolution context. No retry or separate labeling run occurred.
+
+Graph-health warning:289 dangling endpoints,244 directed/246 undirected collapsed
+same-endpoint edges; zero missing endpoints/self-loops/unverified code nodes.
+These limit navigation accuracy and are not repaired by this task. pyproject.toml
+produced zero nodes and remains unstamped; no retry.92 changed community labels
+were regenerated deterministically. HTML aggregates254 communities/724 links;
+report shows212 of254 communities and counts256 code-corpus files versus258 in
+the full detector. No raw graph.json content was read directly by the agent.
+Native outputs/five-file backup and local tooling remain ignored/untracked;
+temporary old-graph backup was removed after success. Cost record adds zero input/
+output tokens. Source/configuration/001–010 identity, documentation consistency,
+ignore/exclusion and diff checks pass. No tests/full gate/installed flows rerun
+at T023; T024 is still the fresh final checkpoint. Phase1 remains incomplete.
+
+T024's exact remaining scope is the fresh Ruff/mypy/import-linter/pytest/diff
+gate and non-editable wheel/sdist installability/compatibility/privacy review,
+including guarded Follow and007–010 process suites; review Core/contract/complete
+diff/artifact scope. Correct genuine defects only with focused evidence and rerun
+the full gate after corrective executable/governing-contract changes. Record only
+completed progress, report011 software readiness/Phase1 incompleteness/native,
+physical and Enhanced limits/exact next action, then stop for separately authorized
+pre-commit review. No T024 work, further Graphify, hardware, commit or push is
+authorized by T023.
+
+T024 fresh final checkpoint passed without a genuine defect or corrective code/
+test/shared-fixture/configuration/governing-contract change. Ruff is clean; mypy
+checks121 source files; all seven import contracts are kept (73 modules/274
+dependencies). Full pytest passes8182 cases in724.907s (JUnit), zero failures/
+errors/skips, warnings as errors. The same full run includes all625 required
+installed process cases:96 Follow/112 CLI/111 evidence/153 Monitor/153 annotations;
+these overlap the full total and are not a separate added count. Both backend
+fixtures, real journals, numeric IPv4/IPv6 and non-editable wheel/sdist children
+outside checkout execute with independent physical/discovery/account guards.
+
+Fresh read-only artifact audit passes26 archives/10 isolated installations/
+196 wheel RECORD rows (183 payload hashes/sizes). Exact product/source/test/config bytes,
+metadata/Python range/console entry, locked runtime closure and non-editable
+installation targets match; no credential/journal/private/generated/agent output
+is packaged. Complete33-file Feature011 review covers ten product modules, twelve
+test files, root import coverage and ten documentation/specification files. Core/
+011/completed003/005–010 conformance is clean: single RX/journal/worker, atomic
+tail/provenance, bounded gaps/pages, strong generation/query/job ownership,
+synchronous seals before HTTP drain, honest offered/unknown cutoff facts, inward
+dependencies and existing local security. No architecture rewrite is needed.
+
+Finite client/main AST, prior read/cleanup and annotation helpers and original
+composition assertions remain unchanged;187 protected baseline inputs match HEAD.
+All258 entry files matched before recording, and only observed progress/history
+documents changed afterward. Documentation/link/fence/task-marker/stop/scope and
+working/staged diff checks pass. All24 tasks are checked. Graphify was not rerun;
+T023's actual outcome/navigation limits remain historical. No physical device,
+real-account credential, commit, push or next slice was selected/performed.
+
+Feature011 is software-complete on macOS/arm64 Python3.14.3 and remains uncommitted.
+Phase1 remains incomplete. Native Linux/Windows, active-DUT, physical/electrical/
+safe-open/OS-driver loss/re-enumeration and Enhanced production/hardware acceptance
+remain unexecuted; actual Windows commands remain unsupported. The simulated
+Enhanced-shaped fixture proves software neutrality only. TX/Interact/console,
+Control, release/reacquire/handoff/reconnect, text/regex/history, MCP/AI and other
+Phase1 work remain deferred. The next action is exactly: **Await separate authorization for final Feature011 pre-commit review.**
+T024 stops here; no automatic commit/push/Graphify/hardware or new slice.
+
+
+The separately authorized final pre-commit review passed without a genuine011
+defect or correction. Reviewed the complete33-file change set against Core,
+011 spec/plan/model/contract/tasks, completed003/005–010 and current status.
+Finite client/main, read/cleanup/annotation helpers and original composition
+assertions retain their established behavior;187 protected baseline inputs match
+the accepted010 parent. No Core/schema/Profile/backend/dependency/architecture
+change or hardware acceptance claim was added.
+
+Fresh pre-commit gate: Ruff clean; mypy121 files; all seven import contracts kept
+(73 modules/274 dependencies);8182 full tests pass in727.597s (JUnit), zero
+failures/errors/skips, warnings as errors. The625 installed cases are included:
+96 Follow/112 CLI/111 evidence/153 Monitor/153 annotations, both backend fixtures,
+real journals/numeric IPv4+IPv6/non-editable wheel+sdist outside checkout, with
+independent hardware/discovery/account guards. No new fixture or production fix.
+
+Staged verification starts with all258 index/worktree inputs identical and the
+exact33 intended files. Full-run artifact audit passes26 archives/10 environments;
+an additional258-file index export independently builds all three wheel/sdist
+packages and passes guarded installed entry/direct Follow help and installed
+module imports outside both checkout/export. Its six archives/two environments
+also pass exact source/test/config/metadata/locked-dependency/entry/.pth/direct_url/
+privacy checks against staged blobs. Total:32 archives/12 environments/
+242 RECORD rows (226 hashed payloads). No credential/network work in smoke
+children; no checkout/editable product fallback. Staged diff/stat/names/content/
+cached whitespace exclude unrelated/generated/runtime/credential/Graphify/local
+tool files. No Git hooks are installed; Graphify is not rerun. Generated outputs,
+backups and local tooling remain ignored. Final result recording changes only
+progress/history documents; executable/governing bytes still match the tested
+index, so documentation consistency/diff checks apply without another full run.
+
+Feature011's implementation commit is `:/^Implement live follow`, `Implement live follow`,
+with accepted parent `b6b043c50d8536d6569bbc52579f11a9eda5aa5e`; prior baseline
+commits remain ancestors. The title reference resolves to that commit without
+a self-referential hash. Nothing was pushed. Phase1 remains incomplete; existing
+macOS/arm64 Python3.14.3 software evidence does not prove native Linux/Windows,
+active-DUT, physical/electrical/safe-open or Enhanced acceptance. Actual Windows
+commands remain unsupported. No physical device was accessed or next slice begun.
 
 ## Completed Feature: Client Annotations (010; Software-Complete)
 
@@ -160,9 +662,9 @@ All36 selected Python sources have current AST stamps; root pyproject.toml remai
 unstamped after yielding zero nodes. Generated outputs and five curated backups
 remain ignored. All109 source/configuration hashes match task entry.
 
-**Next action: Await human direction for the next Phase1 slice. Do not start
-implementation or native/physical acceptance automatically.**
-No next slice, push or hardware action was authorized by the completed commit task.
+At the010 commit checkpoint the next action was to await human direction.
+That direction now selects011; its current authorization boundary is in Resume
+Here. The completed010 commit task itself authorized no next slice or hardware.
 
 T024 task evidence remains /private/tmp/dutchmate-010-t024-96i7fh5x/.
 The separately authorized pre-commit checkpoint freshly validated an exact236-blob
@@ -517,7 +1019,12 @@ review and T022 documentation/conformance reconciliation are verified. T023 fina
 code-only Graphify update is complete with recorded tooling/health limits. T024
 fresh final full gate, installed flows and artifact/privacy/Core/contract review
 passed; Feature010 is software-complete and committed.
-Explicit deferrals beyond010 remain streaming/follow, text/line decoding, regex/multiple conditions,
+Follow011 has a GREEN Core/service/CLI US1 MVP and combined T019 hardening/full gate;
+T020 installed Follow and T021 diff/artifact/compatibility review are verified.
+T022 conformance/T023 tooling and T024 fresh full/installed/artifact/privacy
+closure and final pre-commit review are verified; Feature011 is software-complete
+and committed. Other explicit
+deferrals beyond010 remain text/line decoding, regex/multiple conditions,
 annotation editing/backdating/attachments and derived views, catalogue/discovery, restart recovery/arbitrary
 historical browsing, TX/Interact/console, Control, reconnect/handoff, service management,
 Enhanced production, MCP/AI and physical-hardware acceptance. Profile discovery/
@@ -528,13 +1035,16 @@ arbitrary power-loss/media/lying-flush/live-copy guarantees. No Core timeout or
 forced abandonment is introduced.
 
 Phase 1 remains incomplete under
-[Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): follow,
-Interact, console, control, handoff, reconnect and real-DUT acceptance remain.
+[Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): remaining
+Follow native/physical acceptance, Interact, console,
+control, handoff, reconnect and real-DUT acceptance remain.
 Feature010 annotation behavior, hardening, installed review and final T024 software
 closure and the separately authorized final pre-commit review/commit are verified.
-Features001–010 are committed software slices. Software-complete009 does not establish
-physical Monitor acceptance. Await human direction for the next Phase1 slice;
-do not access physical hardware or start another slice automatically.
+Features001–011 are committed software slices. Software-complete009 does not establish
+physical Monitor acceptance. Feature011 current progress and authorization are
+recorded in Resume Here; final pre-commit review/commit are complete. Await human
+selection/authorization; no physical
+hardware or another slice is automatically authorized.
 
 ## References
 

@@ -4,7 +4,7 @@ import asyncio
 from collections import deque
 from collections.abc import Callable
 from dataclasses import FrozenInstanceError, dataclass, field
-from typing import Final, Literal, Protocol
+from typing import Final, Literal, Protocol, cast
 from uuid import uuid4
 
 from dutchmate_core.evidence import (
@@ -17,6 +17,14 @@ from dutchmate_core.evidence import (
     PendingOperationStartedEvidence,
     maximum_monitor_end_drafts,
     monitor_marker_charges_fit,
+)
+from dutchmate_core.follow import (
+    FollowRejected,
+    FollowRequest,
+    FollowStart,
+    _follow_head_request,
+    _FollowSubscription,
+    _RetrieveFollowPage,
 )
 from dutchmate_core.model import (
     SQLITE_INTEGER_MAX,
@@ -266,7 +274,7 @@ class _MonitorRecorder(EvidenceRecorder, Protocol):
 
 
 class MonitorRecordingCoordinator:
-    """Publish acknowledged records under one gate, without reading the journal."""
+    """Publish under one append gate; Follow alone probes live journal metadata."""
 
     def __init__(self, *, recorder: _MonitorRecorder, clock: MonitorClock) -> None:
         self._recorder = recorder
@@ -276,6 +284,7 @@ class MonitorRecordingCoordinator:
         self._operation: _MonitorOperation | None = None
         self._last_now = 0
         self._close_task: asyncio.Task[None] | None = None
+        self._follow: _FollowSubscription | None = None
 
     @property
     def session_id(self) -> SessionId:
@@ -348,10 +357,15 @@ class MonitorRecordingCoordinator:
 
     async def append(self, draft: PendingEvidenceRecord) -> EvidenceRecord:
         async with self._gate:
-            record = await self._recorder.append(draft)
-            # No await between positive ACK, publication and gate release.
-            self._publish(record)
-            return record
+            try:
+                record = await self._recorder.append(draft)
+                # No await between positive ACK, publication and gate release.
+                self._publish(record)
+                return record
+            finally:
+                # A failed ACK may still have committed. Signal possible change,
+                # never a claimed record, sequence or observation timestamp.
+                self._notify_follow()
 
     async def append_client_annotation(
         self, client_surface: str, text: str
@@ -364,11 +378,63 @@ class MonitorRecordingCoordinator:
                 clock_origin_id=self.clock.origin_id,
                 received_at_ns=self._now(),
             )
-            record = await self._recorder.append(draft)
-            if not isinstance(record, ClientAnnotationEvidence):
-                raise RuntimeError("invalid annotation acknowledgement")
-            self._publish(record)
-            return record
+            try:
+                record = await self._recorder.append(draft)
+                if not isinstance(record, ClientAnnotationEvidence):
+                    raise RuntimeError("invalid annotation acknowledgement")
+                self._publish(record)
+                return record
+            finally:
+                self._notify_follow()
+
+    def _notify_follow(self) -> None:
+        subscription = self._follow
+        if subscription is not None:
+            subscription.notify()
+
+    async def start_follow(
+        self,
+        request: FollowRequest,
+        *,
+        run_id: str,
+        reader: object,
+        revalidate: Callable[[], None],
+    ) -> _FollowSubscription:
+        """Capture actual tail/provenance and register under the append gate."""
+        retrieve = getattr(reader, "retrieve", None)
+        if (
+            not callable(retrieve)
+            or getattr(reader, "session_id", None) != self.session_id
+            or getattr(reader, "policy", None) != self.policy
+        ):
+            raise FollowRejected("follow_unavailable")
+        query = cast(_RetrieveFollowPage, retrieve)
+        async with self._gate:
+            revalidate()
+            if request.session_id != self.session_id:
+                raise FollowRejected("session_not_associated")
+            if self._close_task is not None or self.current_provenance is None:
+                raise FollowRejected("follow_unavailable")
+            if self._follow is not None:
+                raise FollowRejected("busy")
+            head = await query(_follow_head_request(self.session_id, self.policy))
+            revalidate()
+            if self._close_task is not None or self.current_provenance is None:
+                raise FollowRejected("follow_unavailable")
+            start = FollowStart(
+                run_id,
+                self.session_id,
+                head.snapshot_end_exclusive,
+                self.current_provenance,
+            )
+
+            def unregister() -> None:
+                if self._follow is subscription:
+                    self._follow = None
+
+            subscription = _FollowSubscription(start, self.policy, query, unregister)
+            self._follow = subscription
+            return subscription
 
     def _publish(self, record: EvidenceRecord) -> None:
         """Publish under the append gate using fresh post-ACK Monitor time."""
@@ -409,17 +475,20 @@ class MonitorRecordingCoordinator:
             draft = self.preflight(
                 request, expected_provenance, charge_markers, operation_id=operation_id
             )
-            record = await self._recorder.append(draft)
-            if not isinstance(record, OperationStartedEvidence):
-                raise RuntimeError("invalid Monitor start acknowledgement")
-            # This sample and installation are atomic with respect to acquisition.
-            started_at = self._now()
-            operation = _MonitorOperation(self, record, run_id, started_at)
-            self._operation = operation
-            intent = None if pending_stop is None else pending_stop()
-            if intent is not None:
-                self._stop(intent)
-            return operation
+            try:
+                record = await self._recorder.append(draft)
+                if not isinstance(record, OperationStartedEvidence):
+                    raise RuntimeError("invalid Monitor start acknowledgement")
+                # This sample and installation are atomic with respect to acquisition.
+                started_at = self._now()
+                operation = _MonitorOperation(self, record, run_id, started_at)
+                self._operation = operation
+                intent = None if pending_stop is None else pending_stop()
+                if intent is not None:
+                    self._stop(intent)
+                return operation
+            finally:
+                self._notify_follow()
 
     async def close(self) -> None:
         if self._close_task is None:
@@ -540,12 +609,15 @@ class _MonitorOperation:
             failure: MonitorEndFailure | None = None
             try:
                 async with self._coordinator._gate:
-                    record = await self._coordinator._recorder.append(draft)
-                    if not isinstance(record, OperationEndedEvidence):
-                        raise RuntimeError("invalid Monitor end acknowledgement")
-                    ended = EvidenceReference(
-                        self._coordinator.session_id, record.sequence
-                    )
+                    try:
+                        record = await self._coordinator._recorder.append(draft)
+                        if not isinstance(record, OperationEndedEvidence):
+                            raise RuntimeError("invalid Monitor end acknowledgement")
+                        ended = EvidenceReference(
+                            self._coordinator.session_id, record.sequence
+                        )
+                    finally:
+                        self._coordinator._notify_follow()
             except JournalFailure as error:
                 failure = MonitorEndFailure("journal", error.kind.value)
             except Exception:

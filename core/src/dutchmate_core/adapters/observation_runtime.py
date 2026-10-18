@@ -26,6 +26,7 @@ from dutchmate_core.profile import ProfileFailure, ResolvedDutProfile
 from dutchmate_core.runtime import (
     ObservationRuntime,
     PreparationFailure,
+    PreparedFollowAccess,
     PreparedObservationRun,
     RuntimeIssue,
     RuntimeIssueSource,
@@ -119,6 +120,12 @@ async def attach_basic_observation(
                         coordinator=coordinator,
                         clock=clock,
                         charge_annotation=charge_client_annotation,
+                    ),
+                    follow_access=PreparedFollowAccess(
+                        session_id=journal.session_id,
+                        policy=journal.policy,
+                        coordinator=coordinator,
+                        live_reader=journal,
                     ),
                 )
             except Exception as error:

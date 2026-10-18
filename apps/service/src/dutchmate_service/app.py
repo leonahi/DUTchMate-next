@@ -36,6 +36,12 @@ from dutchmate_service.evidence_http import (
     evidence_response,
     validate_evidence_request,
 )
+from dutchmate_service.follow_http import (
+    FollowStream,
+    follow_error,
+    follow_rejection_response,
+    validate_follow_request,
+)
 from dutchmate_service.http import (
     SecurityGate,
     _Disconnected,
@@ -64,6 +70,7 @@ class _LaunchContext:
         # Installed only inside the owning lifespan; cleared after joined cleanup.
         self._seal_monitors: Callable[[], None] | None = None
         self._seal_annotations: Callable[[], None] | None = None
+        self._seal_follows: Callable[[], None] | None = None
         # Captured on the owning loop after joined cleanup, safe to inspect later.
         # No runtime/task/resource handle crosses the bootstrap handoff.
         self.final_status: RuntimeStatus | None = None
@@ -75,6 +82,8 @@ class _LaunchContext:
             self._seal_monitors()
         if self._seal_annotations is not None:
             self._seal_annotations()
+        if self._seal_follows is not None:
+            self._seal_follows()
 
     def claim(self, config: ServiceConfig) -> None:
         if (
@@ -109,6 +118,7 @@ def create_app(
     operations: set[asyncio.Task[Response]] = set()
     reads: set[asyncio.Task[Response]] = set()
     monitors: set[asyncio.Task[Response]] = set()
+    follows: set[FollowStream] = set()
 
     def accepting() -> bool:
         return ready and _launch_context is not None and not _launch_context.stopping
@@ -291,6 +301,7 @@ def create_app(
         _launch_context.runtime_started = True
         _launch_context._seal_monitors = runtime._seal_monitors
         _launch_context._seal_annotations = runtime._seal_annotations
+        _launch_context._seal_follows = runtime._seal_follows
         if _launch_context.stopping:
             _launch_context.request_stop()
         ready = not _launch_context.stopping
@@ -301,6 +312,14 @@ def create_app(
             _launch_context.request_stop()
 
             async def cleanup() -> None:
+                # Stop transport waits first; join only submitted Core cleanup,
+                # never an idle socket, before the existing final detach.
+                streams = tuple(follows)
+                for stream in streams:
+                    stream.cancel()
+                await asyncio.gather(
+                    *(stream.task for stream in streams), return_exceptions=True
+                )
                 # Admission is closed before taking this finite snapshot. Tasks
                 # not yet inside Core must settle before the final detach.
                 await asyncio.gather(
@@ -322,6 +341,7 @@ def create_app(
             finally:
                 _launch_context._seal_monitors = None
                 _launch_context._seal_annotations = None
+                _launch_context._seal_follows = None
 
     app = FastAPI(
         lifespan=lifespan,
@@ -433,6 +453,33 @@ def create_app(
             raise asyncio.CancelledError() from None
         except Exception as error:
             return annotation_rejection_response(error)
+
+    @app.post("/v1/observation/follow")
+    async def follow(request: Request) -> Response:
+        if not accepting() or runtime is None:
+            return error_response(503, "service", "stopping")
+        try:
+            value = await validate_follow_request(request.scope, request.receive)
+            if isinstance(value, Response):
+                return value
+            caller = asyncio.current_task()
+            if caller is not None and caller.cancelling():
+                raise asyncio.CancelledError()
+            if not accepting():
+                return error_response(503, "service", "stopping")
+            for previous in tuple(follows):
+                if previous.task.done():
+                    follows.discard(previous)
+            if follows:
+                return follow_error(503, "service", "follow_capacity")
+            stream = FollowStream(runtime, value, request.receive, accepting)
+            follows.add(stream)
+            stream.task.add_done_callback(lambda task: follows.discard(stream))
+            return await stream.response()
+        except _Disconnected:
+            raise asyncio.CancelledError() from None
+        except Exception as error:
+            return follow_rejection_response(error)
 
     def credential() -> str | None:
         return None if _launch_context is None else _launch_context.bootstrap.credential

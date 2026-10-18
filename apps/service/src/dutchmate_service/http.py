@@ -44,6 +44,7 @@ _ROUTES = {
     b"/v1/observation/detach": "POST",
     b"/v1/observation/monitor": "POST",
     b"/v1/observation/annotations": "POST",
+    b"/v1/observation/follow": "POST",
     b"/v1/evidence/record": "POST",
     b"/v1/evidence/page": "POST",
 }
@@ -549,8 +550,9 @@ class SecurityGate:
                 b"/v1/evidence/page",
                 b"/v1/observation/monitor",
                 b"/v1/observation/annotations",
+                b"/v1/observation/follow",
             }:
-                # Reads/Monitor/annotations check readiness before body validation. The
+                # Reads/Monitor/annotations/Follow check readiness before body validation. The
                 # existing observation validation/replay path stays unchanged.
                 await self._app(scope, receive, safe_send)
                 return

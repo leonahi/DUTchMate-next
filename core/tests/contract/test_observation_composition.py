@@ -72,6 +72,20 @@ type Edge = Callable[
 ]
 
 
+class _FollowTransfer(Protocol):
+    @property
+    def session_id(self) -> model.SessionId: ...
+
+    @property
+    def policy(self) -> model.SessionPolicy: ...
+
+    @property
+    def coordinator(self) -> object: ...
+
+    @property
+    def live_reader(self) -> object: ...
+
+
 def _edge() -> Edge:
     assert importlib.util.find_spec(_EDGE_MODULE) is not None, _MISSING_EDGE
     module = importlib.import_module(_EDGE_MODULE)
@@ -1191,3 +1205,148 @@ async def test_t013_transferred_recorder_policy_mismatch_is_closed_before_any_op
         assert closes == 1 and destination.is_file()
     finally:
         await _t013_join_test_resources(runtime, created, original_close)
+
+
+@pytest.mark.asyncio
+async def test_011_t008_follow_production_transfers_same_v3_coordinator_reader_and_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    probe = AdmissionProbe([])
+    await _edge()(probe, _selected(tmp_path), tmp_path / "follow.db")
+    prepared = await probe.captured_preparation()
+    try:
+        access = cast(_FollowTransfer | None, getattr(prepared, "follow_access", None))
+        assert access is not None, "T009 missing: production Follow access transfer"
+        assert prepared.evidence_access is not None
+        assert (
+            prepared.monitor_access is not None
+            and prepared.annotation_access is not None
+        )
+        assert access.coordinator is prepared.recorder
+        assert access.coordinator is prepared.monitor_access.coordinator
+        assert access.coordinator is prepared.annotation_access.coordinator
+        assert access.live_reader is prepared.evidence_access.live_reader
+        assert access.session_id == prepared.evidence_access.session_id
+        assert access.policy == prepared.evidence_access.policy == _expected_policy()
+        assert isinstance(access.live_reader, sqlite_evidence.SqliteEvidenceJournal)
+        assert factory.calls == []
+    finally:
+        await prepared.recorder.close()
+
+
+@pytest.mark.asyncio
+async def test_011_t008_follow_production_uses_explicit_v3_without_legacy_factory_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    original = sqlite_evidence.SqliteEvidenceJournal.create_v3
+    calls: list[sqlite_evidence.SqliteEvidenceJournal] = []
+
+    async def create_v3(
+        cls: type[sqlite_evidence.SqliteEvidenceJournal],
+        path: str | Path,
+        policy: model.SessionPolicy,
+    ) -> sqlite_evidence.SqliteEvidenceJournal:
+        del cls
+        journal = await original(path, policy)
+        calls.append(journal)
+        return journal
+
+    async def forbidden(*args: object, **kwargs: object) -> NoReturn:
+        raise AssertionError(
+            "Follow production must keep the explicit v3 preparation path"
+        )
+
+    monkeypatch.setattr(
+        sqlite_evidence.SqliteEvidenceJournal, "create_v3", classmethod(create_v3)
+    )
+    monkeypatch.setattr(
+        sqlite_evidence.SqliteEvidenceJournal, "create", classmethod(forbidden)
+    )
+    monkeypatch.setattr(
+        sqlite_evidence.SqliteEvidenceJournal, "create_v2", classmethod(forbidden)
+    )
+    probe = AdmissionProbe([])
+    destination = tmp_path / "explicit-v3.db"
+    await _edge()(probe, _selected(tmp_path), destination)
+    prepared = await probe.captured_preparation()
+    try:
+        assert prepared.evidence_access is not None
+        assert calls == [prepared.evidence_access.live_reader]
+        assert getattr(prepared, "follow_access", None) is not None, (
+            "T009 missing: production Follow access transfer"
+        )
+        await prepared.recorder.close()
+        with closing(
+            sqlite3.connect(f"file:{destination}?mode=ro", uri=True)
+        ) as connection:
+            assert connection.execute("PRAGMA user_version").fetchone() == (3,)
+        assert prepared.evidence_access.terminal_opener is not None
+        terminal = await prepared.evidence_access.terminal_opener()
+        await terminal.close()
+        assert factory.calls == []
+    finally:
+        await prepared.recorder.close()
+
+
+@pytest.mark.asyncio
+async def test_011_t008_follow_separate_preparations_never_reuse_transfer_identities(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    factory = _t008_fake_serial_only(monkeypatch)
+    probe = AdmissionProbe([])
+    selected = _selected(tmp_path)
+    await _edge()(probe, selected, tmp_path / "first-follow.db")
+    first = await probe.captured_preparation()
+    try:
+        first_access = cast(
+            _FollowTransfer | None, getattr(first, "follow_access", None)
+        )
+        assert first_access is not None, (
+            "T009 missing: production Follow access transfer"
+        )
+        await first.recorder.close()
+        await _edge()(probe, selected, tmp_path / "second-follow.db")
+        second = await probe.captured_preparation()
+        try:
+            second_access = cast(
+                _FollowTransfer | None, getattr(second, "follow_access", None)
+            )
+            assert second_access is not None
+            assert second_access is not first_access
+            assert second_access.session_id != first_access.session_id
+            assert second_access.coordinator is not first_access.coordinator
+            assert second_access.live_reader is not first_access.live_reader
+            assert factory.calls == []
+        finally:
+            await second.recorder.close()
+    finally:
+        await first.recorder.close()
+
+
+@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.asyncio
+async def test_011_t008_follow_legacy_factories_keep_explicit_schema_and_read_contract(
+    tmp_path: Path, version: int
+) -> None:
+    # Deliberately GREEN prerequisite: Follow must not revise these entry points.
+    create = (
+        sqlite_evidence.SqliteEvidenceJournal.create
+        if version == 1
+        else sqlite_evidence.SqliteEvidenceJournal.create_v2
+    )
+    destination = tmp_path / "legacy.db"
+    journal = await create(destination, _expected_policy())
+    session_id = journal.session_id
+    try:
+        page = await journal.retrieve(
+            evidence.EvidenceRetrievalRequest(session_id, 11, 16384)
+        )
+        assert page.records == () and page.snapshot_end_exclusive == 0
+    finally:
+        await journal.close()
+    with closing(
+        sqlite3.connect(f"file:{destination}?mode=ro", uri=True)
+    ) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (version,)

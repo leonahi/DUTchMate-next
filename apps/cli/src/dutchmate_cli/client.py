@@ -12,6 +12,7 @@ from typing import Literal, NoReturn, cast
 import httpx
 
 from dutchmate_cli import annotation, evidence, monitor
+from dutchmate_cli import follow as follow_wire
 from dutchmate_cli.context import AttachPaths, CliFailure, CliFailureKind, Endpoint
 
 type RequestOutcome = Literal["not_submitted", "unknown", "report_received"]
@@ -456,6 +457,108 @@ async def exchange_annotation(
         validate=_annotation_reply,
         reject=_annotation_error,
     )
+
+
+def _follow_frame(position: follow_wire.Position, raw: bytearray | None) -> bytes:
+    if raw is None:
+        _invalid()
+    try:
+        value = position.accept(_decode(raw))
+        return _encode_record(value)
+    except ValueError, TypeError, RecursionError:
+        pass
+    _invalid()
+
+
+async def exchange_follow(
+    *, endpoint: Endpoint, request_body: dict[str, object], credential: str,
+    delivery: DeliveryState, emit: Callable[[bytes], None],
+) -> tuple[int, bytes | None]:
+    """One Follow HTTP exchange; finite delivery below retains its old budgets."""
+    for name in (
+        "httpx", "httpcore", "httpcore.connection", "httpcore.http11",
+        "httpcore.http2", "httpcore.proxy", "httpcore.socks",
+    ):
+        logger = logging.getLogger(name)
+        logger.disabled = True
+        logger.propagate = False
+    authority = (
+        f"[::1]:{endpoint.port}" if endpoint.host == "::1"
+        else f"127.0.0.1:{endpoint.port}"
+    )
+    try:
+        limits = httpx.Limits(max_connections=1, max_keepalive_connections=0)
+        transport = httpx.AsyncHTTPTransport(
+            trust_env=False, http1=True, http2=False, retries=0, proxy=None, limits=limits,
+        )
+        async with httpx.AsyncClient(
+            transport=transport, trust_env=False, follow_redirects=False,
+            http1=True, http2=False, proxy=None, limits=limits,
+            timeout=httpx.Timeout(5.0, connect=5.0, read=5.0, write=5.0, pool=5.0),
+        ) as client:
+            delivery.request_outcome = "unknown"
+            loop = asyncio.get_running_loop()
+            async with asyncio.timeout_at(loop.time() + 10) as handshake:
+                async with client.stream(
+                    "POST", f"http://{authority}/v1/observation/follow", json=request_body,
+                    headers={
+                        "Host": authority, "Authorization": f"Bearer {credential}",
+                        "Accept": "application/x-ndjson", "Accept-Encoding": "identity",
+                    },
+                ) as response:
+                    if response.status_code != 200:
+                        value = _decode(await _raw(response))
+                        try:
+                            if not follow_wire.recognized_error(value, response.status_code):
+                                _remote_error(value, response.status_code)
+                        except ValueError, TypeError, RecursionError:
+                            _invalid()
+                        record = _encode_record(value)
+                        delivery.request_outcome = "report_received"
+                        return 4, record
+                    media = response.headers.get_list("content-type")
+                    encoding = response.headers.get_list("content-encoding")
+                    transfer = response.headers.get_list("transfer-encoding")
+                    if (
+                        len(media) != 1 or follow_wire._MEDIA.fullmatch(media[0].strip()) is None
+                        or (encoding and (len(encoding) != 1 or encoding[0].strip().lower() != "identity"))
+                        or response.headers.get_list("content-length")
+                        or (transfer and (len(transfer) != 1 or transfer[0].strip().lower() != "chunked"))
+                    ):
+                        _invalid()
+                    frames = follow_wire.Frames(response.aiter_raw())
+                    position = follow_wire.Position(evidence._text(request_body["session_id"]))
+                    first = _follow_frame(position, await frames.read())
+                    # The first complete started frame ends the handshake. All
+                    # later budgets start after the previous frame's output.
+                    handshake.reschedule(None)
+                    emit(first)
+                    del first
+                    while True:
+                        async with asyncio.timeout_at(loop.time() + 5):
+                            record = _follow_frame(position, await frames.read())
+                            if position.terminal:
+                                emit(record)
+                                del record
+                                try:
+                                    await frames.require_eof()
+                                except ValueError:
+                                    _invalid()
+                                delivery.request_outcome = "report_received"
+                                return 0, None
+                        emit(record)
+                        del record
+    except CliFailure as error:
+        kind = error.kind
+    except (TimeoutError, httpx.TimeoutException):
+        kind = CliFailureKind.REQUEST_TIMEOUT
+    except (httpx.ProtocolError, httpx.DecodingError, ValueError):
+        kind = CliFailureKind.INVALID_RESPONSE
+    except httpx.TransportError:
+        kind = CliFailureKind.TRANSPORT_FAILED
+    # The console normalizes unexpected exceptions and public interrupt forms;
+    # context managers have already closed this HTTP subscriber before it does.
+    return local_failure(kind, delivery)
 
 
 async def _deliver(
