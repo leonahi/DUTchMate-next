@@ -71,8 +71,9 @@ layers = [
   "dutchmate_core.annotation",
   "dutchmate_core.monitor",
   "dutchmate_core.follow",
+  "dutchmate_core.interact",
   "dutchmate_core.acquisition",
-  "dutchmate_core.backend | dutchmate_core.evidence",
+  "dutchmate_core.backend | dutchmate_core.evidence | dutchmate_core.profile",
   "dutchmate_core.model",
 ]
 
@@ -84,6 +85,7 @@ source_modules = [
   "dutchmate_core.annotation",
   "dutchmate_core.monitor",
   "dutchmate_core.follow",
+  "dutchmate_core.interact",
   "dutchmate_core.evidence_access",
   "dutchmate_core.acquisition",
   "dutchmate_core.backend",

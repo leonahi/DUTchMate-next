@@ -8,13 +8,20 @@ import asyncio
 import os
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 
 from dutchmate_core.adapters.observation_runtime import attach_basic_observation
 from dutchmate_core.annotation import AnnotationRequest
 from dutchmate_core.evidence import EvidenceRetrievalRequest
-from dutchmate_core.model import EvidenceReference
+from dutchmate_core.model import EvidenceReference, SessionId
 from dutchmate_core.monitor import MonitorRequest
-from dutchmate_core.runtime import ObservationRuntime, RuntimeStatus
+from dutchmate_core.profile import ResolvedInteractionProfile, ResolvedProfile
+from dutchmate_core.runtime import (
+    ObservationRuntime,
+    PrepareObservationRun,
+    RuntimeStatus,
+)
+from dutchmate_core.runtime import ObservationRuntime as CoreObservationRuntime
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
@@ -43,12 +50,21 @@ from dutchmate_service.follow_http import (
     validate_follow_request,
 )
 from dutchmate_service.http import (
+    ApiVersionRejected,
     SecurityGate,
     _Disconnected,
+    api_version,
+    check_api_version,
     error_response,
     rejection_response,
     status_response,
     validate_request,
+)
+from dutchmate_service.interact_http import (
+    InteractJob,
+    interact_error,
+    interact_rejection_response,
+    validate_interact_request,
 )
 from dutchmate_service.monitor_http import (
     monitor_rejection_response,
@@ -71,6 +87,7 @@ class _LaunchContext:
         self._seal_monitors: Callable[[], None] | None = None
         self._seal_annotations: Callable[[], None] | None = None
         self._seal_follows: Callable[[], None] | None = None
+        self._seal_interacts: Callable[[], None] | None = None
         # Captured on the owning loop after joined cleanup, safe to inspect later.
         # No runtime/task/resource handle crosses the bootstrap handoff.
         self.final_status: RuntimeStatus | None = None
@@ -78,6 +95,8 @@ class _LaunchContext:
 
     def request_stop(self) -> None:
         self.stopping = True
+        if self._seal_interacts is not None:
+            self._seal_interacts()
         if self._seal_monitors is not None:
             self._seal_monitors()
         if self._seal_annotations is not None:
@@ -119,6 +138,19 @@ def create_app(
     reads: set[asyncio.Task[Response]] = set()
     monitors: set[asyncio.Task[Response]] = set()
     follows: set[FollowStream] = set()
+    interacts: set[InteractJob] = set()
+    attach_version: ContextVar[int] = ContextVar("attach_api_version", default=2)
+
+    def capture(
+        owner: ObservationRuntime, version: int, session: SessionId | None = None
+    ) -> RuntimeStatus:
+        # Read the actual Core snapshot, never a delivery-cached status. The
+        # registered job calls this immediately before Core's synchronous
+        # admission prefix, without an intervening await. Lifecycle lock bodies
+        # contain no I/O/yield; status/detach select on the same owner loop.
+        current = CoreObservationRuntime.status(owner)
+        check_api_version(current, version, session)
+        return current
 
     def accepting() -> bool:
         return ready and _launch_context is not None and not _launch_context.stopping
@@ -131,17 +163,26 @@ def create_app(
             task.exception()
 
     async def invoke(
-        owner: ObservationRuntime, value: tuple[str, str] | AnnotationRequest | None
+        owner: ObservationRuntime,
+        value: tuple[str, str] | AnnotationRequest | None,
+        version: int,
     ) -> Response:
         try:
             if isinstance(value, AnnotationRequest):
+                capture(owner, version, value.session_id)
                 return annotation_response(await owner.annotate(value))
-            captured = (
-                await owner.detach()
-                if value is None
-                else await attach_basic_observation(owner, *value)
-            )
+            if value is None:
+                capture(owner, version)
+                captured = await owner.detach()
+            else:
+                token = attach_version.set(version)
+                try:
+                    captured = await attach_basic_observation(owner, *value)
+                finally:
+                    attach_version.reset(token)
             return status_response(captured)
+        except ApiVersionRejected as error:
+            return rejection_response(error)
         except Exception as error:
             # Normalize inside the owner: Python 3.14 shield reports late raised
             # exceptions to the loop after delivery cancellation, even if read.
@@ -171,7 +212,9 @@ def create_app(
         if len(operations) >= 8:
             return error_response(503, "service", "operation_capacity")
 
-        operation = asyncio.create_task(invoke(owner, value))
+        operation = asyncio.create_task(
+            invoke(owner, value, api_version(request.scope))
+        )
         operations.add(operation)
         operation.add_done_callback(completed)
         # Registration is complete before any await or disconnect observation.
@@ -197,15 +240,28 @@ def create_app(
             task.exception()
 
     async def invoke_read(
-        owner: ObservationRuntime, value: EvidenceReference | EvidenceRetrievalRequest
+        owner: ObservationRuntime,
+        value: EvidenceReference | EvidenceRetrievalRequest,
+        version: int,
     ) -> Response:
         try:
+            reference = (
+                value if isinstance(value, EvidenceReference) else value.reference
+            )
+            session = (
+                reference if isinstance(reference, SessionId) else reference.session_id
+            )
+            capture(owner, version, session)
             report = (
                 await owner.read_record(value)
                 if isinstance(value, EvidenceReference)
                 else await owner.read_page(value)
             )
-            return evidence_response(report)
+            return (
+                evidence_response(report)
+                if version == 1
+                else evidence_response(report, api_version=2)
+            )
         except Exception as error:
             # Normalize within the retained owner, including after client loss.
             return evidence_rejection_response(error)
@@ -225,7 +281,9 @@ def create_app(
                 read_completed(previous)
         if len(reads) >= 8:
             return error_response(503, "service", "operation_capacity")
-        operation = asyncio.create_task(invoke_read(owner, value))
+        operation = asyncio.create_task(
+            invoke_read(owner, value, api_version(request.scope))
+        )
         reads.add(operation)
         operation.add_done_callback(read_completed)
         # Separate registration is complete before Core admission or any await.
@@ -250,10 +308,13 @@ def create_app(
             task.exception()
 
     async def invoke_monitor(
-        owner: ObservationRuntime, value: MonitorRequest
+        owner: ObservationRuntime, value: MonitorRequest, version: int
     ) -> Response:
         try:
+            capture(owner, version, value.session_id)
             return monitor_response(await owner.monitor(value))
+        except ApiVersionRejected as error:
+            return rejection_response(error)
         except Exception as error:
             # Keep normalization inside the retained job after delivery loss.
             return monitor_rejection_response(error)
@@ -271,7 +332,9 @@ def create_app(
                 monitor_completed(previous)
         if monitors:
             return error_response(503, "service", "operation_capacity")
-        operation = asyncio.create_task(invoke_monitor(owner, value))
+        operation = asyncio.create_task(
+            invoke_monitor(owner, value, api_version(request.scope))
+        )
         monitors.add(operation)
         operation.add_done_callback(monitor_completed)
         # One independent job is registered before Core entry or delivery waits.
@@ -298,10 +361,28 @@ def create_app(
             raise BootstrapFailure(BootstrapFailureKind.INVALID_CONFIGURATION)
         _launch_context.claim(config)
         runtime = ObservationRuntime()
+        attach_owner = runtime.attach
+
+        async def versioned_attach[Profile: ResolvedProfile](
+            profile: Profile, prepare: PrepareObservationRun[Profile]
+        ) -> RuntimeStatus:
+            # The adapter resolves once and passes the same immutable value
+            # here before Core admission/resources. Bind only this service-owned
+            # instance; preserve the existing zero-argument constructor/factory.
+            if attach_version.get() == 1 and isinstance(
+                profile, ResolvedInteractionProfile
+            ):
+                raise ApiVersionRejected()
+            return await attach_owner(profile, prepare)
+
+        # Deliberate per-owner composition of this one boundary, not a class or
+        # Core API change. The generic callable retains attach's exact signature.
+        runtime.attach = versioned_attach  # type: ignore[method-assign]
         _launch_context.runtime_started = True
         _launch_context._seal_monitors = runtime._seal_monitors
         _launch_context._seal_annotations = runtime._seal_annotations
         _launch_context._seal_follows = runtime._seal_follows
+        _launch_context._seal_interacts = runtime._seal_interacts
         if _launch_context.stopping:
             _launch_context.request_stop()
         ready = not _launch_context.stopping
@@ -326,6 +407,7 @@ def create_app(
                     *tuple(operations),
                     *tuple(reads),
                     *tuple(monitors),
+                    *(job.task for job in tuple(interacts)),
                     return_exceptions=True,
                 )
                 try:
@@ -342,6 +424,7 @@ def create_app(
                 _launch_context._seal_monitors = None
                 _launch_context._seal_annotations = None
                 _launch_context._seal_follows = None
+                _launch_context._seal_interacts = None
 
     app = FastAPI(
         lifespan=lifespan,
@@ -371,17 +454,20 @@ def create_app(
         return error_response(500, "service", "internal_failure")
 
     @app.get("/v1/observation/status")
-    async def status() -> Response:
+    @app.get("/v2/observation/status")
+    async def status(request: Request) -> Response:
         if runtime is None:
             return error_response(503, "service", "stopping")
         try:
             return status_response(
-                runtime.status(), service_state="ready" if accepting() else "stopping"
+                capture(runtime, api_version(request.scope)),
+                service_state="ready" if accepting() else "stopping",
             )
         except Exception as error:
             return rejection_response(error)
 
     @app.post("/v1/observation/attach")
+    @app.post("/v2/observation/attach")
     async def attach(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -397,6 +483,7 @@ def create_app(
             return rejection_response(error)
 
     @app.post("/v1/observation/detach")
+    @app.post("/v2/observation/detach")
     async def detach(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -411,6 +498,8 @@ def create_app(
 
     @app.post("/v1/evidence/record")
     @app.post("/v1/evidence/page")
+    @app.post("/v2/evidence/record")
+    @app.post("/v2/evidence/page")
     async def read_evidence(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -427,6 +516,7 @@ def create_app(
             return evidence_rejection_response(error)
 
     @app.post("/v1/observation/monitor")
+    @app.post("/v2/observation/monitor")
     async def monitor(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -441,6 +531,7 @@ def create_app(
             return monitor_rejection_response(error)
 
     @app.post("/v1/observation/annotations")
+    @app.post("/v2/observation/annotations")
     async def annotate(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -455,6 +546,7 @@ def create_app(
             return annotation_rejection_response(error)
 
     @app.post("/v1/observation/follow")
+    @app.post("/v2/observation/follow")
     async def follow(request: Request) -> Response:
         if not accepting() or runtime is None:
             return error_response(503, "service", "stopping")
@@ -472,7 +564,20 @@ def create_app(
                     follows.discard(previous)
             if follows:
                 return follow_error(503, "service", "follow_capacity")
-            stream = FollowStream(runtime, value, request.receive, accepting)
+            owner, version = runtime, api_version(request.scope)
+            session = value.session_id
+
+            def check_follow_version() -> None:
+                capture(owner, version, session)
+
+            stream = FollowStream(
+                owner,
+                value,
+                request.receive,
+                accepting,
+                api_version=version,
+                check_version=check_follow_version,
+            )
             follows.add(stream)
             stream.task.add_done_callback(lambda task: follows.discard(stream))
             return await stream.response()
@@ -480,6 +585,33 @@ def create_app(
             raise asyncio.CancelledError() from None
         except Exception as error:
             return follow_rejection_response(error)
+
+    @app.post("/v2/observation/interact")
+    async def interact(request: Request) -> Response:
+        if not accepting() or runtime is None:
+            return error_response(503, "service", "stopping")
+        try:
+            value = await validate_interact_request(request.scope, request.receive)
+            if isinstance(value, Response):
+                return value
+            caller = asyncio.current_task()
+            if caller is not None and caller.cancelling():
+                raise asyncio.CancelledError()
+            if not accepting():
+                return error_response(503, "service", "stopping")
+            for previous in tuple(interacts):
+                if previous.task.done():
+                    interacts.discard(previous)
+            if interacts:
+                return interact_error(503, "service", "interact_capacity")
+            job = InteractJob(runtime, value, accepting)
+            interacts.add(job)
+            job.task.add_done_callback(lambda task: interacts.discard(job))
+            return await job.response(request.receive)
+        except _Disconnected:
+            raise asyncio.CancelledError() from None
+        except Exception as error:
+            return interact_rejection_response(error)
 
     def credential() -> str | None:
         return None if _launch_context is None else _launch_context.bootstrap.credential

@@ -7,36 +7,39 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 ## Resume Here
 
-- **Active phase**: Phase1 — Basic backend through CLI; Phase1 remains incomplete.
-- **Committed baseline**: Features001–011 are software-complete on main.
-  Feature011: `:/^Implement live follow` (`Implement live follow`); Feature010: `b6b043c50d8536d6569bbc52579f11a9eda5aa5e`,
-  `Implement client annotations`; Feature009: `2fdebaf4aa3df815be9f2ce223c832e70c739569`.
-- **Selected slice**: Feature011 `live-follow`, receive-only live Follow through
-  Core, authenticated service and thin CLI, accepted by the human.
-- **Current checkpoint**: T001–T024 complete;24/24 tasks complete.
-  Feature011 is software-complete and committed; final pre-commit review/gate passed.
-- **Design**: Atomic live-tail/provenance start, one independent subscriber/job,
-  coalesced wakeups and bounded same-journal pages; exact records/retention gaps.
-  Closed NDJSON with transport-only heartbeat and explicit terminal tail/uncertainty.
-- **Preserved**: Sole RX/journal/worker,003 evidence/retention,005 lifecycle,
-  006 security,007 thin client,008 read cleanup,009 Monitor and010 annotations.
-- **Next action**: Await human selection and authorization of the next Phase1 slice or acceptance activity.
-  No push, next slice, Graphify rerun or physical-hardware action is authorized.
-- **First group boundary**: No live coordinator registration, runtime/composition,
-  service or CLI Follow behavior inT001–T005. T006 is RED coordinator/real-journal
-  integration test authoring only.
-- **Validation**: Fresh pre-commit 8182 full passes, including625 guarded installed
-  Follow/007–010 cases; zero failures/errors/skips, warnings as errors. Ruff/mypy121/
-  seven import contracts/staged diff pass;32 archives/12 installs audited.
-- **Graphify**: T023 one code-only update passed:6095 nodes/20503 edges/254
-  communities, zero tokens; graph-health/zero-node limits recorded in history.
-- **Acceptance limits**: Existing macOS/arm64 Python3.14.3 software evidence only.
-  Native Linux/Windows, active-DUT, physical/electrical/safe-open and Enhanced
-  hardware acceptance remain unexecuted; actual Windows commands unsupported.
-- **Deferrals**: TX/Interact/console, Control, release/reacquire/handoff/reconnect,
-  text/line/regex, historical browsing, Enhanced production, MCP/AI and unrelated
-  Phase1 work. Follow software closure is verified; native/physical acceptance remains.
-- **Stop boundary**: Feature011 committed; stop. Nothing pushed; no next slice or hardware.
+- **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 remains incomplete.
+- **Committed baseline**: Features 001–012 on main. Feature 012 implementation:
+  `:/^Implement bounded interact`, `Implement bounded interact`; accepted parent
+  `a28acc363f0ee81e9f269c9a92e55e314bf0f062` (Feature 011).
+- **Completed slice**: Feature 012 `bounded-interact`; T001–T030 complete (30/30),
+  software-complete and committed within macOS/arm64 Python 3.14.3 software scope.
+- **Final pre-commit review**: Complete 61-file diff/Core/contract review. One v4
+  invariant defect corrected: a retained end must reject TX settlement before its
+  own observation start even after its start/TX records expire. Six RED→GREEN
+  cases cover append rollback, writer reopen and read-only terminal open on both
+  backend shapes. Existing error/cleanup categories and all legacy versions retained.
+- **Fresh final gate**: 11,399 tests passed in 1021.96s (JUnit1021.782s), warnings
+  as errors, zero failures/errors/skips: Core4545/service2777/CLI4077. Ruff clean;
+  mypy142; seven import contracts kept (77 files/312 dependencies); diff clean.
+- **Installed/staged/privacy**: Full includes 197 Interact/artifact and625 legacy
+  process cases. All287 Git-index blobs exported independently; five corrected
+  wheel/sdist audits pass outside checkout/export. Six archives,39 installed
+  product modules per stack,25 locked versions,127 installed RECORD rows; private/
+  generated/runtime/credential/Graphify/local tooling excluded. Exact61 staged paths.
+- **Compatibility/ownership**: Profile1, journals1/2/3, API1/default CLI, old codecs/
+  charges, Monitor clocks/security/cleanup retained. One authoritative RX/private
+  Acquisition connection; intent ACK before write registration; join before close.
+  Backend ACK proves acceptance only, never physical wire/DUT receipt or causation.
+- **Tooling**: No Graphify rerun at pre-commit; T029 result/health limits remain
+  historical and predate this narrow correction. Outputs/backups/tooling stay ignored.
+- **Limits**: Native Linux/Windows serial/driver/OS and real UART/DUT acceptance
+  remain outstanding; Windows CLI support is not added. Safe-open DTR/RTS
+  transitions/glitches, voltage/wiring/electrical behavior and Enhanced hardware/
+  protocols remain unvalidated. No hardware or real account state was accessed.
+- **Next action**: Await human selection/authorization of the next Phase 1 slice or
+  separately scoped acceptance work.
+- **Stop**: Authorized Feature012 review/commit complete. Nothing pushed; no next
+  slice, Graphify or hardware/account work is automatically authorized.
 
 ## Repository Baseline
 
@@ -53,6 +56,7 @@ Completed-slice evidence is kept in [development history](development_history.md
 | [009](../specs/009-receive-only-monitor/spec.md) | Bounded receive-only Monitor, explicit v2 markers, authenticated service/CLI and owned settlement | `:/^Implement receive-only monitor` |
 | [010](../specs/010-client-annotations/spec.md) | Bounded attributed client assertions, explicitv3 evidence, authenticated service/thin CLI and owned insertion | `:/^Implement client annotations` |
 | [011](../specs/011-live-follow/spec.md) | Receive-only live-tail Follow, bounded exact evidence/gaps, owned stop/cleanup, authenticated NDJSON and thin streaming CLI | `:/^Implement live follow` |
+| [012](../specs/012-bounded-interact/spec.md) | Bounded exact-byte Interact, minimum owned Basic TX, explicit Profile2/journal4/API2, authenticated service/thin CLI and joined settlement | `:/^Implement bounded interact` |
 
 All prior implementation commits remain ancestors of feature 007. Its accepted
 parent `c2c9ce3` records feature 006; `b4c5730` is the service implementation.
@@ -80,6 +84,94 @@ Feature010's implementation commit is `:/^Implement client annotations`, `Implem
 with accepted parent `2fdebaf4aa3df815be9f2ce223c832e70c739569`. The title-based reference resolves to
 the implementation commit without a self-referential hash; prior baselines remain
 ancestors. Nothing was pushed.
+
+Feature012's implementation commit is `:/^Implement bounded interact`,
+`Implement bounded interact`, with accepted parent
+`a28acc363f0ee81e9f269c9a92e55e314bf0f062`. The title-based reference resolves to
+the implementation commit without a self-referential hash. Nothing was pushed.
+
+## Completed Feature: Bounded Interact (012; Software-Complete)
+
+Artifacts: [spec](../specs/012-bounded-interact/spec.md),
+[plan](../specs/012-bounded-interact/plan.md),
+[research](../specs/012-bounded-interact/research.md),
+[model](../specs/012-bounded-interact/data-model.md),
+[contract](../specs/012-bounded-interact/contracts/interact.md),
+[guide](../specs/012-bounded-interact/quickstart.md),
+[planning-quality checklist](../specs/012-bounded-interact/checklists/requirements.md)
+and [tasks](../specs/012-bounded-interact/tasks.md).
+
+Sequential identifier012 follows completed001–011. All30 tasks and the separately
+authorized final pre-commit review/implementation commit are complete. Feature012
+is software-complete and committed on main within the observed macOS/arm64 scope;
+Phase1 remains incomplete. Resume Here owns the current action; dated task stops,
+corrections and actual validation remain in [history](development_history.md).
+
+### Implemented Software Scope
+
+Core implements one bounded exact-byte Interact through the existing owned backend
+and authoritative RX stream. Immutable Profile-v2 authorization, reported RX/TX
+capabilities and exact evidence-policy preflight precede one serialized write.
+Positive intent ACK precedes registration; observation starts at intent+1 and can
+match RX before write ACK. Matching, TX settlement, overall outcome and audit ACKs
+remain independent facts; whole RX chunks and ambient evidence remain authoritative.
+
+Acquisition seals/joins admitted writes before physical close independently of
+audit. Runtime joins Interact audit before final Follow/read/recorder cleanup;
+service stop seals before HTTP drain and joins its admitted jobs. Pre-registration
+cancellation suppresses TX; post-registration cancellation joins settlement.
+Existing Monitor clocks, Follow hints/gaps, annotations, independent slots/read
+leases and permanent cleanup uncertainty retain their contracts.
+
+| Boundary | Implemented selection and compatibility |
+|---|---|
+|Profile/Basic|Distinct immutable v2 policy, TX false by default; explicit opt-in writer has one strongly owned worker and fixed 1000ms library wait. Existing v1 values/defaults/open/read behavior retained.|
+|Composition/journal|Profile 1 creates journal 3/RX; Profile 2 creates journal 4/write capability independently of permission. Explicit v4 adds three kinds; legacy factories/codecs/charges unchanged.|
+|Service/API|Authenticated literal API-v2 routes and independent Interact ownership; API-v1 keeps legacy shapes and rejects known v2-only runs without downgrade.|
+|CLI|Explicit --api-version 2 for Interact, one credential/request and finite delivery. Default API-v1/no-flag behavior retained; delivered valid reports exit0 even for failed outcomes.|
+|ACK/boundary|Backend acceptance never proves physical wire/DUT receipt. Start cursor establishes Core observation order, not DUT causation. Unknown progress/ACKs remain unknown.|
+
+Console, arbitrary streaming TX, Control, handoff/reconnect, text/line/regex
+conveniences, a generic command framework, Enhanced production and MCP remain
+outside this slice. No physical/native-driver acceptance is inferred from fakes.
+
+### Observed Checkpoints
+
+These checkpoint executions overlap; their counts are not added together.
+Earlier foundation/RED/GREEN counts and diagnostics remain in history.
+
+| Checkpoint | Recorded result |
+|---|---|
+|T019 US1 MVP|Core/service/thin CLI and four authenticated two-shape/real-journal acceptance cases; full gate 10,392 passes.|
+|T020–T022 US2|256 Core and 296 delivery assertions already GREEN; T022 no-change result and 7,641 focused passes.|
+|T023–T025 US3|Two Core failures expose one pre-registration cancellation gap; T024 adds 64 already-GREEN lifetime cases; T025 corrects the gap, with 184 T023/64 T024 cases GREEN and 11,192 full passes.|
+|T026 installed|192 guarded Interact cases (24 per artifact/host/backend cell) and 625 legacy process cases pass, 817 total; no shared-fixture edit.|
+|T027 review|One v4 consistency defect corrected; four new regressions RED→GREEN, 1,507 Core/2,350 delivery passes and five fresh artifact audits. Full gate 11,393 passes; 197 installed Interact/artifact plus 625 legacy process cases (822 total).|
+|T028 documentation|Evidence/progress reconciled and existing architecture explanation confirmed; fresh import-contract/doc/scope checks only. No code/test/contract or full-gate rerun.|
+|T029 tooling|One code-only incremental Graphify update: 6,941 nodes/24,546 edges/302 communities, zero LLM tokens, no retry. Limits: 492 dangling edges, 178 duplicates, 918 directed/928 undirected collapsed edges; changed documents excluded and pyproject.toml unindexed. Navigation may be incomplete/corrupt; full limits remain in history.|
+|T030 final closure|Fresh full gate: 11,393 passes, zero failures/errors/skips; Ruff/mypy142/seven import contracts/diff clean. Includes 197 Interact/artifact and 625 legacy process cases; five fresh artifact audits also pass separately. No production/test correction.|
+|Final pre-commit review|One unpaired-v4-end timestamp invariant corrected; six RED→GREEN cases and780 focused passes. Fresh full11,399 passes, zero failures/errors/skips; Ruff/mypy142/import7, exact staged/index-export artifact/privacy checks pass. Implementation committed; nothing pushed.|
+
+T027's full XML (/private/tmp/dutchmate-012-t027-full.xml) has zero failures/errors/
+skips with warnings as errors. Its earlier standalone installed XML retains three
+intermediate authoring/stale-artifact failures and is not final acceptance evidence.
+The final full run includes all 197 cases in that module. T027 also verifies six
+archives, 39 product modules per installation, 49 wheel/127 installed RECORD
+entries, 25 locked external versions, non-editable imports outside checkout and
+private/generated exclusions. Package/dependency/lock declarations remain unchanged.
+
+The existing architecture explanation in Core §16 and rationale §15 remains
+accurate; internal optional writers/owners stay within its established roles and
+inward dependencies. No explanation or Core rule is changed. The 012 plan records
+actual consumers, including the authorized Follow union extension and unchanged
+terminal/server wiring. T030 final full/installed/artifact/privacy/Core review
+passes without a new defect at that checkpoint. The subsequent pre-commit review
+corrects only the self-contained v4 end timestamp check in sqlite_evidence.py,
+with six new journal regressions. Final11,399-test/staged/installability/privacy
+verification passes before commit; architecture explanation remains unchanged.
+Native Linux/Windows serial/driver behavior, safe-open
+DTR/RTS transitions/glitches, electrical pins/voltage/wiring, physical UART/DUT
+receipt and Enhanced hardware/protocols remain outside software acceptance.
 
 ## Completed Feature: Receive-Only Live Follow (011; Software-Complete)
 
@@ -1024,9 +1116,9 @@ T020 installed Follow and T021 diff/artifact/compatibility review are verified.
 T022 conformance/T023 tooling and T024 fresh full/installed/artifact/privacy
 closure and final pre-commit review are verified; Feature011 is software-complete
 and committed. Other explicit
-deferrals beyond010 remain text/line decoding, regex/multiple conditions,
+deferrals beyond010 remain text/line decoding, regex and Monitor multiple conditions,
 annotation editing/backdating/attachments and derived views, catalogue/discovery, restart recovery/arbitrary
-historical browsing, TX/Interact/console, Control, reconnect/handoff, service management,
+historical browsing, Console, Control, reconnect/handoff, service management,
 Enhanced production, MCP/AI and physical-hardware acceptance. Profile discovery/
 defaults/writing/migration/overlays/reload, durable Profile identity, session management,
 cleanup retry/operator recovery and external-program execution remain deferred.
@@ -1036,15 +1128,15 @@ forced abandonment is introduced.
 
 Phase 1 remains incomplete under
 [Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): remaining
-Follow native/physical acceptance, Interact, console,
-control, handoff, reconnect and real-DUT acceptance remain.
+Follow/Interact native/physical acceptance, Console, control, handoff, reconnect
+and real-DUT acceptance remain.
 Feature010 annotation behavior, hardening, installed review and final T024 software
 closure and the separately authorized final pre-commit review/commit are verified.
-Features001–011 are committed software slices. Software-complete009 does not establish
-physical Monitor acceptance. Feature011 current progress and authorization are
-recorded in Resume Here; final pre-commit review/commit are complete. Await human
-selection/authorization; no physical
-hardware or another slice is automatically authorized.
+Features001–012 are committed software slices. Software-complete009 does not establish
+physical Monitor acceptance. Feature012 current progress and authorization are
+recorded in Resume Here; final review/software closure is verified and committed. Await
+human review/selection; no physical hardware or another slice is automatically
+authorized.
 
 ## References
 

@@ -10,8 +10,9 @@ from dataclasses import dataclass
 from typing import Literal, NoReturn, cast
 
 import httpx
+import typer
 
-from dutchmate_cli import annotation, evidence, monitor
+from dutchmate_cli import annotation, evidence, interact, monitor
 from dutchmate_cli import follow as follow_wire
 from dutchmate_cli.context import AttachPaths, CliFailure, CliFailureKind, Endpoint
 
@@ -45,6 +46,7 @@ _REQUEST_CODES = {
     401: {"authentication_required"}, 404: {"route_not_found"},
     405: {"method_not_allowed"}, 413: {"payload_too_large"},
     415: {"unsupported_media_type"}, 422: {"invalid_request"},
+    409: {"unsupported_api_version"},
 }
 _ACQUISITION_CODES = {"capability_rejection", "recording_failure", "transport_failure"}
 _ISSUE_CODES = _PROFILE_CODES | _ACQUISITION_CODES | {
@@ -103,11 +105,13 @@ def _integers(view: dict[str, object], keys: tuple[str, ...]) -> None:
         _invalid()
 
 
-def _profile(value: object) -> None:
+def _profile(value: object, *, api_version: int = 1) -> None:
     view = _object(value, {
         "format_version", "dut", "backend", "uart", "open_lines", "policy", "session_policy",
     })
-    if type(view["format_version"]) is not int or view["format_version"] != 1:
+    if type(view["format_version"]) is not int or view["format_version"] not in (
+        {1, 2} if api_version == 2 else {1}
+    ):
         _invalid()
     for field, keys in (("dut", {"id", "name"}), ("backend", {"kind", "expected_device"})):
         for item in _object(view[field], keys).values():
@@ -205,7 +209,7 @@ def _acquisition(value: object) -> None:
         _enum(view["primary_failure_kind"], _ACQUISITION_CODES)
 
 
-def _status(value: object) -> None:
+def _status(value: object, *, api_version: int = 1) -> None:
     envelope = _object(value, {"service_state", "runtime"})
     _enum(envelope["service_state"], {"ready", "stopping"})
     view = _object(envelope["runtime"], {
@@ -224,7 +228,7 @@ def _status(value: object) -> None:
         if view[key] is not None:
             _string(view[key])
     if view["profile"] is not None:
-        _profile(view["profile"])
+        _profile(view["profile"], api_version=api_version)
     if view["acquisition"] is not None:
         _acquisition(view["acquisition"])
     if view["primary_issue"] is not None:
@@ -332,27 +336,36 @@ async def _raw(response: httpx.Response) -> bytearray:
 async def exchange(
     *, endpoint: Endpoint, command: str, credential: str, delivery: DeliveryState,
     paths: AttachPaths | None = None,
+    api_version: int = 1,
 ) -> tuple[int, bytes]:
     """Deliver one existing observation request; no account/resources/terminal work."""
+    _check_api_version(api_version)
     request_body: dict[str, str] | None = None
     if command == "attach" and paths is not None:
-        method, route = "POST", "/v1/observation/attach"
+        method, route = "POST", "/v1/observation/attach" if api_version == 1 else "/v2/observation/attach"
         request_body = {"profile_path": paths.profile_path, "journal_path": paths.journal_path}
     elif command == "status" and paths is None:
-        method, route = "GET", "/v1/observation/status"
+        method, route = "GET", "/v1/observation/status" if api_version == 1 else "/v2/observation/status"
     elif command == "detach" and paths is None:
-        method, route = "POST", "/v1/observation/detach"
+        method, route = "POST", "/v1/observation/detach" if api_version == 1 else "/v2/observation/detach"
     else:
         return local_failure(CliFailureKind.INVALID_ARGUMENTS, delivery)
     return await _deliver(
         endpoint=endpoint, method=method, route=route, request_body=request_body,
-        credential=credential, delivery=delivery, validate=_status, reject=_remote_error,
+        credential=credential, delivery=delivery,
+        validate=_status if api_version == 1 else lambda value: _status(value, api_version=2),
+        reject=_remote_error,
     )
 
 
-def _evidence_reply(value: object) -> object:
+def _check_api_version(api_version: int) -> None:
+    if type(api_version) is not int or api_version not in {1, 2}:
+        raise CliFailure(CliFailureKind.INVALID_ARGUMENTS)
+
+
+def _evidence_reply(value: object, *, api_version: int = 1) -> object:
     try:
-        return evidence.reply(value)
+        return evidence.reply(value) if api_version == 1 else evidence.reply(value, api_version=2)
     except ValueError, TypeError, RecursionError:
         pass
     _invalid()
@@ -372,16 +385,20 @@ def _evidence_error(value: object, status: int) -> object:
 async def exchange_evidence(
     *, endpoint: Endpoint, operation: str, request_body: dict[str, object],
     credential: str, delivery: DeliveryState,
+    api_version: int = 1,
 ) -> tuple[int, bytes]:
+    _check_api_version(api_version)
     if operation == "record":
-        route = "/v1/evidence/record"
+        route = "/v1/evidence/record" if api_version == 1 else "/v2/evidence/record"
     elif operation == "page":
-        route = "/v1/evidence/page"
+        route = "/v1/evidence/page" if api_version == 1 else "/v2/evidence/page"
     else:
         return local_failure(CliFailureKind.INVALID_ARGUMENTS, delivery)
     return await _deliver(
         endpoint=endpoint, method="POST", route=route, request_body=request_body,
-        credential=credential, delivery=delivery, validate=_evidence_reply, reject=_evidence_error,
+        credential=credential, delivery=delivery,
+        validate=_evidence_reply if api_version == 1 else lambda value: _evidence_reply(value, api_version=2),
+        reject=_evidence_error,
     )
 
 
@@ -409,11 +426,13 @@ async def exchange_monitor(
     request_body: dict[str, object],
     credential: str,
     delivery: DeliveryState,
+    api_version: int = 1,
 ) -> tuple[int, bytes]:
+    _check_api_version(api_version)
     return await _deliver(
         endpoint=endpoint,
         method="POST",
-        route="/v1/observation/monitor",
+        route="/v1/observation/monitor" if api_version == 1 else "/v2/observation/monitor",
         request_body=request_body,
         credential=credential,
         delivery=delivery,
@@ -446,16 +465,44 @@ async def exchange_annotation(
     request_body: dict[str, object],
     credential: str,
     delivery: DeliveryState,
+    api_version: int = 1,
 ) -> tuple[int, bytes]:
+    _check_api_version(api_version)
     return await _deliver(
         endpoint=endpoint,
         method="POST",
-        route="/v1/observation/annotations",
+        route="/v1/observation/annotations" if api_version == 1 else "/v2/observation/annotations",
         request_body=request_body,
         credential=credential,
         delivery=delivery,
         validate=_annotation_reply,
         reject=_annotation_error,
+    )
+
+
+async def exchange_interact(
+    *, endpoint: Endpoint, request_body: dict[str, object], credential: str,
+    delivery: DeliveryState,
+) -> tuple[int, bytes]:
+    def validate(value: object) -> object:
+        try:
+            return interact.reply(value, request_body)
+        except ValueError, TypeError, RecursionError:
+            _invalid()
+
+    def reject(value: object, status: int) -> object:
+        try:
+            if not interact.recognized_error(value, status):
+                _remote_error(value, status)
+        except ValueError, TypeError, RecursionError:
+            _invalid()
+        error = _object(_object(value, {"error"})["error"], {"source", "code"})
+        return {"error": {"source": error["source"], "code": error["code"]}}
+
+    return await _deliver(
+        endpoint=endpoint, method="POST", route="/v2/observation/interact",
+        request_body=request_body, credential=credential, delivery=delivery,
+        validate=validate, reject=reject,
     )
 
 
@@ -473,8 +520,11 @@ def _follow_frame(position: follow_wire.Position, raw: bytearray | None) -> byte
 async def exchange_follow(
     *, endpoint: Endpoint, request_body: dict[str, object], credential: str,
     delivery: DeliveryState, emit: Callable[[bytes], None],
+    api_version: int = 1,
 ) -> tuple[int, bytes | None]:
     """One Follow HTTP exchange; finite delivery below retains its old budgets."""
+    _check_api_version(api_version)
+    route = "/v1/observation/follow" if api_version == 1 else "/v2/observation/follow"
     for name in (
         "httpx", "httpcore", "httpcore.connection", "httpcore.http11",
         "httpcore.http2", "httpcore.proxy", "httpcore.socks",
@@ -500,7 +550,7 @@ async def exchange_follow(
             loop = asyncio.get_running_loop()
             async with asyncio.timeout_at(loop.time() + 10) as handshake:
                 async with client.stream(
-                    "POST", f"http://{authority}/v1/observation/follow", json=request_body,
+                    "POST", f"http://{authority}{route}", json=request_body,
                     headers={
                         "Host": authority, "Authorization": f"Bearer {credential}",
                         "Accept": "application/x-ndjson", "Accept-Encoding": "identity",
@@ -527,7 +577,9 @@ async def exchange_follow(
                     ):
                         _invalid()
                     frames = follow_wire.Frames(response.aiter_raw())
-                    position = follow_wire.Position(evidence._text(request_body["session_id"]))
+                    position = follow_wire.Position(
+                        evidence._text(request_body["session_id"]), api_version=api_version,
+                    )
                     first = _follow_frame(position, await frames.read())
                     # The first complete started frame ends the handshake. All
                     # later budgets start after the previous frame's output.
@@ -623,6 +675,8 @@ async def _deliver(
         kind = CliFailureKind.INVALID_RESPONSE
     except httpx.TransportError:
         kind = CliFailureKind.TRANSPORT_FAILED
+    except (KeyboardInterrupt, typer.Abort):
+        raise
     except Exception:
         kind = CliFailureKind.INTERNAL_FAILURE
     return local_failure(kind, delivery)

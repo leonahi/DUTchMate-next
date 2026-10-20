@@ -10,6 +10,8 @@ from dutchmate_core.model import (
     ClientAnnotationEvidence,
     EvidenceRangeReference,
     EvidenceRecord,
+    InteractEndedEvidence,
+    InteractStartedEvidence,
     ObserverLossEvidence,
     OperationEndedEvidence,
     OperationStartedEvidence,
@@ -21,6 +23,7 @@ from dutchmate_core.model import (
     SequenceRange,
     SessionId,
     SessionPolicy,
+    UartTxSettledEvidence,
     validate_persisted_counter,
     validate_record_sequence,
 )
@@ -106,6 +109,9 @@ class FollowBatch:
                     OperationStartedEvidence,
                     OperationEndedEvidence,
                     ClientAnnotationEvidence,
+                    InteractStartedEvidence,
+                    UartTxSettledEvidence,
+                    InteractEndedEvidence,
                 ),
             ):
                 raise TypeError("Follow requires existing evidence records")

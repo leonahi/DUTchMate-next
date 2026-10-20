@@ -1,11 +1,12 @@
-"""Validated values for the receive-only Basic serial backend adapter."""
+"""Basic serial backend with unchanged RX defaults and an opt-in UART writer."""
 
 import asyncio
 import errno
 import sys
 import time
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, replace
 from enum import IntEnum, StrEnum
 from typing import Protocol, cast
 from uuid import uuid4
@@ -15,6 +16,8 @@ import serial
 from dutchmate_core.backend import (
     BackendFailureKind,
     BackendFailureOperation,
+    BackendWriteResult,
+    BackendWriteStatus,
     EventStreamAlreadyConsumedError,
     NormalizedBackendFailure,
 )
@@ -332,6 +335,78 @@ class _SerialFactory(Protocol):
     def __call__(self, *, port: str | None) -> _SerialHandle: ...
 
 
+class _SerialWriteHandle(_SerialHandle, Protocol):
+    write_timeout: float | None
+
+    def write(self, payload: bytes) -> int: ...
+
+
+@dataclass(frozen=True, slots=True)
+class _WriteProvenance(BackendConnectionProvenance):
+    receive_only: BasicSerialConnectionProvenance
+    write_timeout_ms: int
+
+    def to_snapshot(self) -> ConnectionProvenanceSnapshot:
+        snapshot = self.receive_only.to_snapshot()
+        return replace(
+            snapshot,
+            backend_schema_version=2,
+            fields=tuple(
+                sorted(
+                    (
+                        *snapshot.fields,
+                        ProvenanceField("write_timeout_ms", self.write_timeout_ms),
+                        ProvenanceField(
+                            "write_acknowledgement_scope", "backend_acceptance"
+                        ),
+                    ),
+                    key=lambda field: field.name,
+                )
+            ),
+        )
+
+
+def _write_once(handle: _SerialWriteHandle, payload: bytes) -> BackendWriteResult:
+    """One library call; a returned prefix is backend acceptance only."""
+    try:
+        count = handle.write(payload)
+    except serial.SerialTimeoutException:
+        return BackendWriteResult(BackendWriteStatus.TIMEOUT, None, None)
+    except Exception as error:
+        if _is_device_loss(error):
+            return BackendWriteResult(BackendWriteStatus.DISCONNECTED, None, None)
+        return BackendWriteResult(
+            BackendWriteStatus.FAILURE, None, BackendFailureKind.IO_FAILURE
+        )
+    if type(count) is not int or not 0 <= count <= len(payload):
+        return BackendWriteResult(
+            BackendWriteStatus.FAILURE,
+            None,
+            BackendFailureKind.INTERNAL_CONTRACT_FAILURE,
+        )
+    return BackendWriteResult(
+        BackendWriteStatus.ACKNOWLEDGED
+        if count == len(payload)
+        else BackendWriteStatus.PARTIAL,
+        count,
+        None,
+    )
+
+
+async def _await_owned_work[T](future: asyncio.Future[T]) -> T:
+    """Cancellation cannot orphan submitted library work or connection cleanup."""
+    cancelled = False
+    while not future.done():
+        try:
+            await asyncio.shield(future)
+        except asyncio.CancelledError:
+            cancelled = True
+    result = future.result()
+    if cancelled:
+        raise asyncio.CancelledError
+    return result
+
+
 @dataclass(frozen=True, slots=True)
 class _ReadObservation:
     payload: bytes
@@ -494,6 +569,57 @@ class _BasicSerialConnection:
             )
 
 
+class _BasicSerialWriteConnection(_BasicSerialConnection):
+    """One owned writer alongside the inherited authoritative RX path."""
+
+    __slots__ = ("_write_handle", "_write_future", "_writer_executor")
+
+    def __init__(
+        self, descriptor: ConnectionDescriptor, serial_handle: _SerialWriteHandle
+    ) -> None:
+        super().__init__(descriptor, serial_handle)
+        self._write_handle = serial_handle
+        self._write_future: asyncio.Future[BackendWriteResult] | None = None
+        self._writer_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="dutchmate-basic-write"
+        )
+
+    async def write(self, payload: bytes) -> BackendWriteResult:
+        if type(payload) is not bytes:
+            raise TypeError("UART write requires exact bytes")
+        if not 1 <= len(payload) <= 4096:
+            raise ValueError("UART write requires1..4096 bytes")
+        if self._closing:
+            raise RuntimeError("UART connection is closing")
+        if self._write_future is not None:
+            raise RuntimeError("a UART write is already submitted")
+        future = asyncio.get_running_loop().run_in_executor(
+            self._writer_executor, _write_once, self._write_handle, payload
+        )
+        self._write_future = future
+        try:
+            return await _await_owned_work(future)
+        finally:
+            self._write_future = None
+
+    async def close(self) -> None:
+        self._closing = True
+        close_task = self._close_task
+        if close_task is None:
+            close_task = asyncio.create_task(self._close_once())
+            self._close_task = close_task
+        await _await_owned_work(close_task)
+
+    async def _close_once(self) -> None:
+        try:
+            future = self._write_future
+            if future is not None:
+                await _await_owned_work(future)
+            await super()._close_once()
+        finally:
+            self._writer_executor.shutdown(wait=True)
+
+
 class BasicSerialBackend:
     """Open one explicitly selected local serial device without discovery."""
 
@@ -503,8 +629,12 @@ class BasicSerialBackend:
         configuration: SerialConfiguration,
         line_intent: SerialOpenLineIntent,
         *,
+        write_enabled: bool = False,
         _serial_factory: _SerialFactory | None = None,
     ) -> None:
+        if type(write_enabled) is not bool:
+            raise TypeError("write opt-in must be an exact boolean")
+        self._write_enabled = write_enabled
         self._selector = selector
         self._configuration = configuration
         self._line_intent = line_intent
@@ -527,6 +657,7 @@ class BasicSerialBackend:
             request,
             self._serial_factory,
             windows=_running_on_windows(),
+            write_enabled=self._write_enabled,
         )
         if open_failure is not None:
             raise open_failure
@@ -562,6 +693,7 @@ def _open_serial_connection(
     serial_factory: _SerialFactory,
     *,
     windows: bool,
+    write_enabled: bool = False,
 ) -> tuple[_BasicSerialConnection | None, NormalizedBackendFailure | None]:
     serial_handle, construction_failure = _construct_closed_handle(serial_factory)
     if construction_failure is not None:
@@ -577,6 +709,13 @@ def _open_serial_connection(
         _best_effort_close(serial_handle)
         return None, configuration_failure
 
+    if write_enabled:
+        try:
+            cast("_SerialWriteHandle", serial_handle).write_timeout = 1.0
+        except Exception as error:
+            _best_effort_close(serial_handle)
+            return None, _open_failure(BackendFailureKind.CONFIGURATION_REJECTED, error)
+
     open_failure = _open_handle(serial_handle)
     if open_failure is not None:
         _best_effort_close(serial_handle)
@@ -591,6 +730,36 @@ def _open_serial_connection(
         _best_effort_close(serial_handle)
         return None, verification_failure
     assert descriptor is not None
+    if write_enabled:
+        try:
+            write_handle = cast("_SerialWriteHandle", serial_handle)
+            timeout = write_handle.write_timeout
+            if type(timeout) not in (int, float) or timeout != 1.0:
+                raise ValueError(
+                    "library-reported write timeout differs from requested"
+                )
+            assert isinstance(timeout, (int, float))
+            descriptor = replace(
+                descriptor,
+                capabilities=BackendCapabilities(
+                    descriptor.capabilities.values | {BackendCapability.UART_SEND}
+                ),
+                connection_provenance=_WriteProvenance(
+                    cast(
+                        "BasicSerialConnectionProvenance",
+                        descriptor.connection_provenance,
+                    ),
+                    int(timeout * 1000),
+                ),
+            )
+        except Exception as error:
+            _best_effort_close(serial_handle)
+            return None, _open_failure(BackendFailureKind.CONFIGURATION_REJECTED, error)
+        try:
+            return _BasicSerialWriteConnection(descriptor, write_handle), None
+        except Exception as error:
+            _best_effort_close(serial_handle)
+            return None, _open_failure(BackendFailureKind.IO_FAILURE, error)
     return _BasicSerialConnection(descriptor, serial_handle), None
 
 

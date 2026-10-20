@@ -10,11 +10,11 @@ from dutchmate_core.adapters.basic_serial import (
     SerialParity,
     SerialStopBits,
 )
-from dutchmate_core.profile import ResolvedDutProfile
+from dutchmate_core.profile import ResolvedProfile
 
 
 def to_basic_serial_open_request(
-    resolved_profile: ResolvedDutProfile,
+    resolved_profile: ResolvedProfile,
 ) -> BasicSerialOpenRequest:
     """Translate one resolved Basic Profile into its serial-open request."""
 

@@ -482,6 +482,9 @@ type EvidenceRecord = (
     | OperationStartedEvidence
     | OperationEndedEvidence
     | ClientAnnotationEvidence
+    | InteractStartedEvidence
+    | UartTxSettledEvidence
+    | InteractEndedEvidence
 )
 
 
@@ -837,3 +840,264 @@ class ClientAnnotationEvidence:
     @property
     def attribution_basis(self) -> Literal["client_asserted"]:
         return "client_asserted"
+
+
+class InteractObservationOutcome(StrEnum):
+    MATCHED = "matched"
+    TIMEOUT = "timeout"
+    BYTE_LIMIT = "byte_limit"
+    DISCONNECTED = "disconnected"
+    DETACHED = "detached"
+    TIMESTAMP_ORIGIN_RESET = "timestamp_origin_reset"
+    RECORDING_FAILURE = "recording_failure"
+    TRANSPORT_FAILURE = "transport_failure"
+    SERVICE_STOPPING = "service_stopping"
+    CANCELLED = "cancelled"
+    TX_FAILED = "tx_failed"
+
+
+class InteractOutcome(StrEnum):
+    MATCHED = "matched"
+    TIMEOUT = "timeout"
+    BYTE_LIMIT = "byte_limit"
+    DISCONNECTED = "disconnected"
+    DETACHED = "detached"
+    TIMESTAMP_ORIGIN_RESET = "timestamp_origin_reset"
+    RECORDING_FAILURE = "recording_failure"
+    TRANSPORT_FAILURE = "transport_failure"
+    SERVICE_STOPPING = "service_stopping"
+    CANCELLED = "cancelled"
+    WRITE_TIMEOUT = "write_timeout"
+    PARTIAL_WRITE = "partial_write"
+
+
+@dataclass(frozen=True, slots=True)
+class InteractMatch:
+    condition_index: int
+    start: MonitorMatchStart
+    end: MonitorMatchEnd
+
+    def __post_init__(self) -> None:
+        validate_persisted_counter(self.condition_index, name="condition index")
+        if self.condition_index > 3:
+            raise ValueError("condition index must be in0..3")
+        MonitorMatch(self.start, self.end)
+
+
+@dataclass(frozen=True, slots=True)
+class InteractObservation:
+    """Frozen observation facts suitable for a later versioned end record.
+
+    These values do not extend the existing evidence union or persistence codec.
+    """
+
+    window: SequenceRange
+    outcome: InteractObservationOutcome
+    examined_rx_bytes: int
+    observer_loss_records: int
+    match: InteractMatch | None
+    clock: MonitorClockFacts
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.window, SequenceRange):
+            raise TypeError("Interact window must be validated")
+        if not self.window.start_inclusive:
+            raise ValueError("Interact window must follow a start record")
+        if not isinstance(self.outcome, InteractObservationOutcome):
+            raise TypeError("Interact observation outcome must be declared")
+        validate_persisted_counter(self.examined_rx_bytes, name="examined RX bytes")
+        validate_persisted_counter(self.observer_loss_records, name="loss records")
+        if self.examined_rx_bytes > 1048576:
+            raise ValueError("examined RX exceeds Interact bound")
+        if self.window.is_empty and (
+            self.examined_rx_bytes or self.observer_loss_records
+        ):
+            raise ValueError("empty observation cannot contain RX or loss")
+        if (
+            self.outcome
+            in (
+                InteractObservationOutcome.MATCHED,
+                InteractObservationOutcome.BYTE_LIMIT,
+            )
+            and not self.examined_rx_bytes
+        ):
+            raise ValueError("match/byte exhaustion requires examined RX")
+        if not isinstance(self.clock, MonitorClockFacts):
+            raise TypeError("Interact clock facts must be validated")
+        if (self.outcome is InteractObservationOutcome.TIMEOUT) != (
+            self.clock.decided_at_ns >= self.clock.deadline_at_ns
+        ):
+            raise ValueError("observation disagrees with its deadline")
+        if self.outcome is InteractObservationOutcome.MATCHED:
+            if not isinstance(self.match, InteractMatch):
+                raise ValueError("matched observation requires a match")
+            if not (
+                self.window.start_inclusive
+                <= self.match.start.sequence
+                <= self.match.end.sequence
+                < self.window.end_exclusive
+            ):
+                raise ValueError("match must be inside the frozen window")
+            if (
+                self.match.start.byte_offset >= self.examined_rx_bytes
+                or self.match.end.byte_offset_exclusive > self.examined_rx_bytes
+            ):
+                raise ValueError("match offset exceeds examined RX")
+        elif self.match is not None:
+            raise ValueError("only matched observation may carry a match")
+
+
+@dataclass(frozen=True, slots=True)
+class RecordedTxFacts:
+    """Immutable stored settlement; normalized backend literals checked by codec."""
+
+    submitted: bool
+    status: str
+    accepted_prefix_bytes: int | None
+    failure_code: str | None
+    acknowledgement_scope: Literal["backend_acceptance"]
+    clock_origin_id: str
+    settled_at_ns: int
+
+    def __post_init__(self) -> None:
+        if type(self.submitted) is not bool or type(self.status) is not str:
+            raise TypeError("TX submission/status must have exact native types")
+        if self.status not in {
+            "acknowledged",
+            "partial",
+            "timeout",
+            "disconnected",
+            "failure",
+            "not_submitted",
+        }:
+            raise ValueError("unknown TX settlement")
+        if self.submitted == (self.status == "not_submitted"):
+            raise ValueError("TX submission disagrees with settlement")
+        if self.status in {"acknowledged", "partial"}:
+            count = self.accepted_prefix_bytes
+            if count is None:
+                raise TypeError("acknowledged prefix must be present")
+            validate_persisted_counter(count, name="accepted prefix")
+            minimum, maximum = (1, 4096) if self.status == "acknowledged" else (0, 4095)
+            if not minimum <= count <= maximum:
+                raise ValueError("accepted prefix outside payload bounds")
+        elif self.accepted_prefix_bytes is not None:
+            raise ValueError("unknown/suppressed progress must be absent")
+        if self.status == "failure":
+            if type(self.failure_code) is not str or not self.failure_code:
+                raise ValueError("failed TX requires a normalized category")
+        elif self.failure_code is not None:
+            raise ValueError("only failed TX carries a failure category")
+        if (
+            type(self.acknowledgement_scope) is not str
+            or self.acknowledgement_scope != "backend_acceptance"
+        ):
+            raise ValueError("TX acknowledgement is backend acceptance only")
+        validate_monitor_uuid(self.clock_origin_id)
+        validate_persisted_counter(self.settled_at_ns, name="settlement time")
+
+
+@dataclass(frozen=True, slots=True)
+class RecordedTxAuditFailure:
+    source: Literal["journal", "service"]
+    code: str
+
+    def __post_init__(self) -> None:
+        if type(self.source) is not str or self.source not in {"journal", "service"}:
+            raise ValueError("TX audit source must be normalized")
+        if type(self.code) is not str or not self.code:
+            raise ValueError("TX audit code must be normalized")
+
+
+@dataclass(frozen=True, slots=True)
+class InteractStartedEvidence:
+    sequence: int
+    operation_id: str
+    provenance: SegmentProvenance
+    profile_version: int
+    uart_tx_enabled: bool
+    conditions: tuple[bytes, ...]
+    timeout_ms: int
+    max_rx_bytes: int
+    write_timeout_ms: int
+    clock_origin_id: str
+    payload: bytes
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_monitor_uuid(self.operation_id)
+        validate_monitor_uuid(self.clock_origin_id)
+        if not isinstance(self.provenance, SegmentProvenance):
+            raise TypeError("Interact intent needs captured provenance")
+        if type(self.profile_version) is not int or self.profile_version != 2:
+            raise ValueError("Interact intent requires Profile2")
+        if type(self.uart_tx_enabled) is not bool or not self.uart_tx_enabled:
+            raise ValueError("Interact intent needs captured TX authorization")
+        if type(self.payload) is not bytes or not 1 <= len(self.payload) <= 4096:
+            raise ValueError("requested payload must be exact1..4096 bytes")
+        if type(self.conditions) is not tuple or not 1 <= len(self.conditions) <= 4:
+            raise ValueError("Interact intent needs1..4 literal conditions")
+        for condition in self.conditions:
+            validate_monitor_bounds(condition, self.timeout_ms, self.max_rx_bytes)
+        if type(self.write_timeout_ms) is not int or self.write_timeout_ms != 1000:
+            raise ValueError("backend write wait must be1000 ms")
+
+
+@dataclass(frozen=True, slots=True)
+class UartTxSettledEvidence:
+    sequence: int
+    operation_id: str
+    start_sequence: int
+    tx: RecordedTxFacts
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_record_sequence(self.start_sequence)
+        validate_monitor_uuid(self.operation_id)
+        if self.start_sequence >= self.sequence:
+            raise ValueError("TX settlement must follow intent")
+        if not isinstance(self.tx, RecordedTxFacts):
+            raise TypeError("TX settlement facts must be validated")
+
+
+@dataclass(frozen=True, slots=True)
+class InteractEndedEvidence:
+    sequence: int
+    operation_id: str
+    start_sequence: int
+    tx_settled_sequence: int | None
+    tx: RecordedTxFacts
+    tx_audit_failure: RecordedTxAuditFailure | None
+    outcome: InteractOutcome
+    observation: InteractObservation
+
+    def __post_init__(self) -> None:
+        validate_record_sequence(self.sequence)
+        validate_record_sequence(self.start_sequence)
+        validate_monitor_uuid(self.operation_id)
+        if self.start_sequence >= self.sequence:
+            raise ValueError("Interact end must follow intent")
+        if self.tx_settled_sequence is not None:
+            validate_record_sequence(self.tx_settled_sequence)
+            if not self.start_sequence < self.tx_settled_sequence < self.sequence:
+                raise ValueError("TX reference must be between intent and end")
+        if not isinstance(self.tx, RecordedTxFacts) or not isinstance(
+            self.observation, InteractObservation
+        ):
+            raise TypeError("Interact end needs validated TX and observation facts")
+        if not isinstance(self.outcome, InteractOutcome):
+            raise TypeError("Interact outcome must be declared")
+        if (self.tx_settled_sequence is None) != (self.tx_audit_failure is not None):
+            raise ValueError("TX audit reference and failure disagree")
+        if self.tx_audit_failure is not None and not isinstance(
+            self.tx_audit_failure, RecordedTxAuditFailure
+        ):
+            raise TypeError("TX audit failure must be normalized")
+        observation = self.observation
+        if (
+            observation.window.start_inclusive != self.start_sequence + 1
+            or observation.window.end_exclusive > self.sequence
+        ):
+            raise ValueError("Interact window must follow intent and precede end")
+        if self.tx.clock_origin_id != observation.clock.origin_id:
+            raise ValueError("TX and observation clocks disagree")

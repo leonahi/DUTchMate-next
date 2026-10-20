@@ -32,6 +32,7 @@ from dutchmate_service.evidence_http import (
 )
 from dutchmate_service.http import (
     _MEDIA,
+    ApiVersionRejected,
     _header_values,
     _observation_view,
     _read_body,
@@ -64,7 +65,7 @@ def follow_error(status: int, source: str, code: str) -> Response:
 def follow_rejection_response(error: Exception) -> Response:
     if isinstance(error, FollowRejected):
         return follow_error(_REJECTIONS[error.kind], "follow", error.kind)
-    if isinstance(error, (JournalFailure, RuntimeRejectedError)):
+    if isinstance(error, (JournalFailure, RuntimeRejectedError, ApiVersionRejected)):
         return evidence_rejection_response(error)
     return error_response(500, "service", "internal_failure")
 
@@ -163,6 +164,9 @@ class FollowStream:
         request: FollowRequest,
         receive: Receive,
         accepting: Callable[[], bool],
+        *,
+        api_version: int = 1,
+        check_version: Callable[[], None] | None = None,
     ) -> None:
         loop = asyncio.get_running_loop()
         self._ready: asyncio.Future[Response] = loop.create_future()
@@ -173,6 +177,8 @@ class FollowStream:
         self._settling = False
         self._last_frame = 0.0
         self._initial_frame: bytes | None = None
+        self._api_version = api_version
+        self._check_version = check_version
         self.task = asyncio.create_task(self._own(runtime, request, accepting))
         self.task.add_done_callback(self._completed)
         self._observer = asyncio.create_task(self._disconnected(receive))
@@ -235,6 +241,8 @@ class FollowStream:
             if not accepting():
                 rejection = error_response(503, "service", "stopping")
             else:
+                if self._check_version is not None:
+                    self._check_version()
                 source = await runtime.start_follow(request)
                 self._initial_frame = _started(source.start, request)
                 response = _FollowResponse(self)
@@ -352,7 +360,15 @@ class FollowStream:
                     if record.sequence != offered:
                         raise ValueError("noncontiguous Follow record")
                     await self._send_frame(
-                        send, _frame({"type": "record", "record": _record(record)})
+                        send,
+                        _frame(
+                            {
+                                "type": "record",
+                                "record": _record(
+                                    record, api_version=self._api_version
+                                ),
+                            }
+                        ),
                     )
                     offered += 1
                     del record

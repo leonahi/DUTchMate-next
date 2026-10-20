@@ -1,6 +1,7 @@
 """SQLite-backed durable evidence journal adapter."""
 
 import asyncio
+import base64
 import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Literal, cast
 from uuid import uuid4
 
+from dutchmate_core.backend import BackendFailureKind, BackendWriteStatus
 from dutchmate_core.evidence import (
     EvidenceCursor,
     EvidencePage,
@@ -20,9 +22,18 @@ from dutchmate_core.evidence import (
     JournalOperation,
     PendingClientAnnotationEvidence,
     PendingEvidenceRecord,
+    PendingInteractEndedEvidence,
+    PendingInteractStartedEvidence,
     PendingOperationEndedEvidence,
     PendingOperationStartedEvidence,
+    PendingUartTxSettledEvidence,
     _assign_sequence,
+)
+from dutchmate_core.interact import (
+    InteractAuditFailure,
+    InteractTxFacts,
+    _validate_overall,
+    _validate_tx_payload,
 )
 from dutchmate_core.model import (
     GENERIC_PROVENANCE_ENVELOPE_VERSION,
@@ -37,6 +48,12 @@ from dutchmate_core.model import (
     EvidenceRangeReference,
     EvidenceRecord,
     EvidenceReference,
+    InteractEndedEvidence,
+    InteractMatch,
+    InteractObservation,
+    InteractObservationOutcome,
+    InteractOutcome,
+    InteractStartedEvidence,
     LossObservability,
     MonitorClockFacts,
     MonitorMatch,
@@ -51,6 +68,8 @@ from dutchmate_core.model import (
     PersistedConnectionProvenance,
     PersistedCounterOverflowError,
     ProvenanceField,
+    RecordedTxAuditFailure,
+    RecordedTxFacts,
     RetentionMarker,
     RetentionTimestampEndpoint,
     RxBytesEvidence,
@@ -65,6 +84,7 @@ from dutchmate_core.model import (
     TimestampMeaning,
     TimestampObserver,
     TimestampUnit,
+    UartTxSettledEvidence,
     UpstreamLossNotObservable,
     checked_persisted_add,
     validate_persisted_counter,
@@ -177,6 +197,11 @@ _SCHEMA_STATEMENTS_V2 = (
 
 _SCHEMA_STATEMENTS_V3 = (
     _SCHEMA_STATEMENTS[0].replace("CHECK (schema_version = 1)", "CHECK (schema_version = 3)"),
+    *_SCHEMA_STATEMENTS[1:],
+)
+
+_SCHEMA_STATEMENTS_V4 = (
+    _SCHEMA_STATEMENTS[0].replace("CHECK (schema_version = 1)", "CHECK (schema_version = 4)"),
     *_SCHEMA_STATEMENTS[1:],
 )
 
@@ -746,6 +771,14 @@ class SqliteEvidenceJournal:
         return await cls._create(path, session_policy, 3)
 
     @classmethod
+    async def create_v4(
+        cls,
+        path: str | Path,
+        session_policy: SessionPolicy,
+    ) -> SqliteEvidenceJournal:
+        return await cls._create(path, session_policy, 4)
+
+    @classmethod
     async def _create(
         cls,
         path: str | Path,
@@ -812,6 +845,14 @@ class SqliteEvidenceJournal:
         return await cls._open(path, expected_session_id, 3)
 
     @classmethod
+    async def open_v4(
+        cls,
+        path: str | Path,
+        expected_session_id: SessionId | None = None,
+    ) -> SqliteEvidenceJournal:
+        return await cls._open(path, expected_session_id, 4)
+
+    @classmethod
     async def _open(
         cls,
         path: str | Path,
@@ -869,7 +910,7 @@ class SqliteEvidenceJournal:
                 if self._schema_version == 1
                 else partial(_append_on_worker, schema_version=self._schema_version)
             )
-            if self._schema_version == 3:
+            if self._schema_version in (3, 4):
                 append = partial(append, timestamp_context=self._timestamp_context)
             future = loop.run_in_executor(
                 self._executor,
@@ -1104,8 +1145,10 @@ def _validate_existing_journal(
                 JournalFailureKind.CORRUPT_JOURNAL,
             ) from None
         raise
-    if schema_version in (2, 3):
+    if schema_version in (2, 3, 4):
         _validate_operation_pairs(connection, schema_version=schema_version)
+    if schema_version == 4:
+        _validate_interact_pairs(connection)
     return result
 
 
@@ -1121,7 +1164,7 @@ def _validate_existing_journal_contents(
         )
     if (
         type(schema_version) is not int
-        or schema_version not in (1, 2, 3)
+        or schema_version not in (1, 2, 3, 4)
         or _pragma_integer(connection, "user_version") != schema_version
     ):
         raise JournalFailure(
@@ -1137,7 +1180,9 @@ def _validate_existing_journal_contents(
         _validate_v2_schema(connection)
     elif schema_version == 3:
         _validate_v3_schema(connection)
-    if schema_version in (2, 3):
+    elif schema_version == 4:
+        _validate_v4_schema(connection)
+    if schema_version in (2, 3, 4):
         version_row = connection.execute(
             "SELECT schema_version FROM session_metadata"
         ).fetchone()
@@ -1225,6 +1270,8 @@ def _schema_statements_for_version(
             return _SCHEMA_STATEMENTS_V2
         if schema_version == 3:
             return _SCHEMA_STATEMENTS_V3
+        if schema_version == 4:
+            return _SCHEMA_STATEMENTS_V4
     raise JournalFailure(operation, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION)
 
 
@@ -1233,6 +1280,22 @@ def _validate_v3_schema(connection: sqlite3.Connection) -> None:
     expected = {
         ("table", name): " ".join(statement.split())
         for name, statement in zip(_TABLE_COLUMNS, _SCHEMA_STATEMENTS_V3, strict=True)
+    }
+    actual = {
+        (kind, name): " ".join((sql or "").split())
+        for kind, name, sql in connection.execute(
+            "SELECT type, name, sql FROM sqlite_schema"
+        )
+    }
+    if actual != expected:
+        raise JournalFailure(JournalOperation.OPEN, JournalFailureKind.CORRUPT_JOURNAL)
+
+
+def _validate_v4_schema(connection: sqlite3.Connection) -> None:
+    """V4 retains the fixed three-table organization with an explicit header."""
+    expected = {
+        ("table", name): " ".join(statement.split())
+        for name, statement in zip(_TABLE_COLUMNS, _SCHEMA_STATEMENTS_V4, strict=True)
     }
     actual = {
         (kind, name): " ".join((sql or "").split())
@@ -1368,7 +1431,7 @@ def _read_session_metadata(
         raise JournalFailure(operation, JournalFailureKind.INVARIANT_VIOLATION)
     row = rows[0]
     try:
-        if schema_version in (2, 3) and row[2] != schema_version:
+        if schema_version in (2, 3, 4) and row[2] != schema_version:
             raise JournalFailure(
                 operation, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
             )
@@ -1675,7 +1738,14 @@ def _timestamp_endpoint_for_candidate(
         retained_record = _decode_versioned_record(encoded, schema_version)
         if isinstance(
             retained_record,
-            (OperationStartedEvidence, OperationEndedEvidence, ClientAnnotationEvidence),
+            (
+                OperationStartedEvidence,
+                OperationEndedEvidence,
+                ClientAnnotationEvidence,
+                InteractStartedEvidence,
+                UartTxSettledEvidence,
+                InteractEndedEvidence,
+            ),
         ):
             continue
         retained_identity = _record_stream_identity(retained_record)
@@ -2164,7 +2234,27 @@ def _append_on_worker(
 ) -> EvidenceRecord:
     transaction_started = False
     try:
-        candidate = _encode_versioned_record(_assign_sequence(draft, 0), schema_version)
+        is_interact = isinstance(
+            draft,
+            (
+                PendingInteractStartedEvidence,
+                PendingUartTxSettledEvidence,
+                PendingInteractEndedEvidence,
+            ),
+        )
+        if is_interact and schema_version != 4:
+            raise JournalFailure(JournalOperation.APPEND, JournalFailureKind.INVALID_INPUT)
+        try:
+            candidate = _encode_versioned_record(
+                _assign_sequence(draft, SQLITE_INTEGER_MAX - 1 if is_interact else 0),
+                schema_version,
+            )
+        except (TypeError, ValueError, OverflowError) as error:
+            if is_interact:
+                raise JournalFailure(
+                    JournalOperation.APPEND, JournalFailureKind.INVALID_INPUT, str(error)
+                ) from None
+            raise
         if (
             candidate.charged_bytes > policy.max_record_charged_bytes
             or candidate.charged_bytes > policy.max_retained_charged_bytes
@@ -2201,6 +2291,13 @@ def _append_on_worker(
                 JournalOperation.APPEND,
                 JournalFailureKind.SEQUENCE_EXHAUSTED,
             )
+        if is_interact:
+            try:
+                _assign_sequence(draft, next_sequence)
+            except (TypeError, ValueError, OverflowError) as error:
+                raise JournalFailure(
+                    JournalOperation.APPEND, JournalFailureKind.INVALID_INPUT, str(error)
+                ) from None
         low_water = validate_persisted_counter(
             cast("int", row[1]),
             name="low-water sequence",
@@ -2523,7 +2620,7 @@ def _append_on_worker(
                 JournalOperation.APPEND,
                 JournalFailureKind.INVARIANT_VIOLATION,
             )
-        if schema_version in (2, 3) and isinstance(
+        if schema_version in (2, 3, 4) and isinstance(
             accepted_record, OperationEndedEvidence
         ):
             _validate_operation_pair(
@@ -2532,6 +2629,10 @@ def _append_on_worker(
                 JournalOperation.APPEND,
                 schema_version=schema_version,
             )
+        if schema_version == 4 and isinstance(
+            accepted_record, (UartTxSettledEvidence, InteractEndedEvidence)
+        ):
+            _validate_interact_pair(connection, accepted_record, JournalOperation.APPEND)
         connection.commit()
         transaction_started = False
         if timestamp_context is not None and isinstance(
@@ -2972,6 +3073,8 @@ def _encode_versioned_record(
             return encode_evidence_record_v2(record)
         if schema_version == 3:
             return encode_evidence_record_v3(record)
+        if schema_version == 4:
+            return encode_evidence_record_v4(record)
     raise JournalFailure(
         JournalOperation.ENCODE, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
     )
@@ -2987,6 +3090,507 @@ def _decode_versioned_record(
             return decode_evidence_record_v2(encoded)
         if schema_version == 3:
             return decode_evidence_record_v3(encoded)
+        if schema_version == 4:
+            return decode_evidence_record_v4(encoded)
     raise JournalFailure(
         JournalOperation.DECODE, JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
     )
+
+
+_INTERACT_KINDS = {"interact_started", "uart_tx_settled", "interact_ended"}
+_TX_KEYS = {
+    "submitted",
+    "status",
+    "accepted_prefix_bytes",
+    "failure_code",
+    "acknowledgement_scope",
+    "clock_origin_id",
+    "settled_at_ns",
+}
+
+
+def _normalized_tx(tx: RecordedTxFacts) -> InteractTxFacts:
+    replace(tx)
+    return InteractTxFacts(
+        tx.submitted,
+        BackendWriteStatus(tx.status) if tx.submitted else "not_submitted",
+        tx.accepted_prefix_bytes,
+        None if tx.failure_code is None else BackendFailureKind(tx.failure_code),
+        tx.acknowledgement_scope,
+        tx.clock_origin_id,
+        tx.settled_at_ns,
+    )
+
+
+def _encode_tx(tx: RecordedTxFacts) -> dict[str, object]:
+    _normalized_tx(tx)
+    return {key: getattr(tx, key) for key in _TX_KEYS}
+
+
+def _decode_tx(value: object) -> RecordedTxFacts:
+    tx = _mapping(value, "TX facts")
+    _expect_keys(tx, _TX_KEYS)
+    result = RecordedTxFacts(
+        cast("bool", tx["submitted"]),
+        _text(tx["status"], "TX status"),
+        None
+        if tx["accepted_prefix_bytes"] is None
+        else _integer(tx["accepted_prefix_bytes"], "accepted prefix"),
+        None if tx["failure_code"] is None else _text(tx["failure_code"], "TX failure"),
+        cast('Literal["backend_acceptance"]', tx["acknowledgement_scope"]),
+        _text(tx["clock_origin_id"], "TX origin"),
+        _integer(tx["settled_at_ns"], "TX settlement"),
+    )
+    _normalized_tx(result)
+    return result
+
+
+def _encode_interact_observation(observation: InteractObservation) -> dict[str, object]:
+    replace(observation)
+    match = observation.match
+    encoded_match = (
+        None
+        if match is None
+        else {
+            "condition_index": match.condition_index,
+            **cast(
+                "dict[str, object]",
+                _encode_monitor_match(MonitorMatch(match.start, match.end)),
+            ),
+        }
+    )
+    return {
+        "window": {
+            "start_inclusive": observation.window.start_inclusive,
+            "end_exclusive": observation.window.end_exclusive,
+        },
+        "outcome": observation.outcome.value,
+        "examined_rx_bytes": observation.examined_rx_bytes,
+        "observer_loss_records": observation.observer_loss_records,
+        "match": encoded_match,
+        "clock": {
+            "origin_id": observation.clock.origin_id,
+            "started_at_ns": observation.clock.started_at_ns,
+            "deadline_at_ns": observation.clock.deadline_at_ns,
+            "decided_at_ns": observation.clock.decided_at_ns,
+        },
+    }
+
+
+def _decode_interact_observation(value: object) -> InteractObservation:
+    obj = _mapping(value, "observation")
+    _expect_keys(
+        obj,
+        {
+            "window",
+            "outcome",
+            "examined_rx_bytes",
+            "observer_loss_records",
+            "match",
+            "clock",
+        },
+    )
+    window = _mapping(obj["window"], "window")
+    _expect_keys(window, {"start_inclusive", "end_exclusive"})
+    clock = _mapping(obj["clock"], "clock")
+    _expect_keys(
+        clock, {"origin_id", "started_at_ns", "deadline_at_ns", "decided_at_ns"}
+    )
+    match = None
+    if obj["match"] is not None:
+        raw = _mapping(obj["match"], "match")
+        _expect_keys(raw, {"condition_index", "start", "end"})
+        endpoints = _decode_monitor_match({"start": raw["start"], "end": raw["end"]})
+        assert endpoints is not None
+        match = InteractMatch(
+            _integer(raw["condition_index"], "condition index"),
+            endpoints.start,
+            endpoints.end,
+        )
+    return InteractObservation(
+        SequenceRange(
+            _integer(window["start_inclusive"], "window start"),
+            _integer(window["end_exclusive"], "window end"),
+        ),
+        InteractObservationOutcome(_text(obj["outcome"], "observation outcome")),
+        _integer(obj["examined_rx_bytes"], "examined RX"),
+        _integer(obj["observer_loss_records"], "observer loss"),
+        match,
+        MonitorClockFacts(
+            _text(clock["origin_id"], "clock origin"),
+            _integer(clock["started_at_ns"], "clock start"),
+            _integer(clock["deadline_at_ns"], "clock deadline"),
+            _integer(clock["decided_at_ns"], "clock decision"),
+        ),
+    )
+
+
+def _validate_recorded_audit(failure: RecordedTxAuditFailure | None) -> None:
+    if failure is not None:
+        replace(failure)
+        InteractAuditFailure("uart_tx_settled", failure.source, failure.code)
+
+
+def encode_evidence_record_v4(record: EvidenceRecord) -> EncodedEvidenceRecord:
+    """Add three host-operation variants; seven older encodings remain exact."""
+    if not isinstance(
+        record, (InteractStartedEvidence, UartTxSettledEvidence, InteractEndedEvidence)
+    ):
+        return encode_evidence_record_v3(record)
+    try:
+        record = replace(record)
+        metadata: dict[str, object]
+        payload = b""
+        if isinstance(record, InteractStartedEvidence):
+            kind = "interact_started"
+            payload = record.payload
+            metadata = {
+                "operation_id": record.operation_id,
+                "provenance": _encode_segment_provenance(record.provenance),
+                "profile_version": record.profile_version,
+                "authorization": {"uart_tx_enabled": record.uart_tx_enabled},
+                "conditions_base64": [
+                    base64.b64encode(c).decode("ascii") for c in record.conditions
+                ],
+                "timeout_ms": record.timeout_ms,
+                "max_rx_bytes": record.max_rx_bytes,
+                "write_timeout_ms": record.write_timeout_ms,
+                "clock_origin_id": record.clock_origin_id,
+            }
+        elif isinstance(record, UartTxSettledEvidence):
+            kind = "uart_tx_settled"
+            metadata = {
+                "operation_id": record.operation_id,
+                "start_sequence": record.start_sequence,
+                **_encode_tx(record.tx),
+            }
+        else:
+            kind = "interact_ended"
+            _validate_overall(
+                record.outcome, _normalized_tx(record.tx), record.observation
+            )
+            _validate_recorded_audit(record.tx_audit_failure)
+            metadata = {
+                "operation_id": record.operation_id,
+                "start_sequence": record.start_sequence,
+                "tx_settled_sequence": record.tx_settled_sequence,
+                "tx": _encode_tx(record.tx),
+                "tx_audit_failure": None
+                if record.tx_audit_failure is None
+                else {
+                    "source": record.tx_audit_failure.source,
+                    "code": record.tx_audit_failure.code,
+                },
+                "outcome": record.outcome.value,
+                "observation": _encode_interact_observation(record.observation),
+            }
+        raw = _canonical_json(metadata)
+        return EncodedEvidenceRecord(
+            record.sequence,
+            kind,
+            4,
+            raw,
+            payload,
+            _record_charge(kind, raw, payload),
+            0,
+        )
+    except (AttributeError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.ENCODE, JournalFailureKind.INVALID_INPUT, str(error)
+        ) from None
+
+
+def decode_evidence_record_v4(encoded: EncodedEvidenceRecord) -> EvidenceRecord:
+    """Explicit v4 dispatch with canonical closed metadata and no fallback."""
+    if encoded.record_kind not in _INTERACT_KINDS:
+        return decode_evidence_record_v3(encoded)
+    try:
+        if type(encoded.record_version) is not int or encoded.record_version != 4:
+            raise JournalFailure(
+                JournalOperation.DECODE, JournalFailureKind.INCOMPATIBLE_RECORD_VERSION
+            )
+        sequence = validate_record_sequence(encoded.sequence)
+        if (
+            type(encoded.metadata_json) is not bytes
+            or type(encoded.payload) is not bytes
+        ):
+            raise TypeError("Interact metadata and BLOB must be exact bytes")
+        metadata = _decode_canonical_json(encoded.metadata_json)
+        validate_persisted_counter(encoded.charged_bytes, name="record charge")
+        validate_persisted_counter(encoded.rx_payload_bytes, name="RX payload bytes")
+        if encoded.rx_payload_bytes != 0 or encoded.charged_bytes != _record_charge(
+            encoded.record_kind, encoded.metadata_json, encoded.payload
+        ):
+            raise ValueError("Interact charge or RX telemetry mismatch")
+        operation_id = _text(metadata["operation_id"], "operation ID")
+        if encoded.record_kind == "interact_started":
+            _expect_keys(
+                metadata,
+                {
+                    "operation_id",
+                    "provenance",
+                    "profile_version",
+                    "authorization",
+                    "conditions_base64",
+                    "timeout_ms",
+                    "max_rx_bytes",
+                    "write_timeout_ms",
+                    "clock_origin_id",
+                },
+            )
+            authorization = _mapping(metadata["authorization"], "authorization")
+            _expect_keys(authorization, {"uart_tx_enabled"})
+            raw_conditions = metadata["conditions_base64"]
+            if type(raw_conditions) is not list:
+                raise TypeError("conditions must be an ordered array")
+            conditions = []
+            for value in raw_conditions:
+                text = _text(value, "condition base64")
+                condition = base64.b64decode(text, validate=True)
+                if base64.b64encode(condition).decode("ascii") != text:
+                    raise ValueError("condition base64 must be canonical padded ASCII")
+                conditions.append(condition)
+            return InteractStartedEvidence(
+                sequence,
+                operation_id,
+                _decode_segment_provenance(
+                    _mapping(metadata["provenance"], "provenance")
+                ),
+                _integer(metadata["profile_version"], "profile version"),
+                cast("bool", authorization["uart_tx_enabled"]),
+                tuple(conditions),
+                _integer(metadata["timeout_ms"], "timeout"),
+                _integer(metadata["max_rx_bytes"], "maximum RX"),
+                _integer(metadata["write_timeout_ms"], "write timeout"),
+                _text(metadata["clock_origin_id"], "clock origin"),
+                encoded.payload,
+            )
+        if encoded.payload != b"":
+            raise ValueError("Interact settlement/end BLOB must be empty")
+        start = _integer(metadata["start_sequence"], "start sequence")
+        if encoded.record_kind == "uart_tx_settled":
+            _expect_keys(metadata, {"operation_id", "start_sequence", *_TX_KEYS})
+            return UartTxSettledEvidence(
+                sequence,
+                operation_id,
+                start,
+                _decode_tx({key: metadata[key] for key in _TX_KEYS}),
+            )
+        _expect_keys(
+            metadata,
+            {
+                "operation_id",
+                "start_sequence",
+                "tx_settled_sequence",
+                "tx",
+                "tx_audit_failure",
+                "outcome",
+                "observation",
+            },
+        )
+        audit = None
+        if metadata["tx_audit_failure"] is not None:
+            raw_audit = _mapping(metadata["tx_audit_failure"], "TX audit failure")
+            _expect_keys(raw_audit, {"source", "code"})
+            audit = RecordedTxAuditFailure(
+                cast(
+                    'Literal["journal", "service"]',
+                    _text(raw_audit["source"], "audit source"),
+                ),
+                _text(raw_audit["code"], "audit code"),
+            )
+            _validate_recorded_audit(audit)
+        result = InteractEndedEvidence(
+            sequence,
+            operation_id,
+            start,
+            None
+            if metadata["tx_settled_sequence"] is None
+            else _integer(metadata["tx_settled_sequence"], "TX sequence"),
+            _decode_tx(metadata["tx"]),
+            audit,
+            InteractOutcome(_text(metadata["outcome"], "overall outcome")),
+            _decode_interact_observation(metadata["observation"]),
+        )
+        _validate_overall(result.outcome, _normalized_tx(result.tx), result.observation)
+        return result
+    except JournalFailure:
+        raise
+    except (AttributeError, KeyError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.DECODE, JournalFailureKind.CORRUPT_JOURNAL, str(error)
+        ) from None
+
+
+def charge_interact_markers(
+    start: PendingInteractStartedEvidence,
+    maximum_txs: tuple[PendingUartTxSettledEvidence, ...],
+    maximum_ends: tuple[PendingInteractEndedEvidence, ...],
+) -> tuple[int, int, int]:
+    """Pure canonical preflight; no SQL, reservation or durability promise."""
+    try:
+        if not isinstance(start, PendingInteractStartedEvidence):
+            raise TypeError("Interact charge requires a pending start")
+        for drafts, expected in (
+            (maximum_txs, PendingUartTxSettledEvidence),
+            (maximum_ends, PendingInteractEndedEvidence),
+        ):
+            if (
+                type(drafts) is not tuple
+                or not drafts
+                or not all(isinstance(d, expected) for d in drafts)
+            ):
+                raise TypeError(
+                    "maximum charges require nonempty tuples of the declared drafts"
+                )
+        return (
+            encode_evidence_record_v4(
+                _assign_sequence(start, SQLITE_INTEGER_MAX - 1)
+            ).charged_bytes,
+            max(
+                encode_evidence_record_v4(
+                    _assign_sequence(d, SQLITE_INTEGER_MAX - 1)
+                ).charged_bytes
+                for d in maximum_txs
+            ),
+            max(
+                encode_evidence_record_v4(
+                    _assign_sequence(d, SQLITE_INTEGER_MAX - 1)
+                ).charged_bytes
+                for d in maximum_ends
+            ),
+        )
+    except JournalFailure:
+        raise
+    except (AttributeError, TypeError, ValueError, OverflowError) as error:
+        raise JournalFailure(
+            JournalOperation.ENCODE, JournalFailureKind.INVALID_INPUT, str(error)
+        ) from None
+
+
+def _retained_v4_record(
+    connection: sqlite3.Connection, sequence: int
+) -> EvidenceRecord | None:
+    row = connection.execute(
+        "SELECT sequence, record_kind, record_version, metadata_json, payload, "
+        "charged_bytes, rx_payload_bytes FROM evidence_records WHERE sequence=?",
+        (sequence,),
+    ).fetchone()
+    return (
+        None if row is None else decode_evidence_record_v4(EncodedEvidenceRecord(*row))
+    )
+
+
+def _validate_interact_pairs(connection: sqlite3.Connection) -> None:
+    rows = connection.execute(
+        "SELECT sequence, record_kind, record_version, metadata_json, payload, "
+        "charged_bytes, rx_payload_bytes FROM evidence_records "
+        "WHERE record_kind IN ('uart_tx_settled', 'interact_ended') ORDER BY sequence"
+    ).fetchall()
+    for row in rows:
+        record = decode_evidence_record_v4(EncodedEvidenceRecord(*row))
+        assert isinstance(record, (UartTxSettledEvidence, InteractEndedEvidence))
+        _validate_interact_pair(connection, record, JournalOperation.OPEN)
+
+
+def _validate_interact_pair(
+    connection: sqlite3.Connection,
+    record: UartTxSettledEvidence | InteractEndedEvidence,
+    operation: JournalOperation,
+) -> None:
+    """Validate only surviving facts; missing/ambiguous markers are legal."""
+    try:
+        start = _retained_v4_record(connection, record.start_sequence)
+        if start is not None:
+            if not isinstance(start, InteractStartedEvidence):
+                raise ValueError("Interact must reference an Interact start")
+            if (
+                record.operation_id != start.operation_id
+                or record.tx.clock_origin_id != start.clock_origin_id
+            ):
+                raise ValueError("Interact identity/origin mismatch")
+            _validate_tx_payload(_normalized_tx(record.tx), start.payload)
+        if not isinstance(record, InteractEndedEvidence):
+            return
+        if record.tx.settled_at_ns < record.observation.clock.started_at_ns:
+            raise ValueError("TX settlement precedes observation start")
+        if record.tx_settled_sequence is not None:
+            tx = _retained_v4_record(connection, record.tx_settled_sequence)
+            if tx is not None and (
+                not isinstance(tx, UartTxSettledEvidence)
+                or tx.operation_id != record.operation_id
+                or tx.start_sequence != record.start_sequence
+                or tx.tx != record.tx
+            ):
+                raise ValueError("end disagrees with retained TX settlement")
+            if tx is not None and record.tx.settled_at_ns < record.observation.clock.started_at_ns:
+                raise ValueError("retained TX settlement precedes observation start")
+        if not isinstance(start, InteractStartedEvidence):
+            return
+        observation = record.observation
+        if (
+            observation.examined_rx_bytes > start.max_rx_bytes
+            or observation.clock.deadline_at_ns - observation.clock.started_at_ns
+            != start.timeout_ms * 1_000_000
+            or (
+                observation.outcome is InteractObservationOutcome.BYTE_LIMIT
+                and observation.examined_rx_bytes != start.max_rx_bytes
+            )
+        ):
+            raise ValueError("observation disagrees with retained request bounds")
+        match = observation.match
+        if match is None:
+            return
+        if match.condition_index >= len(start.conditions):
+            raise ValueError("match condition is absent from request")
+        rows = connection.execute(
+            "SELECT sequence, record_kind, record_version, metadata_json, payload, "
+            "charged_bytes, rx_payload_bytes FROM evidence_records "
+            "WHERE sequence>=? AND sequence<=? ORDER BY sequence",
+            (match.start.sequence, match.end.sequence),
+        ).fetchall()
+        records = [
+            decode_evidence_record_v4(EncodedEvidenceRecord(*row)) for row in rows
+        ]
+        if len(records) != match.end.sequence - match.start.sequence + 1:
+            raise ValueError("retained match endpoints must be available")
+        first, last = records[0], records[-1]
+        if not isinstance(first, RxBytesEvidence) or not isinstance(
+            last, RxBytesEvidence
+        ):
+            raise ValueError("match endpoints must be RX")
+        if match.start.byte_offset >= len(
+            first.payload
+        ) or match.end.byte_offset_exclusive > len(last.payload):
+            raise ValueError("match offsets exceed retained RX")
+        chunks = []
+        for item in records:
+            if isinstance(
+                item,
+                (ObserverLossEvidence, SegmentStartedEvidence, SegmentEndedEvidence),
+            ):
+                raise ValueError("match crosses a stream boundary")
+            if isinstance(item, RxBytesEvidence):
+                if (
+                    item.connection_id != start.provenance.connection_id
+                    or item.segment_id != start.provenance.segment_id
+                ):
+                    raise ValueError("match RX provenance differs from request")
+                payload = item.payload
+                lo = match.start.byte_offset if item.sequence == first.sequence else 0
+                hi = (
+                    match.end.byte_offset_exclusive
+                    if item.sequence == last.sequence
+                    else len(payload)
+                )
+                chunks.append(payload[lo:hi])
+        matched = b"".join(chunks)
+        if (
+            matched != start.conditions[match.condition_index]
+            or len(matched) > observation.examined_rx_bytes
+        ):
+            raise ValueError("match bytes disagree with requested condition")
+    except (TypeError, ValueError, IndexError) as error:
+        raise JournalFailure(
+            operation, JournalFailureKind.INVARIANT_VIOLATION, str(error)
+        ) from None

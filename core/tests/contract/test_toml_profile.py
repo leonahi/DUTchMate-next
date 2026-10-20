@@ -222,6 +222,7 @@ class TestT007ObservationPolicyResolution:
 
         resolved = toml_profile.resolve_profile(selected_path)
 
+        assert isinstance(resolved, profile.ResolvedDutProfile)
         _assert_safe_policy(resolved.policy)
 
     @pytest.mark.parametrize(
@@ -253,6 +254,7 @@ class TestT007ObservationPolicyResolution:
 
         resolved = toml_profile.resolve_profile(selected_path)
 
+        assert isinstance(resolved, profile.ResolvedDutProfile)
         _assert_safe_policy(resolved.policy)
 
     @pytest.mark.parametrize(
@@ -637,8 +639,8 @@ class TestT012ProfileCompatibilityAndSchema:
         "version_line",
         [None, "profile_version = true", 'profile_version = "1"',
          "profile_version = 1.0", "profile_version = 0",
-         "profile_version = -1", "profile_version = 2"],
-        ids=("missing", "boolean", "string", "float", "zero", "negative", "two"),
+         "profile_version = -1", "profile_version = 3"],
+        ids=("missing", "boolean", "string", "float", "zero", "negative", "three"),
     )
     def test_incompatible_profile_versions_are_rejected(
         self,

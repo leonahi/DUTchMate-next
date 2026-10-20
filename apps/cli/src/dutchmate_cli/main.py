@@ -5,13 +5,14 @@ import errno
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Annotated, cast
+from typing import Annotated, TypedDict, cast
 
 import typer
 
 from dutchmate_cli import annotation as annotation_wire
 from dutchmate_cli import client, context, evidence
 from dutchmate_cli import follow as follow_wire
+from dutchmate_cli import interact as interact_wire
 from dutchmate_cli import monitor as monitor_wire
 
 app = typer.Typer(
@@ -31,10 +32,19 @@ app = typer.Typer(
 )
 
 
+class _VersionOptions(TypedDict, total=False):
+    api_version: int
+
+
 @dataclass(slots=True)
 class _Invocation:
     options: context.InvocationOptions = field(default_factory=context.InvocationOptions)
     delivery: client.DeliveryState = field(default_factory=client.DeliveryState)
+    api_version: str = "1"
+
+    def version_options(self) -> _VersionOptions:
+        # Preserve existing v1 call shapes as well as their default validators.
+        return {"api_version": 2} if self.api_version == "2" else {}
 
 
 @app.callback()
@@ -44,12 +54,18 @@ def root(
     port: Annotated[int | None, typer.Option(
         "--port", help="Required service port (1..65535) for commands.", show_default=False,
     )] = None,
+    api_version: Annotated[str, typer.Option(
+        "--api-version", help="Explicit HTTP API version: 1 or 2.",
+    )] = "1",
 ) -> None:
+    if api_version not in {"1", "2"}:
+        raise context.CliFailure(context.CliFailureKind.INVALID_ARGUMENTS)
     options = context.InvocationOptions(host=host, port=port)
     if isinstance(ctx.obj, _Invocation):
         ctx.obj.options = options
     else:
         ctx.obj = _Invocation(options=options)
+    cast(_Invocation, ctx.obj).api_version = api_version
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help(), color=False)
 
@@ -83,6 +99,7 @@ def status(ctx: typer.Context) -> int:
     code, record = asyncio.run(client.exchange(
         endpoint=endpoint, command="status", credential=credential,
         delivery=invocation.delivery,
+        **invocation.version_options(),
     ))
     _write(record, error=code != 0)
     return code
@@ -106,6 +123,7 @@ def attach(
     code, record = asyncio.run(client.exchange(
         endpoint=endpoint, command="attach", paths=paths, credential=credential,
         delivery=invocation.delivery,
+        **invocation.version_options(),
     ))
     _write(record, error=code != 0)
     return code
@@ -120,6 +138,7 @@ def detach(ctx: typer.Context) -> int:
     code, record = asyncio.run(client.exchange(
         endpoint=endpoint, command="detach", credential=credential,
         delivery=invocation.delivery,
+        **invocation.version_options(),
     ))
     _write(record, error=code != 0)
     return code
@@ -138,6 +157,7 @@ def follow(
     code, record = asyncio.run(client.exchange_follow(
         endpoint=endpoint, request_body=body, credential=credential,
         delivery=invocation.delivery, emit=lambda frame: _write(frame, error=False),
+        **invocation.version_options(),
     ))
     if record is not None:
         _write(record, error=True)
@@ -178,6 +198,7 @@ def monitor(
             request_body=body,
             credential=credential,
             delivery=invocation.delivery,
+            **invocation.version_options(),
         )
     )
     _write(record, error=code != 0)
@@ -196,6 +217,35 @@ def annotate(
     endpoint = invocation.options.target()
     credential = context.read_credential()
     code, record = asyncio.run(client.exchange_annotation(
+        endpoint=endpoint, request_body=body, credential=credential,
+        delivery=invocation.delivery,
+        **invocation.version_options(),
+    ))
+    _write(record, error=code != 0)
+    return code
+
+
+@app.command("interact")
+def interact(
+    ctx: typer.Context,
+    session: Annotated[str, typer.Option("--session", help="Explicit active session ID.")],
+    payload_base64: Annotated[str, typer.Option(
+        "--payload-base64", help="Exact payload in canonical base64 (1..4096 bytes).",
+    )],
+    condition_base64: Annotated[list[str], typer.Option(
+        "--condition-base64", help="Ordered literal in canonical base64; repeat 1..4 times.",
+    )],
+    timeout_ms: Annotated[int, typer.Option("--timeout-ms", help="Observation bound (1..4000 ms).")],
+    max_rx_bytes: Annotated[int, typer.Option("--max-rx-bytes", help="Examined-byte bound (1..1048576).")],
+) -> int:
+    """Deliver bounded Interact facts; exit 0 never proves wire transmission or DUT receipt."""
+    invocation = cast(_Invocation, ctx.obj)
+    if invocation.api_version != "2":
+        raise context.CliFailure(context.CliFailureKind.INVALID_ARGUMENTS)
+    body = interact_wire.request(session, payload_base64, condition_base64, timeout_ms, max_rx_bytes)
+    endpoint = invocation.options.target()
+    credential = context.read_credential()
+    code, record = asyncio.run(client.exchange_interact(
         endpoint=endpoint, request_body=body, credential=credential,
         delivery=invocation.delivery,
     ))
@@ -227,6 +277,7 @@ def _deliver_evidence(
     code, record = asyncio.run(client.exchange_evidence(
         endpoint=endpoint, operation=operation, request_body=body,
         credential=credential, delivery=invocation.delivery,
+        **invocation.version_options(),
     ))
     _write(record, error=code != 0)
     return code

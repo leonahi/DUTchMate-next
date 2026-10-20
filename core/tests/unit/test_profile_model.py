@@ -1,8 +1,8 @@
 """Contracts for immutable DUT Profile domain values."""
 
 from collections.abc import Callable
-from dataclasses import FrozenInstanceError
-from typing import cast
+from dataclasses import FrozenInstanceError, replace
+from typing import Any, cast
 
 import pytest
 
@@ -307,3 +307,85 @@ class TestT007ObservationPolicy:
         values[field_name] = opposite_value
 
         _assert_unsupported_behavior(lambda: profile.ObservationPolicy(**values))
+
+
+def _interaction_policy_type() -> Any:
+    policy_type = getattr(profile, "InteractionPolicy", None)
+    assert policy_type is not None, "T006: immutable InteractionPolicy is missing"
+    return policy_type
+
+
+class TestT006InteractionPolicy:
+    """012 adds a distinct policy without relaxing any v1 constructor."""
+
+    @pytest.mark.parametrize("tx_enabled", [False, True])
+    def test_only_explicit_tx_permission_changes_the_safe_defaults(
+        self, tx_enabled: bool
+    ) -> None:
+        policy_type = _interaction_policy_type()
+        policy_value = policy_type(uart_tx_enabled=tx_enabled)
+
+        assert not isinstance(policy_value, profile.ObservationPolicy)
+        assert (
+            policy_value.uart_rx_enabled,
+            policy_value.evidence_recording_enabled,
+            policy_value.uart_tx_enabled,
+            policy_value.semantic_control_enabled,
+            policy_value.automatic_reconnect_enabled,
+        ) == (True, True, tx_enabled, False, False)
+        assert policy_type().uart_tx_enabled is False
+        with pytest.raises(FrozenInstanceError):
+            policy_value.uart_tx_enabled = not tx_enabled
+
+    @pytest.mark.parametrize(
+        "field_name",
+        [
+            "uart_rx_enabled",
+            "evidence_recording_enabled",
+            "uart_tx_enabled",
+            "semantic_control_enabled",
+            "automatic_reconnect_enabled",
+        ],
+    )
+    @pytest.mark.parametrize("value", [None, 0, 1, "true", b"false", 1.0])
+    def test_every_policy_value_requires_an_exact_boolean(
+        self, field_name: str, value: object
+    ) -> None:
+        policy_type = _interaction_policy_type()
+        with pytest.raises(TypeError):
+            policy_type(**{field_name: value})
+
+    @pytest.mark.parametrize(
+        ("field_name", "value"),
+        [
+            ("uart_rx_enabled", False),
+            ("evidence_recording_enabled", False),
+            ("semantic_control_enabled", True),
+            ("automatic_reconnect_enabled", True),
+        ],
+    )
+    @pytest.mark.parametrize("tx_enabled", [False, True])
+    def test_rx_and_recording_are_mandatory_and_other_actions_unavailable(
+        self, field_name: str, value: bool, tx_enabled: bool
+    ) -> None:
+        policy_type = _interaction_policy_type()
+        _assert_unsupported_behavior(
+            lambda: policy_type(uart_tx_enabled=tx_enabled, **{field_name: value})
+        )
+
+    def test_no_new_permission_or_control_mapping_fields(self) -> None:
+        policy_type = _interaction_policy_type()
+        with pytest.raises(TypeError):
+            policy_type(control_mappings={})
+
+    def test_v1_values_stay_strict_after_v2_construction(self) -> None:
+        policy_value = _interaction_policy_type()(uart_tx_enabled=True)
+
+        assert profile.ObservationPolicy().uart_tx_enabled is False
+        _assert_unsupported_behavior(
+            lambda: profile.ObservationPolicy(uart_tx_enabled=True)
+        )
+        with pytest.raises(ValueError):
+            profile.ProfileFormatVersion(2)
+        with pytest.raises(TypeError):
+            replace(_resolved_profile(), policy=policy_value)

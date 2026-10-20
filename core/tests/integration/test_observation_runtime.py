@@ -549,7 +549,9 @@ class _NeutralRun:
         root.mkdir()
         self.profile_path = root / "explicit-profile.toml"
         self.profile_path.write_text(_profile_text(policy), encoding="utf-8")
-        self.profile = resolve_profile(self.profile_path)
+        resolved = resolve_profile(self.profile_path)
+        assert isinstance(resolved, profile.ResolvedDutProfile)
+        self.profile = resolved
         self.destination = root / "observation.sqlite3"
         self.factory = factory
         self.fixture: BackendFixture | None = None

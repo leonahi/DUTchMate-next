@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from dutchmate_core.model import BackendEvent, ConnectionDescriptor
+from dutchmate_core.model import (
+    BackendEvent,
+    ConnectionDescriptor,
+    validate_persisted_counter,
+)
 
 
 class EventStreamAlreadyConsumedError(RuntimeError):
@@ -69,3 +73,56 @@ class Backend(Protocol):
     """External boundary that opens one owned backend connection."""
 
     async def open(self) -> BackendConnection: ...
+
+
+class BackendWriteStatus(StrEnum):
+    """Backend acceptance facts, never physical UART or DUT receipt."""
+
+    ACKNOWLEDGED = "acknowledged"
+    PARTIAL = "partial"
+    TIMEOUT = "timeout"
+    DISCONNECTED = "disconnected"
+    FAILURE = "failure"
+
+
+@dataclass(frozen=True, slots=True)
+class BackendWriteResult:
+    status: BackendWriteStatus
+    accepted_prefix_bytes: int | None
+    failure_code: BackendFailureKind | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.status, BackendWriteStatus):
+            raise TypeError("write status must be declared")
+        if self.status in (BackendWriteStatus.ACKNOWLEDGED, BackendWriteStatus.PARTIAL):
+            if self.accepted_prefix_bytes is None:
+                raise TypeError("acknowledged prefix must be an exact integer")
+            validate_persisted_counter(
+                self.accepted_prefix_bytes,
+                name="backend-accepted prefix",
+            )
+            minimum, maximum = (
+                (1, 4096)
+                if self.status is BackendWriteStatus.ACKNOWLEDGED
+                else (0, 4095)
+            )
+            if not minimum <= self.accepted_prefix_bytes <= maximum:
+                raise ValueError("backend-accepted prefix is outside payload bounds")
+        elif self.accepted_prefix_bytes is not None:
+            raise ValueError("unknown write progress must be absent")
+        if self.status is BackendWriteStatus.FAILURE:
+            if not isinstance(self.failure_code, BackendFailureKind):
+                raise TypeError("write failure requires a normalized category")
+        elif self.failure_code is not None:
+            raise ValueError("only failed writes carry a failure category")
+
+
+class UartWriteConnection(BackendConnection, Protocol):
+    """Optional owned writer: exact1..4096 bytes, finite1000 ms backend wait.
+
+    Implementations join submitted work despite waiter cancellation and before
+    closing the connection. An acknowledgement means backend acceptance only.
+    The existing receive-only connection protocol does not require this method.
+    """
+
+    async def write(self, payload: bytes) -> BackendWriteResult: ...

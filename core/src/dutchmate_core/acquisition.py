@@ -3,9 +3,15 @@
 import asyncio
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
+from typing import cast
 from uuid import uuid4
 
-from dutchmate_core.backend import Backend, BackendConnection
+from dutchmate_core.backend import (
+    Backend,
+    BackendConnection,
+    BackendWriteResult,
+    UartWriteConnection,
+)
 from dutchmate_core.evidence import (
     EvidenceRecorder,
     PendingObserverLossEvidence,
@@ -99,6 +105,8 @@ class _AcquisitionGeneration:
     startup_settled: asyncio.Event = field(default_factory=asyncio.Event)
     consumer_task: asyncio.Task[None] | None = None
     close_task: asyncio.Task[None] | None = None
+    write_task: asyncio.Task[BackendWriteResult] | None = None
+    write_sealed: bool = True
 
 
 class AcquisitionAlreadyActiveError(RuntimeError):
@@ -110,7 +118,7 @@ class BackendStreamEndedError(RuntimeError):
 
 
 class UnsupportedBackendCapabilityError(RuntimeError):
-    """Raised when a connection cannot provide authoritative UART RX."""
+    """Raised when a connection cannot provide the requested UART capability."""
 
 
 class Acquisition:
@@ -142,6 +150,39 @@ class Acquisition:
     def snapshot(self) -> AcquisitionSnapshot:
         """Return current or historical immutable acquisition facts."""
         return self._generation.snapshot
+
+    def submit_uart_write(self, payload: bytes) -> asyncio.Future[BackendWriteResult]:
+        """Admit one exact-byte write on the private, currently owned connection.
+
+        Registration commits the invocation before yielding. The returned waiter
+        can be cancelled without retracting that commitment or cancelling the
+        generation's write owner. Profile/policy and audit belong to the caller.
+        """
+        generation = self._generation
+        connection = self._connection
+        if (
+            self._state is not AcquisitionState.ACQUIRING
+            or generation.write_sealed
+            or connection is None
+        ):
+            raise RuntimeError("acquisition is not accepting UART writes")
+        if type(payload) is not bytes:
+            raise TypeError("UART payload must be exact bytes")
+        if not 1 <= len(payload) <= 4096:
+            raise ValueError("UART payload must contain 1 through 4096 bytes")
+        if not connection.descriptor.capabilities.supports(BackendCapability.UART_SEND):
+            raise UnsupportedBackendCapabilityError(
+                "backend connection does not report uart_send"
+            )
+        if not callable(getattr(connection, "write", None)):
+            raise TypeError("backend connection does not implement UART write")
+        if generation.write_task is not None and not generation.write_task.done():
+            raise RuntimeError("a UART write is already admitted")
+        writer = cast(UartWriteConnection, connection)
+        generation.write_task = asyncio.create_task(
+            writer.write(payload), name="dutchmate-uart-write"
+        )
+        return asyncio.shield(generation.write_task)
 
     def _set_state(self, state: AcquisitionState) -> None:
         self._state = state
@@ -250,6 +291,7 @@ class Acquisition:
             self._generation.snapshot, provenance=provenance
         )
         self._set_state(AcquisitionState.ACQUIRING)
+        self._generation.write_sealed = False
         self._consumer_task = asyncio.create_task(
             self._consume(connection, provenance, termination_event),
             name=f"dutchmate-rx-{connection_id.value}",
@@ -259,6 +301,7 @@ class Acquisition:
 
     async def stop(self) -> AcquisitionState:
         async with self._lifecycle_lock:
+            self._generation.write_sealed = True
             if self._state in {AcquisitionState.STOPPED, AcquisitionState.FAILED}:
                 return self._state
             if self._state is AcquisitionState.IDLE:
@@ -462,6 +505,7 @@ class Acquisition:
                     )
                     last_recorded_timestamp = None
                 elif isinstance(event, Disconnected):
+                    self._generation.write_sealed = True
                     self._generation.snapshot = replace(
                         self._generation.snapshot,
                         terminal_trigger=AcquisitionTerminalTrigger.DISCONNECTED,
@@ -543,6 +587,7 @@ class Acquisition:
         cause: Exception,
         connection: BackendConnection,
     ) -> None:
+        self._generation.write_sealed = True
         self._record_primary_failure(kind)
         if self._failure is None:
             self._failure = AcquisitionFailure(kind=kind, cause=cause)
@@ -554,21 +599,37 @@ class Acquisition:
         self,
         connection: BackendConnection,
     ) -> Exception | None:
+        generation = self._generation
+        generation.write_sealed = True
         if self._close_task is None:
-            self._close_task = asyncio.create_task(connection.close())
-            self._generation.close_task = self._close_task
-        try:
-            await self._close_task
-        except Exception as error:
-            self._generation.snapshot = replace(
-                self._generation.snapshot, close_failed=True
+            self._close_task = asyncio.create_task(
+                self._join_write_and_close(generation, connection)
             )
+            generation.close_task = self._close_task
+        try:
+            await asyncio.shield(self._close_task)
+        except Exception as error:
             return error
-        self._connection_close_unconfirmed = False
-        self._generation.snapshot = replace(
-            self._generation.snapshot, physical_release_confirmed=True
-        )
         return None
+
+    async def _join_write_and_close(
+        self,
+        generation: _AcquisitionGeneration,
+        connection: BackendConnection,
+    ) -> None:
+        # Only backend settlement belongs here: waiting for the caller's audit
+        # would create a dependency cycle with acquisition teardown.
+        if generation.write_task is not None:
+            await asyncio.gather(generation.write_task, return_exceptions=True)
+        try:
+            await connection.close()
+        except Exception:
+            generation.snapshot = replace(generation.snapshot, close_failed=True)
+            raise
+        self._connection_close_unconfirmed = False
+        generation.snapshot = replace(
+            generation.snapshot, physical_release_confirmed=True
+        )
 
     async def _terminate_transport_failure(
         self,
@@ -576,6 +637,7 @@ class Acquisition:
         cause: Exception,
         connection: BackendConnection,
     ) -> None:
+        self._generation.write_sealed = True
         self._record_primary_failure(AcquisitionFailureKind.TRANSPORT_FAILURE)
         try:
             await self._append_segment_end(

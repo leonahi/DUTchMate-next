@@ -12,6 +12,10 @@ from dutchmate_core.model import (
     ConnectionInstanceId,
     EvidenceRangeReference,
     EvidenceRecord,
+    InteractEndedEvidence,
+    InteractObservation,
+    InteractOutcome,
+    InteractStartedEvidence,
     MonitorClockFacts,
     MonitorMatch,
     MonitorMatchEnd,
@@ -21,6 +25,8 @@ from dutchmate_core.model import (
     ObserverLossEvidence,
     OperationEndedEvidence,
     OperationStartedEvidence,
+    RecordedTxAuditFailure,
+    RecordedTxFacts,
     RetentionMarker,
     RxBytesEvidence,
     SegmentEndedEvidence,
@@ -31,6 +37,7 @@ from dutchmate_core.model import (
     SequenceRange,
     SessionId,
     SessionPolicy,
+    UartTxSettledEvidence,
     validate_persisted_counter,
 )
 
@@ -249,6 +256,9 @@ type PendingEvidenceRecord = (
     | PendingOperationStartedEvidence
     | PendingOperationEndedEvidence
     | PendingClientAnnotationEvidence
+    | PendingInteractStartedEvidence
+    | PendingUartTxSettledEvidence
+    | PendingInteractEndedEvidence
 )
 
 
@@ -358,6 +368,16 @@ def _assign_sequence(
                 clock_origin_id=draft.clock_origin_id,
                 received_at_ns=draft.received_at_ns,
             )
+        case PendingInteractStartedEvidence():
+            return InteractStartedEvidence(sequence, draft.operation_id, draft.provenance,
+                draft.profile_version, draft.uart_tx_enabled, draft.conditions,
+                draft.timeout_ms, draft.max_rx_bytes, draft.write_timeout_ms,
+                draft.clock_origin_id, draft.payload)
+        case PendingUartTxSettledEvidence():
+            return UartTxSettledEvidence(sequence, draft.operation_id, draft.start_sequence, draft.tx)
+        case PendingInteractEndedEvidence():
+            return InteractEndedEvidence(sequence, draft.operation_id, draft.start_sequence,
+                draft.tx_settled_sequence, draft.tx, draft.tx_audit_failure, draft.outcome, draft.observation)
         case _:
             raise TypeError(f"unsupported evidence draft: {type(draft).__name__}")
 
@@ -481,3 +501,44 @@ class PendingClientAnnotationEvidence:
     @property
     def attribution_basis(self) -> Literal["client_asserted"]:
         return "client_asserted"
+
+
+@dataclass(frozen=True, slots=True)
+class PendingInteractStartedEvidence:
+    operation_id: str
+    provenance: SegmentProvenance
+    profile_version: int
+    uart_tx_enabled: bool
+    conditions: tuple[bytes, ...]
+    timeout_ms: int
+    max_rx_bytes: int
+    write_timeout_ms: int
+    clock_origin_id: str
+    payload: bytes
+
+    def __post_init__(self) -> None:
+        _assign_sequence(self, SQLITE_INTEGER_MAX - 1)
+
+
+@dataclass(frozen=True, slots=True)
+class PendingUartTxSettledEvidence:
+    operation_id: str
+    start_sequence: int
+    tx: RecordedTxFacts
+
+    def __post_init__(self) -> None:
+        _assign_sequence(self, SQLITE_INTEGER_MAX - 1)
+
+
+@dataclass(frozen=True, slots=True)
+class PendingInteractEndedEvidence:
+    operation_id: str
+    start_sequence: int
+    tx_settled_sequence: int | None
+    tx: RecordedTxFacts
+    tx_audit_failure: RecordedTxAuditFailure | None
+    outcome: InteractOutcome
+    observation: InteractObservation
+
+    def __post_init__(self) -> None:
+        _assign_sequence(self, SQLITE_INTEGER_MAX - 1)

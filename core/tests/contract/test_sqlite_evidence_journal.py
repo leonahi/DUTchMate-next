@@ -2775,3 +2775,234 @@ async def test_read_only_open_is_rejected_before_returning_a_journal(
         path,
         evidence.JournalFailureKind.READ_ONLY,
     )
+
+
+@pytest.mark.asyncio
+async def test_t008_explicit_v4_schema_keeps_three_tables_application_id_and_policy(
+    tmp_path: Path,
+) -> None:
+    from tests.contract.test_interact_journal import create_v4, open_v4
+
+    path = tmp_path / "explicit-v4.sqlite3"
+    policy = _policy()
+    journal = await create_v4(path, policy)
+    session = journal.session_id
+    assert journal.policy == policy
+    assert journal.physical_page_ceiling == policy.max_database_pages
+    await journal.close()
+    conn = sqlite3.connect(path)
+    try:
+        assert conn.execute("PRAGMA application_id").fetchone() == (0x4455544D,)
+        assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+        assert {
+            r[0]
+            for r in conn.execute("SELECT name FROM sqlite_schema WHERE type='table'")
+        } == {"session_metadata", "evidence_records", "retention_marker"}
+        assert conn.execute(
+            "SELECT schema_version,session_id,next_sequence,low_water_sequence FROM session_metadata"
+        ).fetchone() == (4, session.value, 0, 0)
+        assert conn.execute(
+            "SELECT max_retained_records,max_retained_charged_bytes,max_record_charged_bytes,max_database_pages,max_retrieval_page_records,max_retrieval_page_charged_bytes FROM session_metadata"
+        ).fetchone() == (100, 100000, 10000, 64, 20, 20000)
+    finally:
+        conn.close()
+    reopened = await open_v4(path, session)
+    assert reopened.session_id == session and reopened.policy == policy
+    await reopened.close()
+
+
+@pytest.mark.parametrize("stored", [1, 2, 3, 4])
+@pytest.mark.parametrize("selected", [1, 2, 3, 4])
+@pytest.mark.asyncio
+async def test_t008_factory_selection_is_explicit_without_migration(
+    tmp_path: Path, stored: int, selected: int
+) -> None:
+    from tests.contract.test_annotation_journal import create, reopen
+    from tests.contract.test_interact_journal import create_v4, open_v4
+    from tests.contract.test_monitor_journal import _files
+
+    path = tmp_path / "selected.sqlite3"
+    journal = await create_v4(path) if stored == 4 else await create(path, stored)
+    session = journal.session_id
+    await journal.close()
+    before = _files(path)
+    if stored == selected:
+        opened = (
+            await open_v4(path, session)
+            if selected == 4
+            else await reopen(path, selected, session)
+        )
+        await opened.close()
+    else:
+        with pytest.raises(evidence.JournalFailure) as caught:
+            if selected == 4:
+                await open_v4(path, session)
+            else:
+                await reopen(path, selected, session)
+        assert (
+            caught.value.kind is evidence.JournalFailureKind.INCOMPATIBLE_SCHEMA_VERSION
+        )
+    assert _files(path) == before
+
+
+@pytest.mark.parametrize("version", [1, 2, 3])
+@pytest.mark.parametrize("kind_index", range(3))
+@pytest.mark.asyncio
+async def test_t008_legacy_factories_reject_new_drafts_without_mutation(
+    tmp_path: Path, version: int, kind_index: int
+) -> None:
+    from tests.contract.test_annotation_journal import create
+    from tests.contract.test_interact_journal import end_row, pending, start_row, tx_row
+
+    path = tmp_path / "legacy.sqlite3"
+    # Prepare the value before acquiring the journal so RED missing-codec failures
+    # cannot leave a worker owner unclosed.
+    draft = pending((start_row(), tx_row(), end_row())[kind_index])
+    journal = await create(path, version)
+    try:
+        before = _database_state(path)
+        with pytest.raises(evidence.JournalFailure) as caught:
+            await journal.append(draft)
+        assert caught.value.kind is evidence.JournalFailureKind.INVALID_INPUT
+        assert _database_state(path) == before
+    finally:
+        await journal.close()
+
+
+@pytest.mark.asyncio
+async def test_t008_v4_preserves_existing_seven_kind_rows_and_cached_telemetry(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+
+    from tests.contract.test_annotation_journal import seed_match
+    from tests.contract.test_interact_journal import create_v4
+    from tests.contract.test_monitor_journal import (
+        _end,
+        _provenance,
+        _rows,
+        _rx,
+        _start,
+    )
+    from tests.unit.test_annotation_values import draft
+
+    legacy, added = tmp_path / "v3.db", tmp_path / "v4.db"
+    await seed_match(legacy, 0)
+    journal = await create_v4(added)
+    provenance = _provenance(0)
+    ended = replace(
+        _end(),
+        window=model.SequenceRange(2, 5),
+        match=model.MonitorMatch(
+            model.MonitorMatchStart(2, 5), model.MonitorMatchEnd(4, 2)
+        ),
+    )
+    try:
+        for value in (
+            evidence.PendingSegmentStartedEvidence(provenance),
+            _start(provenance),
+            _rx(provenance, b"noise\0\xffPA", 11),
+            draft(),
+            _rx(provenance, b"SStrailing", 12),
+            ended,
+            evidence.PendingObserverLossEvidence(
+                provenance.connection_id,
+                provenance.segment_id,
+                "fixture",
+                "uart",
+                model.ObserverLossCause.OVERFLOW,
+                3,
+                model.BackendObservationTimestamp(
+                    provenance.backend_observation_timestamp_domain.domain_id, 13
+                ),
+            ),
+            evidence.PendingSegmentEndedEvidence(
+                provenance.connection_id,
+                provenance.segment_id,
+                model.SegmentEndReason.EXPLICIT_STOP,
+            ),
+        ):
+            await journal.append(value)
+    finally:
+        await journal.close()
+    assert _rows(added) == _rows(legacy)
+    assert {row[1] for row in _rows(added)} == {
+        "segment_started",
+        "rx_bytes",
+        "observer_loss",
+        "segment_ended",
+        "operation_started",
+        "operation_ended",
+        "client_annotation",
+    }
+
+
+@pytest.mark.asyncio
+async def test_t008_v4_ambiguous_tx_commit_ack_keeps_actual_row_and_self_contained_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.contract.test_interact_journal import (
+        _api,
+        create_v4,
+        end_row,
+        open_v4,
+        pending,
+        start_row,
+        tx_row,
+    )
+    from tests.contract.test_monitor_journal import _provenance, _rows, _rx
+
+    real_connect = sqlite_evidence._connect_sqlite
+    armed = threading.Event()
+
+    class LostAckConnection(_ThreadRecordingConnection):
+        def commit(self) -> None:
+            super().commit()
+            if armed.is_set():
+                armed.clear()
+                raise OSError(
+                    "test-owned commit completed but acknowledgement was lost"
+                )
+
+    def connect(database: str, *, uri: bool = False) -> sqlite3.Connection:
+        return cast(
+            "sqlite3.Connection",
+            LostAckConnection(real_connect(database, uri=uri), [], []),
+        )
+
+    monkeypatch.setattr(sqlite_evidence, "_connect_sqlite", connect)
+    path = tmp_path / "ambiguous.sqlite3"
+    journal = await create_v4(path)
+    try:
+        await journal.append(evidence.PendingSegmentStartedEvidence(_provenance(0)))
+        await journal.append(pending(start_row()))
+        await journal.append(_rx(_provenance(0), b"PASS", 11))
+        armed.set()
+        with pytest.raises(evidence.JournalFailure) as caught:
+            await journal.append(pending(tx_row()))
+        assert caught.value.kind is evidence.JournalFailureKind.IO_FAILURE
+        # No retry and no positively acknowledged intermediate reference.
+        ended = end_row(
+            tx_sequence=None, audit={"source": "journal", "code": "io_failure"}
+        )
+        accepted = await journal.append(pending(ended))
+        assert accepted.sequence == 4
+        assert _api("encode_evidence_record_v4")(accepted) == ended
+        session = journal.session_id
+    finally:
+        armed.clear()
+        await journal.close()
+    assert [row[1] for row in _rows(path)] == [
+        "segment_started",
+        "interact_started",
+        "rx_bytes",
+        "uart_tx_settled",
+        "interact_ended",
+    ]
+    reopened = await open_v4(path, session)
+    try:
+        page = await reopened.resolve_record(model.EvidenceReference(session, 4))
+        assert len(page.records) == 1
+        assert _api("encode_evidence_record_v4")(page.records[0]) == ended
+    finally:
+        await reopened.close()

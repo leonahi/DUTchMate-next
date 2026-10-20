@@ -23,7 +23,7 @@ from dutchmate_core.annotation import (
     _AnnotationBudget,
     _preflight_annotation,
 )
-from dutchmate_core.backend import Backend, BackendFailureKind
+from dutchmate_core.backend import Backend, BackendConnection, BackendFailureKind
 from dutchmate_core.evidence import (
     EvidencePage,
     EvidenceRecorder,
@@ -49,22 +49,32 @@ from dutchmate_core.follow import (
     _follow_head_request,
     _FollowSubscription,
 )
+from dutchmate_core.interact import InteractReport, InteractRequest
 from dutchmate_core.model import (
     BackendCapability,
     EvidenceReference,
+    InteractOutcome,
     MonitorOutcome,
     SegmentProvenance,
     SessionId,
     SessionPolicy,
 )
 from dutchmate_core.monitor import (
+    InteractRejected,
     MonitorRecordingCoordinator,
     MonitorRejected,
     MonitorReport,
     MonitorRequest,
+    PreparedInteractAccess,
     PreparedMonitorAccess,
+    _InteractOperation,
 )
-from dutchmate_core.profile import ProfileFailureKind, ResolvedDutProfile
+from dutchmate_core.profile import (
+    ProfileFailureKind,
+    ResolvedDutProfile,
+    ResolvedInteractionProfile,
+    ResolvedProfile,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,7 +161,7 @@ class RuntimeStatus:
 
     state: RuntimeState = RuntimeState.INACTIVE
     run_id: RunId | None = None
-    profile: ResolvedDutProfile | None = None
+    profile: ResolvedProfile | None = None
     session_id: SessionId | None = None
     acquisition: AcquisitionSnapshot | None = None
     stop_intent: RuntimeStopIntent = RuntimeStopIntent.NONE
@@ -169,7 +179,7 @@ class RuntimeStatus:
             raise TypeError("runtime stop intent must be declared")
         for name, expected_type in (
             ("run_id", RunId),
-            ("profile", ResolvedDutProfile),
+            ("profile", (ResolvedDutProfile, ResolvedInteractionProfile)),
             ("session_id", SessionId),
             ("acquisition", AcquisitionSnapshot),
             ("terminal_reason", RuntimeTerminalReason),
@@ -403,6 +413,7 @@ class PreparedObservationRun:
     monitor_access: PreparedMonitorAccess | None = None
     annotation_access: PreparedAnnotationAccess | None = None
     follow_access: PreparedFollowAccess | None = None
+    interact_access: PreparedInteractAccess | None = None
 
 
 def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | None:
@@ -425,8 +436,8 @@ def _prepared_values(candidate: object) -> tuple[SessionId, SessionPolicy] | Non
     return None
 
 
-type PrepareObservationRun = Callable[
-    [ResolvedDutProfile], Awaitable[PreparedObservationRun]
+type PrepareObservationRun[Profile: ResolvedProfile = ResolvedDutProfile] = Callable[
+    [Profile], Awaitable[PreparedObservationRun]
 ]
 
 
@@ -471,6 +482,27 @@ def _monitor_access_matches(
     except Exception:
         return False
     return True
+
+
+def _interact_access_matches(
+    access: PreparedInteractAccess | None,
+    recorder: ObservationRecorder,
+    session_id: SessionId,
+    policy: SessionPolicy,
+) -> bool:
+    if access is None:
+        return True
+    if not isinstance(access, PreparedInteractAccess):
+        return False
+    try:
+        replace(access)
+        return (
+            access.coordinator is recorder
+            and access.session_id == session_id
+            and access.policy == policy
+        )
+    except Exception:
+        return False
 
 
 def _annotation_access_matches(
@@ -547,6 +579,35 @@ class _AnnotationRun:
     owner: asyncio.Task[AnnotationReceipt] | None = None
 
 
+class _InteractBackend:
+    """Inspect only contract availability at Acquisition's existing open boundary.
+
+    No connection/handle is retained or exposed; Acquisition remains its owner.
+    """
+
+    def __init__(self, backend: Backend) -> None:
+        self.backend = backend
+        self.write_available = False
+
+    async def open(self) -> BackendConnection:
+        connection = await self.backend.open()
+        self.write_available = callable(getattr(connection, "write", None))
+        return connection
+
+
+@dataclass(slots=True)
+class _InteractRun:
+    access: PreparedInteractAccess
+    request: InteractRequest
+    provenance: SegmentProvenance
+    operation_id: str
+    profile: ResolvedInteractionProfile
+    waiter: asyncio.Task[object] | None
+    intents: tuple[InteractOutcome, ...] = ()
+    operation: _InteractOperation | None = None
+    owner: asyncio.Task[InteractReport] | None = None
+
+
 @dataclass(slots=True)
 class _ObservationGeneration:
     ready: asyncio.Future[RuntimeStatus]
@@ -566,6 +627,10 @@ class _ObservationGeneration:
     follow_sealed: bool = False
     follow: FollowSubscription | None = None
     follow_start: asyncio.Task[FollowSubscription] | None = None
+    interact_access: PreparedInteractAccess | None = None
+    interact_sealed: bool = False
+    interact: _InteractRun | None = None
+    interact_backend: _InteractBackend | None = None
 
 
 class _FollowSealed(Exception):
@@ -759,6 +824,7 @@ class ObservationRuntime:
         self._reads: set[asyncio.Task[RunEvidencePage]] = set()
         self._evidence_read_cleanup_confirmed = True
         self._monitors_sealed = False
+        self._interacts_sealed = False
         self._annotations_sealed = False
         self._follows_sealed = False
         self._annotation_budget = _AnnotationBudget()
@@ -976,6 +1042,193 @@ class ObservationRuntime:
             else:
                 subscription._seal("source_ended", page.snapshot_end_exclusive)
         generation.follow_access = None
+
+    def _interact_access(
+        self, generation: _ObservationGeneration
+    ) -> PreparedInteractAccess:
+        access = generation.interact_access
+        if not isinstance(access, PreparedInteractAccess):
+            raise InteractRejected("interact_unavailable")
+        try:
+            replace(access)
+            if (
+                access.session_id != generation.evidence.session_id
+                or access.policy != generation.evidence.policy
+            ):
+                raise ValueError("Interact access no longer matches the captured run")
+        except Exception:
+            raise InteractRejected("interact_unavailable") from None
+        return access
+
+    async def interact(self, request: InteractRequest) -> InteractReport:
+        self._guard_context()
+        if not isinstance(request, InteractRequest):
+            raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
+        if self._interacts_sealed:
+            raise InteractRejected("interact_unavailable")
+        association = self._evidence_association
+        if association is None or association.session_id is None:
+            raise InteractRejected("no_associated_session")
+        if request.session_id != association.session_id:
+            raise InteractRejected("session_not_associated")
+        generation = self._generation
+        if (
+            generation is None
+            or generation.interact_sealed
+            or self._summary.state is not RuntimeState.ACTIVE
+            or generation.acquisition is None
+            or generation.acquisition.snapshot().state is not AcquisitionState.ACQUIRING
+        ):
+            raise InteractRejected("not_active")
+        access = self._interact_access(generation)
+        provenance = access.coordinator.current_provenance
+        if provenance is None:
+            raise InteractRejected("interact_unavailable")
+        profile = self._summary.profile
+        if (
+            not isinstance(profile, ResolvedInteractionProfile)
+            or not profile.policy.uart_tx_enabled
+        ):
+            raise InteractRejected("policy_denied")
+        if (
+            not all(
+                provenance.capabilities.supports(cap)
+                for cap in (BackendCapability.UART_RECEIVE, BackendCapability.UART_SEND)
+            )
+            or generation.interact_backend is None
+            or not generation.interact_backend.write_available
+        ):
+            raise InteractRejected("capability_unavailable")
+        draft = access.coordinator.preflight_interact(
+            request, provenance, access.charge_markers
+        )
+        if generation.interact is not None:
+            raise InteractRejected("busy")
+        pending = _InteractRun(
+            access,
+            request,
+            provenance,
+            draft.operation_id,
+            profile,
+            asyncio.current_task(),
+        )
+        generation.interact = pending
+        owner = asyncio.create_task(
+            self._own_interact(generation, pending), name="dutchmate-runtime-interact"
+        )
+        pending.owner = owner
+        owner.add_done_callback(
+            lambda task: None if task.cancelled() else task.exception()
+        )
+        try:
+            return await asyncio.shield(owner)
+        except asyncio.CancelledError:
+            self._latch_interact_stop(generation, InteractOutcome.CANCELLED)
+            while not owner.done():
+                try:
+                    await asyncio.shield(owner)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not owner.cancelled():
+                owner.exception()
+            raise
+
+    def _pending_interact_stop(
+        self,
+        generation: _ObservationGeneration,
+        pending: _InteractRun,
+    ) -> tuple[InteractOutcome, ...]:
+        # The intent ACK can request cancellation before the public waiter gets
+        # a turn to catch it. Observe that request at the synchronous submission
+        # checkpoint, while retaining this operation's existing owned joins.
+        if (
+            pending.waiter is not None
+            and pending.waiter.cancelling()
+            and InteractOutcome.CANCELLED not in pending.intents
+        ):
+            pending.intents = (*pending.intents, InteractOutcome.CANCELLED)
+        if pending.intents:
+            return pending.intents
+        acquisition = generation.acquisition
+        if acquisition is None:
+            return ()
+        snapshot = acquisition.snapshot()
+        if snapshot.terminal_trigger is AcquisitionTerminalTrigger.DISCONNECTED:
+            return (InteractOutcome.DISCONNECTED,)
+        if snapshot.primary_failure_kind is not None:
+            return (InteractOutcome(snapshot.primary_failure_kind.value),)
+        return ()
+
+    async def _own_interact(
+        self, generation: _ObservationGeneration, pending: _InteractRun
+    ) -> InteractReport:
+        def revalidate() -> None:
+            self._guard_context()
+            if (
+                self._interacts_sealed
+                or self._generation is not generation
+                or generation.interact_sealed
+                or self._summary.state is not RuntimeState.ACTIVE
+                or generation.acquisition is None
+                or generation.acquisition.snapshot().state
+                is not AcquisitionState.ACQUIRING
+            ):
+                raise InteractRejected("not_active")
+            if (
+                self._interact_access(generation) is not pending.access
+                or self._summary.profile != pending.profile
+            ):
+                raise InteractRejected("interact_unavailable")
+
+        acquisition = generation.acquisition
+        assert acquisition is not None
+        try:
+            operation = await pending.access.coordinator.start_interact(
+                pending.request,
+                run_id=generation.evidence.run_id.value,
+                expected_provenance=pending.provenance,
+                revalidate=revalidate,
+                charge_markers=pending.access.charge_markers,
+                submit_uart_write=acquisition.submit_uart_write,
+                pending_stop=lambda: self._pending_interact_stop(generation, pending),
+                operation_id=pending.operation_id,
+            )
+            pending.operation = operation
+            return await operation.wait()
+        finally:
+            if generation.interact is pending:
+                generation.interact = None
+
+    def _latch_interact_stop(
+        self, generation: _ObservationGeneration, outcome: InteractOutcome
+    ) -> None:
+        pending = generation.interact
+        if pending is not None:
+            if outcome not in pending.intents:
+                pending.intents = (*pending.intents, outcome)
+            if pending.operation is not None:
+                pending.operation.stop(pending.intents)
+
+    def _seal_interacts(self) -> None:
+        """Synchronous incarnation seal; settlement remains strongly owned."""
+        self._guard_context()
+        self._interacts_sealed = True
+        generation = self._generation
+        if generation is not None:
+            generation.interact_sealed = True
+            self._latch_interact_stop(generation, InteractOutcome.SERVICE_STOPPING)
+
+    async def _join_interact(self, generation: _ObservationGeneration) -> None:
+        pending = generation.interact
+        if pending is not None:
+            outcomes = self._pending_interact_stop(generation, pending)
+            if pending.operation is not None and outcomes:
+                pending.operation.stop(outcomes)
+            assert pending.owner is not None
+            await asyncio.gather(asyncio.shield(pending.owner), return_exceptions=True)
+        generation.interact_access = None
 
     def _monitor_access(
         self, generation: _ObservationGeneration
@@ -1377,11 +1630,13 @@ class ObservationRuntime:
                 owner.exception()
             raise
 
-    async def attach(
-        self, profile: ResolvedDutProfile, prepare: PrepareObservationRun
+    async def attach[Profile: ResolvedProfile](
+        self, profile: Profile, prepare: PrepareObservationRun[Profile]
     ) -> RuntimeStatus:
         self._guard_context()
-        if not isinstance(profile, ResolvedDutProfile) or not callable(prepare):
+        if not isinstance(
+            profile, (ResolvedDutProfile, ResolvedInteractionProfile)
+        ) or not callable(prepare):
             raise RuntimeRejectedError(RuntimeRejectedKind.INVALID_REQUEST)
         async with self._lock:
             if not self._summary.attach_admissible:
@@ -1444,6 +1699,8 @@ class ObservationRuntime:
             return
         generation.monitor_sealed = True
         generation.annotation_sealed = True
+        generation.interact_sealed = True
+        self._latch_interact_stop(generation, InteractOutcome.DETACHED)
         self._seal_follow(generation, "detached")
         self._latch_monitor_stop(generation, MonitorOutcome.DETACHED)
         if self._summary.stop_intent is RuntimeStopIntent.NONE:
@@ -1520,11 +1777,11 @@ class ObservationRuntime:
                     waiter.cancel()
             await asyncio.gather(*waiters, return_exceptions=True)
 
-    async def _own(
+    async def _own[Profile: ResolvedProfile](
         self,
         generation: _ObservationGeneration,
-        profile: ResolvedDutProfile,
-        prepare: PrepareObservationRun,
+        profile: Profile,
+        prepare: PrepareObservationRun[Profile],
     ) -> RuntimeStatus:
         prepared: PreparedObservationRun | None = None
         if not generation.stop.is_set():
@@ -1596,6 +1853,12 @@ class ObservationRuntime:
                                 session_id,
                                 policy,
                             )
+                            or not _interact_access_matches(
+                                prepared.interact_access,
+                                prepared.recorder,
+                                session_id,
+                                policy,
+                            )
                             or not _annotation_access_matches(
                                 prepared.annotation_access,
                                 prepared.recorder,
@@ -1621,6 +1884,7 @@ class ObservationRuntime:
                             generation.monitor_access = prepared.monitor_access
                             generation.annotation_access = prepared.annotation_access
                             generation.follow_access = prepared.follow_access
+                            generation.interact_access = prepared.interact_access
                             if prepared.evidence_access is not None:
                                 association.live_reader = (
                                     prepared.evidence_access.live_reader
@@ -1633,8 +1897,12 @@ class ObservationRuntime:
                                 generation.acquisition = Acquisition(prepared.recorder)
             if generation.acquisition is not None:
                 assert prepared is not None
+                backend = prepared.backend
+                if prepared.interact_access is not None:
+                    generation.interact_backend = _InteractBackend(backend)
+                    backend = generation.interact_backend
                 try:
-                    await generation.acquisition.start(prepared.backend)
+                    await generation.acquisition.start(backend)
                 except Exception:
                     self._guard_context()
                     async with self._lock:
@@ -1668,6 +1936,7 @@ class ObservationRuntime:
             self._summary = replace(self.status(), state=RuntimeState.DETACHING)
             generation.monitor_sealed = True
             generation.annotation_sealed = True
+            generation.interact_sealed = True
             self._seal_follow(
                 generation,
                 "source_failed" if self._summary.primary_issue else "source_ended",
@@ -1698,6 +1967,7 @@ class ObservationRuntime:
             joined_snapshot = await generation.acquisition.join_terminated()
         await self._join_monitor(generation, joined_snapshot)
         await self._join_annotation(generation)
+        await self._join_interact(generation)
         await self._final_follow_head(generation)
         # Acquisition, Monitor and annotations joined. Seal before pinned reads;
         # no lifecycle lock spans these joins or recorder close. Terminal access

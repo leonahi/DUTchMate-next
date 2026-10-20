@@ -12,6 +12,7 @@ from dutchmate_core.evidence import (
     JournalFailureKind,
 )
 from dutchmate_core.evidence_access import EvidenceReadRejected, RunEvidencePage
+from dutchmate_core.interact import InteractTxFacts
 from dutchmate_core.model import (
     SQLITE_INTEGER_MAX,
     BackendObservationTimestamp,
@@ -19,11 +20,15 @@ from dutchmate_core.model import (
     EvidenceRangeReference,
     EvidenceRecord,
     EvidenceReference,
+    InteractEndedEvidence,
+    InteractObservation,
+    InteractStartedEvidence,
     MonitorClockFacts,
     MonitorMatch,
     ObserverLossEvidence,
     OperationEndedEvidence,
     OperationStartedEvidence,
+    RecordedTxFacts,
     RetentionMarker,
     RetentionTimestampEndpoint,
     RxBytesEvidence,
@@ -31,6 +36,7 @@ from dutchmate_core.model import (
     SegmentStartedEvidence,
     SequenceRange,
     SessionId,
+    UartTxSettledEvidence,
 )
 from dutchmate_core.runtime import RuntimeRejectedError
 from starlette.responses import Response
@@ -38,6 +44,7 @@ from starlette.types import Receive, Scope
 
 from dutchmate_service.http import (
     _MEDIA,
+    ApiVersionRejected,
     _header_values,
     _observation_view,
     _read_body,
@@ -101,7 +108,7 @@ def evidence_rejection_response(error: Exception) -> Response:
         return _read_error(
             _JOURNAL_CODES.get(error.kind, 500), "journal", error.kind.value
         )
-    if isinstance(error, RuntimeRejectedError):
+    if isinstance(error, (RuntimeRejectedError, ApiVersionRejected)):
         return rejection_response(error)
     return error_response(500, "service", "internal_failure")
 
@@ -195,7 +202,7 @@ async def validate_evidence_request(
         )
         if type(value) is not dict:
             raise ValueError("invalid_request")
-        if scope["raw_path"] == b"/v1/evidence/record":
+        if scope["raw_path"] in {b"/v1/evidence/record", b"/v2/evidence/record"}:
             if set(value) != {"session_id", "sequence"}:
                 raise ValueError("invalid_request")
             return EvidenceReference(
@@ -271,7 +278,54 @@ def _marker(value: RetentionMarker | None) -> dict[str, object] | None:
     }
 
 
-def _record(value: EvidenceRecord) -> dict[str, object]:
+def _record(value: EvidenceRecord, *, api_version: int = 1) -> dict[str, object]:
+    if api_version == 2:
+        if isinstance(value, InteractStartedEvidence):
+            return {
+                "kind": "interact_started",
+                "sequence": value.sequence,
+                "operation_id": value.operation_id,
+                "provenance": {
+                    "connection_id": value.provenance.connection_id.value,
+                    "segment_id": value.provenance.segment_id.value,
+                    **_observation_view(value.provenance),
+                },
+                "profile_version": value.profile_version,
+                "authorization": {"uart_tx_enabled": value.uart_tx_enabled},
+                "conditions_base64": [
+                    base64.b64encode(c).decode("ascii") for c in value.conditions
+                ],
+                "timeout_ms": value.timeout_ms,
+                "max_rx_bytes": value.max_rx_bytes,
+                "write_timeout_ms": value.write_timeout_ms,
+                "clock_origin_id": value.clock_origin_id,
+                "payload_base64": base64.b64encode(value.payload).decode("ascii"),
+            }
+        if isinstance(value, UartTxSettledEvidence):
+            return {
+                "kind": "uart_tx_settled",
+                "sequence": value.sequence,
+                "operation_id": value.operation_id,
+                "start_sequence": value.start_sequence,
+                **_tx_view(value.tx),
+            }
+        if isinstance(value, InteractEndedEvidence):
+            return {
+                "kind": "interact_ended",
+                "sequence": value.sequence,
+                "operation_id": value.operation_id,
+                "start_sequence": value.start_sequence,
+                "tx_settled_sequence": value.tx_settled_sequence,
+                "tx": _tx_view(value.tx),
+                "tx_audit_failure": None
+                if value.tx_audit_failure is None
+                else {
+                    "source": value.tx_audit_failure.source,
+                    "code": value.tx_audit_failure.code,
+                },
+                "outcome": value.outcome.value,
+                "observation": _interact_observation_view(value.observation),
+            }
     if isinstance(value, ClientAnnotationEvidence):
         return {
             "kind": "client_annotation",
@@ -380,6 +434,42 @@ def _clock_view(value: MonitorClockFacts) -> dict[str, object]:
     }
 
 
+def _tx_view(value: RecordedTxFacts | InteractTxFacts) -> dict[str, object]:
+    return {
+        "submitted": value.submitted,
+        "status": str(value.status),
+        "accepted_prefix_bytes": value.accepted_prefix_bytes,
+        "failure_code": None if value.failure_code is None else str(value.failure_code),
+        "acknowledgement_scope": value.acknowledgement_scope,
+        "clock_origin_id": value.clock_origin_id,
+        "settled_at_ns": value.settled_at_ns,
+    }
+
+
+def _interact_observation_view(value: InteractObservation) -> dict[str, object]:
+    match = value.match
+    return {
+        "window": _range(value.window),
+        "outcome": value.outcome.value,
+        "examined_rx_bytes": value.examined_rx_bytes,
+        "observer_loss_records": value.observer_loss_records,
+        "match": None
+        if match is None
+        else {
+            "condition_index": match.condition_index,
+            "start": {
+                "sequence": match.start.sequence,
+                "byte_offset": match.start.byte_offset,
+            },
+            "end": {
+                "sequence": match.end.sequence,
+                "byte_offset_exclusive": match.end.byte_offset_exclusive,
+            },
+        },
+        "clock": _clock_view(value.clock),
+    }
+
+
 def _encode(value: object) -> bytes:
     """Canonical stdlib JSON escaping with at most limit+1 accumulated bytes.
 
@@ -438,7 +528,7 @@ def _encode(value: object) -> bytes:
     return bytes(output)
 
 
-def evidence_response(report: RunEvidencePage) -> Response:
+def evidence_response(report: RunEvidencePage, *, api_version: int = 1) -> Response:
     """Project page facts unchanged; overflow rejects the entire canonical report."""
     try:
         page = report.page
@@ -447,7 +537,10 @@ def evidence_response(report: RunEvidencePage) -> Response:
                 "run_id": report.run_id.value,
                 "session_id": report.session_id.value,
                 "page": {
-                    "records": (_record(record) for record in page.records),
+                    "records": (
+                        _record(record, api_version=api_version)
+                        for record in page.records
+                    ),
                     "snapshot_end_exclusive": page.snapshot_end_exclusive,
                     "expired_range": _range(page.expired_range),
                     "retention_marker": _marker(page.retention_marker),

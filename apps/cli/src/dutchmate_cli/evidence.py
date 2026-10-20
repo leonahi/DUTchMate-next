@@ -217,9 +217,16 @@ def _provenance(value: object) -> dict[str, object]:
     return view
 
 
-def _record(value: object) -> dict[str, object]:
+def _record(value: object, *, api_version: int = 1) -> dict[str, object]:
     if type(value) is not dict:
         raise ValueError("invalid_response")
+    if api_version == 2:
+        if value.get("kind") == "interact_started":
+            return _interact_started(value)
+        if value.get("kind") == "uart_tx_settled":
+            return _uart_tx_settled(value)
+        if value.get("kind") == "interact_ended":
+            return _interact_ended(value)
     if value.get("kind") == "operation_started":
         return _operation_started(value)
     if value.get("kind") == "operation_ended":
@@ -458,6 +465,189 @@ def _range(value: object) -> dict[str, object] | None:
     return view
 
 
+_INTERACT_OBSERVATION_OUTCOMES = _MONITOR_OUTCOMES | {"cancelled", "tx_failed"}
+_INTERACT_EXTERNAL_OUTCOMES = {
+    "disconnected", "detached", "timestamp_origin_reset", "recording_failure",
+    "transport_failure", "service_stopping", "cancelled",
+}
+_INTERACT_OUTCOMES = _MONITOR_OUTCOMES | {"cancelled", "write_timeout", "partial_write"}
+_TX_KEYS = (
+    "submitted", "status", "accepted_prefix_bytes", "failure_code",
+    "acknowledgement_scope", "clock_origin_id", "settled_at_ns",
+)
+_BACKEND_FAILURE_CODES = {
+    "invalid_request", "device_not_found", "permission_denied", "device_busy",
+    "configuration_rejected", "line_state_setup_failed", "io_failure",
+    "internal_contract_failure",
+}
+
+
+def _payload_base64(value: object) -> str:
+    text = _text(value)
+    if len(text) > 5464:
+        raise ValueError("invalid_response")
+    raw = base64.b64decode(text, validate=True)
+    if not 1 <= len(raw) <= 4096 or base64.b64encode(raw).decode("ascii") != text:
+        raise ValueError("invalid_response")
+    return text
+
+
+def _conditions(value: object) -> list[str]:
+    items = _array(value)
+    if not 1 <= len(items) <= 4:
+        raise ValueError("invalid_response")
+    return [_condition_base64(item) for item in items]
+
+
+def _tx_facts(value: object) -> dict[str, object]:
+    view = _view(value, _TX_KEYS)
+    submitted = view["submitted"]
+    if type(submitted) is not bool:
+        raise ValueError("invalid_response")
+    status = _choice(view["status"], {
+        "acknowledged", "partial", "timeout", "disconnected", "failure", "not_submitted",
+    })
+    if submitted == (status == "not_submitted"):
+        raise ValueError("invalid_response")
+    if status in {"acknowledged", "partial"}:
+        _counter(view["accepted_prefix_bytes"], minimum=1 if status == "acknowledged" else 0,
+                 maximum=4096 if status == "acknowledged" else 4095)
+    elif view["accepted_prefix_bytes"] is not None:
+        raise ValueError("invalid_response")
+    if status == "failure":
+        _choice(view["failure_code"], _BACKEND_FAILURE_CODES)
+    elif view["failure_code"] is not None:
+        raise ValueError("invalid_response")
+    _choice(view["acknowledgement_scope"], {"backend_acceptance"})
+    _uuid(view["clock_origin_id"])
+    _counter(view["settled_at_ns"])
+    return view
+
+
+def _tx_audit_failure(value: object) -> dict[str, object]:
+    view = _view(value, ("source", "code"))
+    source, code = _text(view["source"]), _text(view["code"])
+    if ((source == "journal" and code in {c for _, c in _JOURNAL_ERRORS})
+            or (source == "service" and code == "internal_failure")):
+        return view
+    raise ValueError("invalid_response")
+
+
+def _interact_observation(value: object) -> dict[str, object]:
+    view = _view(value, ("window", "outcome", "examined_rx_bytes", "observer_loss_records", "match", "clock"))
+    window = _view(view["window"], ("start_inclusive", "end_exclusive"))
+    start = _counter(window["start_inclusive"], minimum=1)
+    end = _counter(window["end_exclusive"], minimum=start)
+    outcome = _choice(view["outcome"], _INTERACT_OBSERVATION_OUTCOMES)
+    examined = _counter(view["examined_rx_bytes"], maximum=1048576,
+                        minimum=1 if outcome in {"matched", "byte_limit"} else 0)
+    loss = _counter(view["observer_loss_records"])
+    if start == end and (examined or loss):
+        raise ValueError("invalid_response")
+    match = None
+    if outcome == "matched":
+        match = _view(view["match"], ("condition_index", "start", "end"))
+        _counter(match["condition_index"], maximum=3)
+        first = _view(match["start"], ("sequence", "byte_offset"))
+        last = _view(match["end"], ("sequence", "byte_offset_exclusive"))
+        first_seq = _counter(first["sequence"], minimum=start, maximum=end - 1)
+        _counter(last["sequence"], minimum=first_seq, maximum=end - 1)
+        offset = _counter(first["byte_offset"], maximum=examined - 1)
+        last_offset = _counter(last["byte_offset_exclusive"], minimum=1, maximum=examined)
+        if first["sequence"] == last["sequence"] and last_offset <= offset:
+            raise ValueError("invalid_response")
+        match["start"], match["end"] = first, last
+    elif view["match"] is not None:
+        raise ValueError("invalid_response")
+    clock = _operation_clock(view["clock"])
+    started = _counter(clock["started_at_ns"])
+    deadline = _counter(clock["deadline_at_ns"], minimum=started + 1)
+    decided = _counter(clock["decided_at_ns"], minimum=started)
+    duration = deadline - started
+    if duration % 1000000 or not 1000000 <= duration <= 4000000000:
+        raise ValueError("invalid_response")
+    if (outcome == "timeout") != (decided >= deadline):
+        raise ValueError("invalid_response")
+    view.update(window=window, match=match, clock=clock)
+    return view
+
+
+def _interact_facts(
+    start_sequence: int, tx: dict[str, object], observation: dict[str, object],
+    outcome: object, *, end_sequence: int | None = None,
+) -> str:
+    """Validate declared wire relationships; never reproduce a Core decision."""
+    overall = _choice(outcome, _INTERACT_OUTCOMES)
+    window = cast(dict[str, object], observation["window"])
+    clock = cast(dict[str, object], observation["clock"])
+    if (window["start_inclusive"] != start_sequence + 1
+            or (end_sequence is not None and _counter(window["end_exclusive"]) > end_sequence)
+            or tx["clock_origin_id"] != clock["origin_id"]
+            or _counter(tx["settled_at_ns"]) < _counter(clock["started_at_ns"])):
+        raise ValueError("invalid_response")
+    if tx["status"] == "acknowledged" and observation["outcome"] == "tx_failed":
+        raise ValueError("invalid_response")
+    if overall not in _INTERACT_EXTERNAL_OUTCOMES:
+        expected = {"partial": "partial_write", "timeout": "write_timeout",
+                    "disconnected": "disconnected", "failure": "transport_failure"}.get(_text(tx["status"]))
+        if tx["status"] == "acknowledged":
+            expected = _text(observation["outcome"])
+        if not tx["submitted"] or overall != expected:
+            raise ValueError("invalid_response")
+    return overall
+
+
+def _interact_started(value: object) -> dict[str, object]:
+    view = _view(value, (
+        "kind", "sequence", "operation_id", "provenance", "profile_version",
+        "authorization", "conditions_base64", "timeout_ms", "max_rx_bytes",
+        "write_timeout_ms", "clock_origin_id", "payload_base64",
+    ))
+    _counter(view["sequence"], maximum=_MAX - 1)
+    _uuid(view["operation_id"])
+    view["provenance"] = _provenance(view["provenance"])
+    _counter(view["profile_version"], minimum=2, maximum=2)
+    authorization = _view(view["authorization"], ("uart_tx_enabled",))
+    if authorization["uart_tx_enabled"] is not True:
+        raise ValueError("invalid_response")
+    view["authorization"] = authorization
+    view["conditions_base64"] = _conditions(view["conditions_base64"])
+    _counter(view["timeout_ms"], minimum=1, maximum=4000)
+    _counter(view["max_rx_bytes"], minimum=1, maximum=1048576)
+    _counter(view["write_timeout_ms"], minimum=1000, maximum=1000)
+    _uuid(view["clock_origin_id"])
+    _payload_base64(view["payload_base64"])
+    return view
+
+
+def _uart_tx_settled(value: object) -> dict[str, object]:
+    view = _view(value, ("kind", "sequence", "operation_id", "start_sequence", *_TX_KEYS))
+    sequence = _counter(view["sequence"], maximum=_MAX - 1)
+    _counter(view["start_sequence"], maximum=sequence - 1)
+    _uuid(view["operation_id"])
+    view.update(_tx_facts({key: view[key] for key in _TX_KEYS}))
+    return view
+
+
+def _interact_ended(value: object) -> dict[str, object]:
+    view = _view(value, ("kind", "sequence", "operation_id", "start_sequence",
+                         "tx_settled_sequence", "tx", "tx_audit_failure", "outcome", "observation"))
+    sequence = _counter(view["sequence"], maximum=_MAX - 1)
+    start = _counter(view["start_sequence"], maximum=sequence - 1)
+    _uuid(view["operation_id"])
+    if view["tx_settled_sequence"] is None:
+        view["tx_audit_failure"] = _tx_audit_failure(view["tx_audit_failure"])
+    elif view["tx_audit_failure"] is not None:
+        raise ValueError("invalid_response")
+    else:
+        _counter(view["tx_settled_sequence"], minimum=start + 1, maximum=sequence - 1)
+    tx = _tx_facts(view["tx"])
+    observation = _interact_observation(view["observation"])
+    _interact_facts(start, tx, observation, view["outcome"], end_sequence=sequence)
+    view.update(tx=tx, observation=observation)
+    return view
+
+
 def _endpoint(value: object) -> dict[str, object] | None:
     if value is None:
         return None
@@ -537,7 +727,7 @@ def _reply_cursor(value: object) -> str | None:
     return token
 
 
-def reply(value: object) -> dict[str, object]:
+def reply(value: object, *, api_version: int = 1) -> dict[str, object]:
     """Validate shape and representation, preserving all service-reported facts."""
     envelope = _view(value, ("run_id", "session_id", "page"))
     _text(envelope["run_id"])
@@ -557,7 +747,7 @@ def reply(value: object) -> dict[str, object]:
             "next_record_required_bytes",
         ),
     )
-    page["records"] = [_record(record) for record in _array(page["records"])]
+    page["records"] = [_record(record, api_version=api_version) for record in _array(page["records"])]
     _counter(page["snapshot_end_exclusive"])
     for name in ("expired_range", "never_existed_range"):
         page[name] = _range(page[name])

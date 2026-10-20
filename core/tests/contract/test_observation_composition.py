@@ -1350,3 +1350,143 @@ async def test_011_t008_follow_legacy_factories_keep_explicit_schema_and_read_co
         sqlite3.connect(f"file:{destination}?mode=ro", uri=True)
     ) as connection:
         assert connection.execute("PRAGMA user_version").fetchone() == (version,)
+
+
+def _t014_serial_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[FakeSerialFactory, list[bool]]:
+    """Inject only the library factory; observe actual composition opt-in."""
+    from tests.contract.test_basic_serial_write import WriteSerial
+
+    factory = FakeSerialFactory(WriteSerial())
+    selections: list[bool] = []
+    original = basic_serial.BasicSerialBackend.__init__
+
+    def construct(
+        self: basic_serial.BasicSerialBackend,
+        selector: basic_serial.SerialDeviceSelector,
+        configuration: basic_serial.SerialConfiguration,
+        line_intent: basic_serial.SerialOpenLineIntent,
+        *,
+        write_enabled: bool = False,
+    ) -> None:
+        selections.append(write_enabled)
+        original(
+            self,
+            selector,
+            configuration,
+            line_intent,
+            write_enabled=write_enabled,
+            _serial_factory=factory,
+        )
+
+    monkeypatch.setattr(basic_serial.BasicSerialBackend, "__init__", construct)
+    return factory, selections
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "version,permission,schema", [(1, False, 3), (2, False, 4), (2, True, 4)]
+)
+async def test_012_t014_profile_version_selects_storage_capability_and_optional_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    version: int,
+    permission: bool,
+    schema: int,
+) -> None:
+    factory, selections = _t014_serial_only(monkeypatch)
+    document = _PROFILE.replace("profile_version = 1", f"profile_version = {version}")
+    if version == 2:
+        document += f"\n[policy]\nuart_tx_enabled = {str(permission).lower()}\n"
+    destination = tmp_path / "version-selected.db"
+    probe = AdmissionProbe([])
+    await _edge()(probe, _selected(tmp_path, document), destination)
+    prepared = await probe.captured_preparation()
+    connection = None
+    try:
+        # Query actual storage metadata, not which constructor a spy saw.
+        with closing(sqlite3.connect(f"file:{destination}?mode=ro", uri=True)) as sql:
+            assert sql.execute("PRAGMA user_version").fetchone() == (schema,), (
+                "T014: Profile-v2 must explicitly compose journal-v4"
+            )
+        access = getattr(prepared, "interact_access", None)
+        assert (access is not None) == (version == 2)
+        assert selections == [version == 2]  # Capability is independent of policy.
+        assert factory.calls == []
+        assert prepared.monitor_access is not None
+        assert (
+            prepared.annotation_access is not None
+            and prepared.follow_access is not None
+        )
+        assert prepared.evidence_access is not None
+        if version == 2:
+            assert access is not None
+            assert (
+                access.coordinator
+                is prepared.recorder
+                is prepared.monitor_access.coordinator
+            )
+            assert (
+                access.clock
+                is prepared.monitor_access.clock
+                is prepared.annotation_access.clock
+            )
+            assert access.session_id == prepared.recorder.session_id
+            assert access.policy == prepared.recorder.policy
+            assert callable(access.charge_markers)
+        connection = await prepared.backend.open()  # Explicit fake serial only.
+        descriptor = connection.descriptor
+        assert descriptor.capabilities.supports(model.BackendCapability.UART_SEND) == (
+            version == 2
+        )
+        snapshot = descriptor.connection_provenance.to_snapshot()
+        assert snapshot.backend_schema_version == (1 if version == 1 else 2)
+        fields = {item.name: item.value for item in snapshot.fields}
+        if version == 2:
+            assert fields["write_timeout_ms"] == 1000
+            assert fields["write_acknowledgement_scope"] == "backend_acceptance"
+        else:
+            assert "write_timeout_ms" not in fields
+        await connection.close()
+        connection = None
+        marker = await prepared.monitor_access.coordinator.append_client_annotation(
+            "cli", "versioned context"
+        )
+        await prepared.recorder.close()
+        assert prepared.evidence_access.terminal_opener is not None
+        terminal = await prepared.evidence_access.terminal_opener()
+        try:
+            page = await terminal.resolve_record(
+                model.EvidenceReference(prepared.recorder.session_id, marker.sequence)
+            )
+            assert page.records == (marker,)
+        finally:
+            await terminal.close()
+    finally:
+        if connection is not None:
+            await connection.close()
+        await prepared.recorder.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fixture_index", [0, 1], ids=["basic-shape", "enhanced-shape"])
+async def test_012_t014_old_preparation_constructor_defaults_to_absent_interact(
+    tmp_path: Path,
+    fixture_index: int,
+) -> None:
+    from tests.fakes import BACKEND_FIXTURE_FACTORIES
+
+    # No new constructor argument is required of old external preparations.
+    factory = BACKEND_FIXTURE_FACTORIES[fixture_index]
+    journal = await sqlite_evidence.SqliteEvidenceJournal.create_v3(
+        tmp_path / "legacy-optional.db", _expected_policy()
+    )
+    try:
+        prepared = rt.PreparedObservationRun(journal, factory().backend)
+        sentinel = object()
+        assert getattr(prepared, "interact_access", sentinel) is None, (
+            "T014 missing: additive PreparedObservationRun.interact_access=None"
+        )
+    finally:
+        await journal.close()

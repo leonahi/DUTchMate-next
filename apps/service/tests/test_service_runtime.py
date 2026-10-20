@@ -1322,6 +1322,7 @@ async def test_t017_identical_http_lifecycle_and_durable_binary_assertions_prese
     ) -> RuntimeStatus:
         owner.status()
         resolved = resolve_profile(explicit_profile)
+        assert isinstance(resolved, ResolvedDutProfile)
 
         async def prepare(profile: ResolvedDutProfile) -> PreparedObservationRun:
             nonlocal fixture, prepare_calls

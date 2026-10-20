@@ -94,8 +94,9 @@ class Frames:
 class Position:
     """Validate the received prefix only; never reconstruct Core decisions."""
 
-    def __init__(self, session: str) -> None:
+    def __init__(self, session: str, *, api_version: int = 1) -> None:
         self._session = session
+        self._api_version = api_version
         self._next: int | None = None
         self.terminal = False
 
@@ -119,7 +120,7 @@ class Position:
         match value.get("type"):
             case "record":
                 view = evidence._view(value, ("type", "record"))
-                record = evidence._record(view["record"])
+                record = evidence._record(view["record"], api_version=self._api_version)
                 if record["sequence"] != self._next:
                     raise ValueError("invalid_response")
                 self._next += 1

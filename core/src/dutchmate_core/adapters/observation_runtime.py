@@ -10,6 +10,7 @@ from dutchmate_core.adapters.monotonic_clock import MonotonicMonitorClock
 from dutchmate_core.adapters.sqlite_evidence import (
     SqliteEvidenceJournal,
     charge_client_annotation,
+    charge_interact_markers,
     charge_monitor_markers,
 )
 from dutchmate_core.adapters.terminal_evidence import (
@@ -21,8 +22,16 @@ from dutchmate_core.annotation import PreparedAnnotationAccess
 from dutchmate_core.backend import NormalizedBackendFailure
 from dutchmate_core.evidence import JournalFailure, JournalFailureKind, JournalOperation
 from dutchmate_core.evidence_access import PreparedEvidenceAccess
-from dutchmate_core.monitor import MonitorRecordingCoordinator, PreparedMonitorAccess
-from dutchmate_core.profile import ProfileFailure, ResolvedDutProfile
+from dutchmate_core.monitor import (
+    MonitorRecordingCoordinator,
+    PreparedInteractAccess,
+    PreparedMonitorAccess,
+)
+from dutchmate_core.profile import (
+    ProfileFailure,
+    ResolvedInteractionProfile,
+    ResolvedProfile,
+)
 from dutchmate_core.runtime import (
     ObservationRuntime,
     PreparationFailure,
@@ -56,11 +65,15 @@ async def attach_basic_observation(
     runtime.status()  # Context guard only; runtime.attach owns admission.
     resolved = resolve_profile(explicit_profile_path)
 
-    async def prepare(profile: ResolvedDutProfile) -> PreparedObservationRun:
+    async def prepare(profile: ResolvedProfile) -> PreparedObservationRun:
+        version = 4 if isinstance(profile, ResolvedInteractionProfile) else 3
         try:
-            journal = await SqliteEvidenceJournal.create_v3(
-                explicit_journal_path, profile.session_policy
+            create = (
+                SqliteEvidenceJournal.create_v4
+                if version == 4
+                else SqliteEvidenceJournal.create_v3
             )
+            journal = await create(explicit_journal_path, profile.session_policy)
         except Exception as error:
             failure = PreparationFailure(
                 primary_issue=_issue(error, RuntimeIssueSource.PREPARATION),
@@ -81,7 +94,7 @@ async def attach_basic_observation(
                     explicit_journal_path,
                     session_id=journal.session_id,
                     policy=journal.policy,
-                    expected_schema_version=3,
+                    expected_schema_version=version,
                 )
             except Exception:
                 target = None
@@ -90,8 +103,17 @@ async def attach_basic_observation(
             )
             try:
                 request = to_basic_serial_open_request(profile)
-                backend = BasicSerialBackend(
-                    request.selector, request.configuration, request.line_intent
+                backend = (
+                    BasicSerialBackend(
+                        request.selector,
+                        request.configuration,
+                        request.line_intent,
+                        write_enabled=True,
+                    )
+                    if version == 4
+                    else BasicSerialBackend(
+                        request.selector, request.configuration, request.line_intent
+                    )
                 )
                 clock = _clocks.get(runtime)
                 if clock is None:
@@ -127,6 +149,15 @@ async def attach_basic_observation(
                         coordinator=coordinator,
                         live_reader=journal,
                     ),
+                    interact_access=PreparedInteractAccess(
+                        journal.session_id,
+                        journal.policy,
+                        coordinator,
+                        clock,
+                        charge_interact_markers,
+                    )
+                    if version == 4
+                    else None,
                 )
             except Exception as error:
                 primary_issue = _issue(error, RuntimeIssueSource.PREPARATION)

@@ -18,12 +18,14 @@ from dutchmate_core.model import (
     ConnectionDescriptor,
     ObserverReportsUartLoss,
     SegmentProvenance,
+    SessionId,
     UpstreamLossNotObservable,
 )
 from dutchmate_core.profile import (
     ProfileFailure,
     ProfileFailureKind,
-    ResolvedDutProfile,
+    ResolvedInteractionProfile,
+    ResolvedProfile,
 )
 from dutchmate_core.runtime import (
     RuntimeIssue,
@@ -47,6 +49,15 @@ _ROUTES = {
     b"/v1/observation/follow": "POST",
     b"/v1/evidence/record": "POST",
     b"/v1/evidence/page": "POST",
+    b"/v2/observation/attach": "POST",
+    b"/v2/observation/status": "GET",
+    b"/v2/observation/detach": "POST",
+    b"/v2/observation/monitor": "POST",
+    b"/v2/observation/annotations": "POST",
+    b"/v2/observation/follow": "POST",
+    b"/v2/evidence/record": "POST",
+    b"/v2/evidence/page": "POST",
+    b"/v2/observation/interact": "POST",
 }
 _BEARER = re.compile(rb"Bearer [0-9a-f]{64}")
 _TOKEN = re.compile(r"[0-9a-f]{64}")
@@ -63,6 +74,7 @@ _REQUEST_CODES = {
     413: {"payload_too_large"},
     415: {"unsupported_media_type"},
     422: {"invalid_request"},
+    409: {"unsupported_api_version"},
 }
 _RUNTIME_CODES = {
     RuntimeRejectedKind.BUSY: 409,
@@ -70,6 +82,25 @@ _RUNTIME_CODES = {
     RuntimeRejectedKind.INVALID_REQUEST: 422,
     RuntimeRejectedKind.WRONG_EXECUTION_CONTEXT: 500,
 }
+
+
+class ApiVersionRejected(RuntimeError):
+    """A known selected run/Profile cannot be represented through API1."""
+
+
+def api_version(scope: Scope) -> int:
+    # Only literal allowlisted paths reach handlers. No negotiation or aliases.
+    return 2 if scope["raw_path"].startswith(b"/v2/") else 1
+
+
+def check_api_version(
+    status: RuntimeStatus, version: int, session: SessionId | None = None
+) -> None:
+    # Leave missing/wrong associations to the existing Core rejection precedence.
+    if session is not None and session != status.session_id:
+        return
+    if version == 1 and isinstance(status.profile, ResolvedInteractionProfile):
+        raise ApiVersionRejected()
 
 
 def error_response(status_code: int, source: str, code: str) -> Response:
@@ -121,6 +152,8 @@ def error_response(status_code: int, source: str, code: str) -> Response:
 
 def rejection_response(error: Exception) -> Response:
     """Map existing normalized rejection facts without reading cause/detail."""
+    if isinstance(error, ApiVersionRejected):
+        return error_response(409, "request", "unsupported_api_version")
     if isinstance(error, RuntimeRejectedError):
         return error_response(_RUNTIME_CODES[error.kind], "runtime", error.kind.value)
     if isinstance(error, ProfileFailure):
@@ -193,7 +226,7 @@ def _encode_bounded(value: object) -> bytes:
     return bytes(output)
 
 
-def _profile_view(profile: ResolvedDutProfile) -> dict[str, object]:
+def _profile_view(profile: ResolvedProfile) -> dict[str, object]:
     return {
         "format_version": profile.format_version.value,
         "dut": {"id": profile.dut.id, "name": profile.dut.name},
@@ -421,7 +454,7 @@ async def validate_request(
     route_error = _route_error(scope)
     if route_error is not None:
         return route_error
-    attach = scope["raw_path"] == b"/v1/observation/attach"
+    attach = scope["raw_path"] in {b"/v1/observation/attach", b"/v2/observation/attach"}
     if attach:
         media = _header_values(scope, b"content-type")
         try:
@@ -551,6 +584,12 @@ class SecurityGate:
                 b"/v1/observation/monitor",
                 b"/v1/observation/annotations",
                 b"/v1/observation/follow",
+                b"/v2/evidence/record",
+                b"/v2/evidence/page",
+                b"/v2/observation/monitor",
+                b"/v2/observation/annotations",
+                b"/v2/observation/follow",
+                b"/v2/observation/interact",
             }:
                 # Reads/Monitor/annotations/Follow check readiness before body validation. The
                 # existing observation validation/replay path stays unchanged.

@@ -9,6 +9,8 @@ from typing import cast
 from dutchmate_core.model import SessionPolicy
 from dutchmate_core.profile import (
     DutIdentity,
+    InteractionPolicy,
+    InteractionProfileFormatVersion,
     ObservationPolicy,
     ProfileBackendSelection,
     ProfileFailure,
@@ -17,6 +19,8 @@ from dutchmate_core.profile import (
     ProfileSerialOpenLineIntent,
     ProfileUartConfiguration,
     ResolvedDutProfile,
+    ResolvedInteractionProfile,
+    ResolvedProfile,
 )
 
 type TomlTable = dict[str, object]
@@ -68,12 +72,13 @@ _PERSISTENCE_FIELDS = (
 )
 
 
-def resolve_profile(explicit_path: str | Path) -> ResolvedDutProfile:
-    """Resolve one explicitly selected, valid Profile version 1 document."""
+def resolve_profile(explicit_path: str | Path) -> ResolvedProfile:
+    """Resolve one captured Profile by its explicit version, without fallback."""
 
     captured = _capture_profile(Path(explicit_path))
     document = _parse_profile(captured)
     dut, backend, uart, open_lines, policy = _validate_schema(document)
+    version = cast("int", document["profile_version"])
 
     backend_kind = backend["kind"]
     if type(backend_kind) is not str:
@@ -84,61 +89,68 @@ def resolve_profile(explicit_path: str | Path) -> ResolvedDutProfile:
     if backend_kind != "basic_serial":
         raise ProfileFailure(
             ProfileFailureKind.UNSUPPORTED_BACKEND,
-            "the selected backend is unavailable in Profile version 1",
+            f"the selected backend is unavailable in Profile version {version}",
         )
 
     try:
-        resolved = ResolvedDutProfile(
-            format_version=ProfileFormatVersion(
-                cast("int", document["profile_version"])
-            ),
-            dut=DutIdentity(
-                id=cast("str", dut["id"]),
-                name=cast("str", dut["name"]),
-            ),
-            backend=ProfileBackendSelection(
-                kind=backend_kind,
-                expected_device=cast("str", backend["expected_device"]),
-            ),
-            uart=ProfileUartConfiguration(
-                baud_rate=cast("int", uart["baud_rate"]),
-                data_bits=cast("int", uart["data_bits"]),
-                parity=cast("str", uart["parity"]),
-                stop_bits=cast("int", uart["stop_bits"]),
-                hardware_flow_control=cast(
-                    "bool", uart["hardware_flow_control"]
-                ),
-                software_flow_control=cast(
-                    "bool", uart["software_flow_control"]
-                ),
-            ),
-            open_lines=ProfileSerialOpenLineIntent(
-                dtr=cast("str", open_lines["dtr"]),
-                rts=cast("str", open_lines["rts"]),
-            ),
-            policy=ObservationPolicy(
-                uart_rx_enabled=cast(
-                    "bool", policy.get("uart_rx_enabled", True)
-                ),
-                evidence_recording_enabled=cast(
-                    "bool", policy.get("evidence_recording_enabled", True)
-                ),
-                uart_tx_enabled=cast(
-                    "bool", policy.get("uart_tx_enabled", False)
-                ),
-                semantic_control_enabled=cast(
-                    "bool", policy.get("semantic_control_enabled", False)
-                ),
-                automatic_reconnect_enabled=cast(
-                    "bool", policy.get("automatic_reconnect_enabled", False)
-                ),
-            ),
-            session_policy=_resolve_session_policy(document),
+        dut_value = DutIdentity(
+            id=cast("str", dut["id"]),
+            name=cast("str", dut["name"]),
         )
-    except (TypeError, ValueError):
+        backend_value = ProfileBackendSelection(
+            kind=backend_kind,
+            expected_device=cast("str", backend["expected_device"]),
+        )
+        uart_value = ProfileUartConfiguration(
+            baud_rate=cast("int", uart["baud_rate"]),
+            data_bits=cast("int", uart["data_bits"]),
+            parity=cast("str", uart["parity"]),
+            stop_bits=cast("int", uart["stop_bits"]),
+            hardware_flow_control=cast("bool", uart["hardware_flow_control"]),
+            software_flow_control=cast("bool", uart["software_flow_control"]),
+        )
+        open_lines_value = ProfileSerialOpenLineIntent(
+            dtr=cast("str", open_lines["dtr"]),
+            rts=cast("str", open_lines["rts"]),
+        )
+        policy_values = {
+            "uart_rx_enabled": cast("bool", policy.get("uart_rx_enabled", True)),
+            "evidence_recording_enabled": cast(
+                "bool", policy.get("evidence_recording_enabled", True)
+            ),
+            "uart_tx_enabled": cast("bool", policy.get("uart_tx_enabled", False)),
+            "semantic_control_enabled": cast(
+                "bool", policy.get("semantic_control_enabled", False)
+            ),
+            "automatic_reconnect_enabled": cast(
+                "bool", policy.get("automatic_reconnect_enabled", False)
+            ),
+        }
+        resolved: ResolvedProfile
+        if version == 1:
+            resolved = ResolvedDutProfile(
+                format_version=ProfileFormatVersion(1),
+                dut=dut_value,
+                backend=backend_value,
+                uart=uart_value,
+                open_lines=open_lines_value,
+                policy=ObservationPolicy(**policy_values),
+                session_policy=_resolve_session_policy(document),
+            )
+        else:
+            resolved = ResolvedInteractionProfile(
+                format_version=InteractionProfileFormatVersion(2),
+                dut=dut_value,
+                backend=backend_value,
+                uart=uart_value,
+                open_lines=open_lines_value,
+                policy=InteractionPolicy(**policy_values),
+                session_policy=_resolve_session_policy(document),
+            )
+    except TypeError, ValueError:
         failure = ProfileFailure(
             ProfileFailureKind.INVALID_VALUE,
-            "a Profile value violates the version 1 schema",
+            f"a Profile value violates the version {version} schema",
         )
     else:
         return resolved
@@ -157,7 +169,7 @@ def _capture_profile(path: Path) -> bytes:
     if len(captured) > _PROFILE_MAX_BYTES:
         raise ProfileFailure(
             ProfileFailureKind.INPUT_TOO_LARGE,
-            "Profile version 1 input exceeds 65,536 bytes",
+            "Profile input exceeds 65,536 bytes",
         )
     return captured
 
@@ -219,7 +231,7 @@ def _validate_schema(
         if table_name in document:
             raise ProfileFailure(
                 ProfileFailureKind.UNSUPPORTED_BEHAVIOR,
-                f"{table_name} configuration is unavailable in Profile version 1",
+                f"{table_name} configuration is unavailable",
             )
 
     _reject_unknown_fields(document, _ROOT_FIELDS, "Profile root")
@@ -249,10 +261,10 @@ def _validate_schema(
 
 def _validate_version(document: TomlTable) -> None:
     version = document.get("profile_version")
-    if type(version) is not int or version != 1:
+    if type(version) is not int or version not in {1, 2}:
         raise ProfileFailure(
             ProfileFailureKind.INCOMPATIBLE_VERSION,
-            "Profile version 1 is required",
+            "Profile version 1 or 2 is required",
         )
 
 

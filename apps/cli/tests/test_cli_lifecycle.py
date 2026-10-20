@@ -580,6 +580,7 @@ async def t013_run(
     async def attach(runtime: ObservationRuntime, profile_path: str, journal_path: str) -> RuntimeStatus:
         assert Path(journal_path) == lifecycle_service.composition.journal_path
         profile = resolve_profile(Path(profile_path))
+        assert isinstance(profile, ResolvedDutProfile)
         return await runtime.attach(profile, run.prepare)
 
     with monkeypatch.context() as patch:

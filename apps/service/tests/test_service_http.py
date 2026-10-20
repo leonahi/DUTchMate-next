@@ -1638,7 +1638,7 @@ async def test_t011_profile_failures_map_422_before_runtime_admission_or_prepara
             ProfileFailureKind.INPUT_TOO_LARGE: "#" + "x" * 65536,
             ProfileFailureKind.INVALID_SYNTAX: "private malformed = [",
             ProfileFailureKind.INCOMPATIBLE_VERSION: _T011_PROFILE.replace(
-                "profile_version = 1", "profile_version = 2"
+                "profile_version = 1", "profile_version = 3"
             ),
             ProfileFailureKind.MISSING_FIELD: _T011_PROFILE.replace(
                 'name = "HTTP observation fixture"\n', ""
