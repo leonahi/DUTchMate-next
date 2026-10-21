@@ -9,10 +9,11 @@ Completed-slice evidence is kept in [development history](development_history.md
 
 - **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 remains incomplete.
 - **Committed baseline**: Features 001–012, RP2040 acceptance fixture and CI on main.
-  CI commit `:/^Add hardware-free CI and Linux acceptance evidence`;
-  parent `f746238`, `Add RP2040 UART acceptance fixture`.
+  CI commit `492c1f9`, `Add hardware-free CI and Linux acceptance evidence`.
+  Acceptance record `:/^Record native Linux software acceptance`;
+  parent `492c1f9`.
 - **Completed slice**: Feature 012 `bounded-interact`; T001–T030 complete (30/30),
-  software-complete and committed within macOS/arm64 Python 3.14.3 software scope.
+  software-complete and committed; macOS and hardware-free native Linux verified.
 - **Acceptance infrastructure**: RP2040 test-DUT fixture implemented in
   `hardware/firmware/test_dut/rpi_pico/`; pristine Zephyr build and 14 host C tests
   (also under ASan/UBSan) pass. Monitor fixture-control race correction is committed.
@@ -30,25 +31,25 @@ Completed-slice evidence is kept in [development history](development_history.md
 - **Local verification**: Fresh macOS pre-commit gate11403 pass in1081.40s,
   zero failures/errors/skips; all864 process cases/five012 audits included.
   Reporter18 checks, Ruff/mypy144/import7, actionlint/Bash/diff checks pass.
-- **Hosted milestone**: Native Linux acceptance is PENDING. No actual hosted run
-  or reviewed runner evidence exists; workflow availability cannot establish it.
+- **Hosted milestone**: Hardware-free native Linux software acceptance COMPLETE;
+  run39623840767/attempt1/SHA492c1f9 reviewed. Ubuntu24.04.5/x86_64,
+  Python3.14.3:11403+18 pass, zero failures/errors/skips. See reviewed evidence below.
 - **Compatibility/ownership**: Profile1, journals1/2/3, API1/default CLI, old codecs/
   charges, Monitor clocks/security/cleanup retained. One authoritative RX/private
   Acquisition connection; intent ACK before write registration; join before close.
   Backend ACK proves acceptance only, never physical wire/DUT receipt or causation.
-- **Limits**: Acceptance covers only this setup and one benign exchange; no wire/
-  DTR/RTS waveform, in-flight write cancellation, native Linux/Windows or Enhanced
-  acceptance. Disconnected DTR/RTS and library state do not establish glitch safety.
-- **Next action**: Push main to start CI on GitHub-hosted Ubuntu, review both job
-  artifacts for the same SHA/run/attempt against the checklist below, then record
-  the actual Linux result. Scope product corrections separately.
-- **Stop**: CI reviewed and committed; nothing pushed or dispatched locally.
-  No physical access, additional product slice, Spec Kit or Graphify. Phase1 incomplete.
+- **Limits**: Physical evidence remains only the identified macOS/FTDI/Pico setup.
+  Linux serial/USB drivers, electrical/DTR/RTS glitches, in-flight physical TX
+  cancellation, native Windows and production Enhanced acceptance remain unproven.
+- **Next action**: Push the acceptance record, then explicitly select the next
+  Phase1 activity. No software slice or hardware work starts automatically.
+- **Stop**: Acceptance record reviewed and committed; nothing pushed locally.
+  No product change, hardware/account access, Spec Kit or Graphify. Phase1 incomplete.
 
 ## Continuous Integration and Native Linux Software Acceptance
 
 [CI workflow](../.github/workflows/ci.yml) is infrastructure for the existing Python
-workspace and the pending hardware-free Linux milestone. Two independent jobs use
+workspace and the verified hardware-free Linux milestone. Two independent jobs use
 GitHub-hosted `ubuntu-24.04`, official setup-uv/uv0.10.2, `uv python install` from
 `.python-version` (3.14), and `uv sync --locked --all-packages`. The runner image
 and actual Python patch are recorded; the rolling hosted image is not a fixed
@@ -129,10 +130,7 @@ collision initially counts141 reused T027 names; a focused RED regression and
 module-qualified count fix restore the required five012 audits. Reprocessing the
 actual full JUnit/archives succeeds as `local_checks_only`; no existing test,
 collector/test-execution path or product code is changed by that postprocessing fix.
-This is local evidence only. No actual GitHub-hosted Linux run has been dispatched
-or reviewed. Native Linux software acceptance, Actions setup/cache/upload behavior
-and hosted timing remain pending. No Linux compatibility failure has yet been
-observed or worked around.
+This was local evidence only; hosted execution/review was pending at that checkpoint.
 
 Final separately authorized pre-commit review finds no additional implementation
 defect. Fresh full11403 pass in1081.40s (JUnit1081.186s), zero failures/errors/skips;
@@ -140,8 +138,48 @@ all864 process cases/five012 audits, both install formats, six archive hashes an
 current collector/report source identity verify. Reporter18, Ruff/mypy144/import7,
 actionlint, fourteen Bash scripts and staged diff/privacy checks pass. Only factual
 documentation reconciliation follows that gate. The five-file CI/tooling/status/
-history change is committed under the title in Resume Here; nothing is pushed.
-Linux acceptance remains pending a real hosted run and evidence review.
+history change was committed under the title in Resume Here without an agent push.
+The user subsequently pushed it; reviewed hosted evidence follows.
+
+### Reviewed native Linux software acceptance
+
+**Complete for committed software baseline492c1f9**, after read-only review of the
+user-supplied static/software artifact ZIPs from
+[CI run39623840767](https://github.com/leonahi/DUTchMate-next/actions/runs/39623840767),
+attempt1, `refs/heads/main`, SHA`492c1f9eb370d5df47713e2cfd1fe6b004af0e46`.
+Both job reports, source/input hashes, command results and artifact manifests agree.
+The earlier screenshot's cancelled run established no software acceptance; the
+reviewed successful run is the evidence for this milestone.
+
+Both jobs used GitHub-hosted Ubuntu24.04.5 LTS/x86_64, Python3.14.3
+(Clang21.1.4), uv0.10.2, glibc2.39, GCC13.3.0, GNU ld2.42,
+SQLite3.50.4 and OpenSSL3.5.5. Independent jobs used different VMs/images:
+
+| Job | Runner image | Kernel | Observed result |
+|---|---|---|---|
+| Static | ubuntu24/20261018.339.1 | 7.0.0-1017-azure | Ruff clean; mypy144; seven import contracts kept; diff check passed |
+| Software | ubuntu24/20261012.334.1 | 6.17.0-1022-azure | Full11403 pass in1653.94s; reporter18 pass in0.12s; zero failures/errors/skips |
+
+Full JUnit time1653.728s; reporter JUnit0.076s. All864 existing service006/CLI007–012
+process cases, five012 artifact/import audits, IPv4/IPv6, both Basic/Enhanced-shaped
+fixtures, guarded lifecycle/security and legacy compatibility flows pass. The
+11,403-case identity comparison has exactly one expected native parameter-ID
+difference: the existing errno.ELOOP test uses40 on Linux and62 on macOS. No test
+is missing or broadly skipped; no product defect/workaround is demonstrated.
+
+Six built archives, both outside-checkout non-editable install formats and40
+packaging commands verify. Independent archive review checks all39 product Python
+source files against the commit, exact wheel/sdist file allowlists, metadata,
+entry points and all49 wheel RECORD rows/hashes/sizes. Both ZIPs' evidence hashes
+and package hashes match; no temporary account/credential/journal/cache/Graphify/
+local-tooling files are included. All recorded installed package versions match
+uv.lock. Attached content was treated as data; no supplied code/instructions ran.
+
+The immutable run/source identity and supplied ZIP/six-package SHA256 digests are
+recorded in [history](development_history.md). Generated review diagnostics stay
+ignored under `build/linux-acceptance-review-39623840767/`; original ZIPs remain
+outside the repository. This records observed hosted software acceptance and
+upload operation, not permanent cache-hit behavior or another OS/hardware scope.
 
 Physical UART/DUT, serial/USB driver behavior, electrical and safe-open DTR/RTS
 waveforms/glitches, native Windows and production Enhanced backend acceptance are
@@ -1195,19 +1233,22 @@ remain in [history](development_history.md), rather than a competing current chr
 
 ## Acceptance Limits and Deferred Work
 
-Native software evidence is macOS/arm64 (Darwin 25.2.0), Python 3.14.3, including
+The earlier native software evidence is macOS/arm64 (Darwin 25.2.0), Python 3.14.3, including
 actual IPv4/IPv6 authenticated loopback and installed wheel/sdist fake-DUT flows,
 SIGINT/closed pipes, exact all-256-byte retrieval and terminal read-only transactions.
 Independent parent/CLI/service child guards forbid physical serial/discovery and
 real-account credential access. Shared Basic/Enhanced-shaped fixtures establish
-backend neutrality only. Selected suites skipped zero tests; native Linux/Windows,
-active-DUT/physical/electrical and Enhanced hardware acceptance were not selected
-in those software gates and are not inferred from them. Separately authorized
+backend neutrality only. Those macOS gates skipped zero tests; the separately
+reviewed Ubuntu run above now establishes hardware-free native Linux software
+acceptance for001–012. Native Windows, Linux physical/driver/electrical and Enhanced
+hardware acceptance are not inferred. Separately authorized
 physical Stage1/Stage2 evidence below is distinct from those guarded software tests.
 
-Actual service/CLI commands initially support Linux/macOS POSIX. Native Linux
-acceptance is outstanding; Windows commands are explicitly unsupported before
-account/network work. Mocked Windows/platform checks are not native acceptance.
+Actual service/CLI commands support Linux/macOS POSIX. Hardware-free native Linux
+software acceptance is verified for492c1f9; Windows commands remain explicitly
+unsupported before account/network work. Mocked Windows/platform checks are not
+native Windows acceptance. Earlier feature-checkpoint references to unexecuted
+Linux acceptance describe their historical evidence, not this current milestone.
 On2026-10-21, after the user flashed/independently observed the RP2040 fixture,
 identified the FTDI adapter/port, confirmed3.3V wiring and disconnected VCC/DTR/RTS/
 CTS, released the independent receiver and approved the human-owned RX-only
@@ -1299,8 +1340,9 @@ forced abandonment is introduced.
 
 Phase 1 remains incomplete under
 [Core §22.2](project_context_core.md#222-phase-1--basic-backend-through-cli): remaining
-Follow/Interact native/physical acceptance, Console, control, handoff, reconnect
-and real-DUT acceptance remain.
+broader Follow/Interact physical acceptance, Console, control, handoff, reconnect
+and real-DUT acceptance remain. Hardware-free native Linux acceptance of the
+implemented001–012 baseline is complete; it does not cover unimplemented workflows.
 Feature010 annotation behavior, hardening, installed review and final T024 software
 closure and the separately authorized final pre-commit review/commit are verified.
 Features001–012 are committed software slices. Software tests alone do not establish

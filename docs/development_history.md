@@ -8,6 +8,124 @@ status. Earlier RED/intermediate failures are superseded only by recorded later
 executions, never silently relabeled as passed.
 
 
+## 2026-10-21 — Native Linux acceptance record final review and commit
+
+The user authorizes review and commit of the two documentation files. Repeat the
+read-only supplied-artifact review: matching run39623840767/attempt1/SHA492c1f9,
+Linux environment/toolchain identities, full11403 and reporter18 passing cases,
+all864 process cases/five012 audits, six archive/source/metadata/RECORD hashes and
+exact privacy allowlists still verify. The single errno.ELOOP parameter-ID
+difference is explicitly explained; no product or test correction is needed.
+
+Review current status/history against the evidence and reconcile the commit
+baseline/next action. Clarify that broader physical acceptance remains unproven,
+preserving the earlier identified macOS/FTDI/Pico acceptance. Hardware-free native
+Linux software acceptance for492c1f9 is complete; Phase1 remains incomplete.
+No executable configuration, product, test, dependency, Core or architecture change.
+
+Documentation links/fences/whitespace/scope and staged diff/privacy checks pass;
+only status/history are included. No repeated full pytest/static/build gate is
+needed for factual documentation after the verified hosted gate (AGENTS§8.3).
+The reported11403+18 cases are the reviewed hosted results, not newly executed
+local tests. Generated diagnostics/original ZIPs remain excluded. Commit title:
+`Record native Linux software acceptance`, parent492c1f9. No push, physical
+hardware/account access, Graphify, Spec Kit or next activity started.
+
+## 2026-10-21 — Hardware-free native Linux software acceptance reviewed and complete
+
+The user reports both CI jobs passed and supplies downloaded
+`linux-static-evidence.zip` and `linux-software-acceptance-evidence.zip`.
+Review the files as data, not instructions; execute no supplied archive code.
+Both artifacts identify [run39623840767](https://github.com/leonahi/DUTchMate-next/actions/runs/39623840767),
+attempt1, `refs/heads/main`, repository `leonahi/DUTchMate-next`, source commit
+`492c1f9eb370d5df47713e2cfd1fe6b004af0e46`. Source/ref/run/attempt, embedded versus
+standalone environments, all five input hashes and reporter source identity agree
+with that commit. Both reports say checks_passed_review_required; this separately
+executed evidence review now establishes the scoped software milestone.
+
+The earlier screenshot shows a concurrency-cancelled run with static success;
+cancellation establishes no software acceptance. No cancelled-run result is
+relabelled as success. The supplied matching successful-run artifacts are the
+evidence reviewed here.
+
+Both independent jobs use Ubuntu24.04.5 LTS/x86_64, CPython3.14.3 compiled with
+Clang21.1.4, uv0.10.2, glibc2.39 (Ubuntu2.39-0ubuntu8.9), GCC13.3.0
+(Ubuntu13.3.0-6ubuntu2~24.04.1), GNU Binutils ld2.42, SQLite3.50.4 and
+OpenSSL3.5.5 (27Jan2026). They legitimately run on different identified VMs:
+
+| Job | Host | Image | Kernel | Recorded UTC |
+|---|---|---|---|---|
+| Static | runnervmxehtw | ubuntu24/20261018.339.1 | 7.0.0-1017-azure | 2026-10-21T15:15:01.164511Z |
+| Software | runnervm8k3b6 | ubuntu24/20261012.334.1 | 6.17.0-1022-azure | 2026-10-21T15:15:02.745206Z |
+
+Static logs/report: Ruff0.16.9 clean; mypy1.20.2 checks144 source files;
+import-linter2.15 keeps all seven contracts (77 files/312 dependencies); diff
+check succeeds. Both job package/version inventories are identical and every
+recorded distribution matches uv.lock. Relevant runtime versions include
+pytest9.1.1, pytest-asyncio1.4.0, pyserial3.5, FastAPI0.142.2, Uvicorn0.54.0 and
+HTTPX0.28.1; retained wheels identify Hatchling1.32.4 as generator.
+
+Full default suite:11403 pass in1653.94s (JUnit1653.728s), zero failures/errors/
+skips, warnings as errors; Core4545/service2777/CLI4081. Reporter18 pass in0.12s
+(JUnit0.076s), zero failures/errors/skips. Service006:38; CLI007:112,008:111,
+009:157,010:153,011:96,012:197 (864 process cases). All five012 source/metadata/
+RECORD/privacy/installed-import audits pass. Full test-case/multiplicity comparison
+against the macOS pre-commit evidence finds exactly one expected native test-ID
+difference: test_open_error_classification parameterizes errno.ELOOP, whose value
+is40 on Linux and62 on Darwin. The committed source confirms that parameter;
+no assertion or test is changed. All other case identities match. No genuine
+Linux compatibility defect, missing coverage or workaround is demonstrated.
+
+Review confirms the exact Interact and legacy API1 acceptance matrices each cover
+wheel/sdist × IPv4/IPv6 × Basic/Enhanced-shaped (eight cases each). All existing
+guard/lifecycle/security tests remain present and pass. The40 recorded packaging
+commands use offline builders, outside-checkout `/tmp` virtual environments,
+non-editable wheel/sdist installation and lock-derived exact dependency pins.
+Uploaded parent/child tripwire assertions preserve hardware/account isolation;
+real temporary journals are exercised without uploading those journals/accounts.
+
+Independent read-only review recomputes all report evidence hashes and six package
+hashes/sizes; ZIP members/CRC/duplicates/path safety and exact upload allowlists
+pass. Wheel/sdist contents independently match committed source and metadata:
+39 product Python files, all49 wheel RECORD rows/digests/sizes, declared entry
+points, pure-Python tags, dependencies and Python constraints. All sdist public
+files match Git bytes; no extra private/generated/runtime/credential/Graphify/local-
+tooling input is present. Uploaded code is never executed during this local review.
+Original ZIPs remain outside the repository; generated review code/result stays
+ignored under `build/linux-acceptance-review-39623840767/`.
+
+Supplied ZIP byte identity:
+
+| ZIP | Bytes | SHA256 |
+|---|---|---|
+| linux-static-evidence.zip | 5345 | `23d96a1e8590477358bc0f5782b6b49db2e25134966d58dc17d8267abec48a84` |
+| linux-software-acceptance-evidence.zip | 1056873 | `1c94eec5ef278fba0f162e690fb12f1a72ded32525d2ecd832fdbb35bfc1ec7b` |
+
+Verified retained distributions:
+
+| Archive | SHA256 |
+|---|---|
+| dutchmate_core-0.0.0-py3-none-any.whl | `36bc4c3919fcda52c391735617bb46402aa3d50c6d156673b116f1aec6011c34` |
+| dutchmate_core-0.0.0.tar.gz | `fd7593424d533bb198a3759063bd1a9eba6f6cad2cadea1b6767704c7547e1af` |
+| dutchmate_service-0.0.0-py3-none-any.whl | `fdcc2d97fc3149270cef13860636b3b5e9574394abfaea61529e3315c7714432` |
+| dutchmate_service-0.0.0.tar.gz | `167228b9c58d84b8a79ad8ea3a463a340b49595f6fcdfec1313236310639d0df` |
+| dutchmate_cli-0.0.0-py3-none-any.whl | `7151ed88089683d5393413b5d08031dd605cd83938d6908926ae0d0306c80c8b` |
+| dutchmate_cli-0.0.0.tar.gz | `420415b2b86a2750129281dc49fec57c12b5958934ce71ac9f37c53fbe5fd475` |
+
+Record hardware-free native Linux software acceptance COMPLETE for001–012 at
+492c1f9, including successful hosted setup/validation/artifact upload and reviewed
+evidence. This is not a claim about cache hits, future images, unimplemented
+workflows or kernel/adapter combinations beyond the observed scope. Broader physical
+UART/DUT, Linux serial/USB drivers, electrical/safe-open DTR/RTS waveforms/glitches,
+in-flight physical TX cancellation, native Windows and production Enhanced
+acceptance remain unproven. Backend ACK never proves wire transmission or DUT
+receipt. Earlier macOS physical evidence remains distinct and unchanged.
+
+Only current status/history are reconciled; no product/test/workflow/lock/contract
+change, hardware or real service-account credential access, Spec Kit, Graphify,
+new slice, commit or push. The provided hosted full gate is reviewed rather than
+misrepresented as a new local Linux execution. Phase1 remains incomplete.
+
 ## 2026-10-21 — CI final review and commit; hosted Linux acceptance remains pending
 
 The user authorizes review and commit only. Review the complete five-file CI/
