@@ -372,7 +372,11 @@ def test_t030_installed_binary_monitor_and_active_terminal_markers(
             else None
         )
         assert (report["ended_record"] is None) is (outcome == "end-unconfirmed")
-        s.fault("normal")
+        # Only the fault-injected case needs a reset. Reasserting an already
+        # normal state is not a command-consumption ACK and can lose the next
+        # emission when the child unlinks the overwritten control file.
+        if outcome == "end-unconfirmed":
+            s.fault("normal")
         _active(native_service_helper, s)
         s.control(emit=True)
         s.wait("emissions", 1 if outcome == "timeout" else 3)
@@ -447,6 +451,59 @@ def test_t030_installed_binary_monitor_and_active_terminal_markers(
             == audit["recorder_closes"]
             == 1
         )
+
+
+@pytest.mark.parametrize("backend", [0, 1], ids=["basic", "enhanced-shaped"])
+def test_installed_monitor_post_timeout_rx_survives_delayed_control_consumption(
+    installed_stack: _Installed,
+    native_service_helper: Any,
+    account_home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: int,
+) -> None:
+    # Reproduce a child preemption between reading a redundant fault="normal"
+    # command and unlinking it. The next emission must not disappear unread.
+    # Only external fixture control is delayed; product clocks/IO stay real.
+    head, separator, tail = support._SERVICE_SCRIPT.partition(
+        "async def monitor_control():"
+    )
+    assert separator
+    unlink = "            control_path.unlink()"
+    delayed_unlink = '''            if command.get("fault") == "normal":
+                audit["normal_control_read"] = True
+                publish()
+                while not (home / "emit-command-written").exists():
+                    await asyncio.sleep(0.01)
+            control_path.unlink()'''
+    monkeypatch.setattr(
+        support, "_SERVICE_SCRIPT", head + separator + tail.replace(unlink, delayed_unlink, 1)
+    )
+    actual_active = _active
+
+    def active(helper: Any, service: Any) -> None:
+        actual_active(helper, service)
+        if not (service.home / "t028-control.json").exists():
+            return
+        service.wait("normal_control_read", True)
+        actual_control = service.control
+
+        def control(**value: Any) -> None:
+            actual_control(**value)
+            (service.home / "emit-command-written").touch()
+
+        monkeypatch.setattr(service, "control", control)
+
+    monkeypatch.setitem(globals(), "_active", active)
+    test_t030_installed_binary_monitor_and_active_terminal_markers(
+        installed_stack,
+        native_service_helper,
+        account_home,
+        tmp_path,
+        "127.0.0.1",
+        backend,
+        "timeout",
+    )
 
 
 @pytest.mark.parametrize("host", ["127.0.0.1", "::1"])

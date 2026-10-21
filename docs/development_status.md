@@ -13,33 +13,41 @@ Completed-slice evidence is kept in [development history](development_history.md
   `a28acc363f0ee81e9f269c9a92e55e314bf0f062` (Feature 011).
 - **Completed slice**: Feature 012 `bounded-interact`; T001–T030 complete (30/30),
   software-complete and committed within macOS/arm64 Python 3.14.3 software scope.
-- **Final pre-commit review**: Complete 61-file diff/Core/contract review. One v4
-  invariant defect corrected: a retained end must reject TX settlement before its
-  own observation start even after its start/TX records expire. Six RED→GREEN
-  cases cover append rollback, writer reopen and read-only terminal open on both
-  backend shapes. Existing error/cleanup categories and all legacy versions retained.
-- **Fresh final gate**: 11,399 tests passed in 1021.96s (JUnit1021.782s), warnings
+- **Acceptance infrastructure**: RP2040 test-DUT fixture implemented in
+  `hardware/firmware/test_dut/rpi_pico/`; pristine Zephyr build and 14 host C tests
+  (also under ASan/UBSan) pass. Monitor checkpoint race reproduced/corrected in its
+  test only; fresh host gate:11,403 pass, zero failures/errors/skips,1032.65s.
+- **Physical acceptance**: Identified macOS/FTDI/Pico Stage1 RX-only passes55 checks;
+  approved Stage2 single PING/independent PONG passes76 through authenticated
+  service/API2/CLI and real v4 journals. Concurrent Follow/Monitor, durable readback,
+  joined detach/stop and explicit reopen verified. Port released; TX restored off.
+- **Acceptance review**:17-file fixture/evidence/Monitor-test scope reviewed;
+  fresh cross-build reproduces the accepted UF2 exactly,14 C tests pass normally
+  and sanitized, five archive/install/privacy audits pass. Associated change:
+  `:/^Add RP2040 UART acceptance fixture` (`Add RP2040 UART acceptance fixture`).
+- **Feature012 review**:61-file diff/Core/contract review; retained-end v4
+  settlement-before-start defect corrected with six RED→GREEN cases on both
+  backend shapes. Existing error/cleanup categories and legacy versions retained.
+- **Feature012 final gate**: 11,399 tests passed in 1021.96s (JUnit1021.782s), warnings
   as errors, zero failures/errors/skips: Core4545/service2777/CLI4077. Ruff clean;
   mypy142; seven import contracts kept (77 files/312 dependencies); diff clean.
-- **Installed/staged/privacy**: Full includes 197 Interact/artifact and625 legacy
-  process cases. All287 Git-index blobs exported independently; five corrected
-  wheel/sdist audits pass outside checkout/export. Six archives,39 installed
-  product modules per stack,25 locked versions,127 installed RECORD rows; private/
-  generated/runtime/credential/Graphify/local tooling excluded. Exact61 staged paths.
+- **Feature012 package/privacy**:197 Interact/artifact and625 legacy process
+  cases;287 index blobs exported, six archives,39 modules/stack,25 pins,127 RECORD
+  rows verified. Private/generated/runtime/credential/Graphify/tooling excluded.
 - **Compatibility/ownership**: Profile1, journals1/2/3, API1/default CLI, old codecs/
   charges, Monitor clocks/security/cleanup retained. One authoritative RX/private
   Acquisition connection; intent ACK before write registration; join before close.
   Backend ACK proves acceptance only, never physical wire/DUT receipt or causation.
 - **Tooling**: No Graphify rerun at pre-commit; T029 result/health limits remain
   historical and predate this narrow correction. Outputs/backups/tooling stay ignored.
-- **Limits**: Native Linux/Windows serial/driver/OS and real UART/DUT acceptance
-  remain outstanding; Windows CLI support is not added. Safe-open DTR/RTS
-  transitions/glitches, voltage/wiring/electrical behavior and Enhanced hardware/
-  protocols remain unvalidated. No hardware or real account state was accessed.
-- **Next action**: Await human selection/authorization of the next Phase 1 slice or
-  separately scoped acceptance work.
-- **Stop**: Authorized Feature012 review/commit complete. Nothing pushed; no next
-  slice, Graphify or hardware/account work is automatically authorized.
+- **Limits**: Acceptance covers only this setup and one benign exchange; no wire/
+  DTR/RTS waveform, in-flight write cancellation, native Linux/Windows or Enhanced
+  acceptance. Disconnected DTR/RTS and library state do not establish glitch safety.
+- **Next action**: Separately scope native Linux software acceptance on an identified
+  Linux host/toolchain, initially hardware-free with existing guarded installed
+  suites. No native acceptance, hardware activity or software slice started.
+- **Stop**: Acceptance review/validation complete; no further hardware/account
+  access, Graphify or push. Stage2's original TX-disabled Profile retained.
 
 ## Repository Baseline
 
@@ -1092,15 +1100,77 @@ SIGINT/closed pipes, exact all-256-byte retrieval and terminal read-only transac
 Independent parent/CLI/service child guards forbid physical serial/discovery and
 real-account credential access. Shared Basic/Enhanced-shaped fixtures establish
 backend neutrality only. Selected suites skipped zero tests; native Linux/Windows,
-active-DUT/physical/electrical and Enhanced hardware acceptance were not selected or
-executed, and are not reported as passed.
+active-DUT/physical/electrical and Enhanced hardware acceptance were not selected
+in those software gates and are not inferred from them. Separately authorized
+physical Stage1/Stage2 evidence below is distinct from those guarded software tests.
 
 Actual service/CLI commands initially support Linux/macOS POSIX. Native Linux
 acceptance is outstanding; Windows commands are explicitly unsupported before
 account/network work. Mocked Windows/platform checks are not native acceptance.
-No physical device has been accessed. Safe-open DTR/RTS/glitches, OS/driver
-loss/re-enumeration, non-standard baud, RX load and physical cancellation/close
-require separately authorized acceptance with an identified device/Profile/setup.
+On2026-10-21, after the user flashed/independently observed the RP2040 fixture,
+identified the FTDI adapter/port, confirmed3.3V wiring and disconnected VCC/DTR/RTS/
+CTS, released the independent receiver and approved the human-owned RX-only
+Profile, observation-only Stage1 ran on that exact target. No UART TX request.
+The production service/API2/CLI, unchanged, made two explicit opens and passed55
+checks covering idle durable RX, bounded retrieval, concurrent Follow/Monitor,
+subscriber cancellation, Monitor detach settlement, physical close, explicit
+fresh-origin reopen and joined service shutdown. Private evidence is at
+`.dutchmate/acceptance/rpi-pico/stage1-20261021T101309Z/`; report/CLI captures and
+two v4 journals (161 and53 records) remain ignored. Physical device identity,
+source/Profile hashes and exact UART bytes are retained there, not in public docs.
+
+Within-run ticks are consecutive; counter1270 falls in the unobserved interval
+between closed/run1 and reopened/run2, without a continuity claim. No reset
+banner was observed; firmware/banner identity was independently reported by the
+user rather than recaptured by resetting the DUT. Normal private service bootstrap
+was used; credential invalidation/cleanup confirmation succeeded and port ownership
+was released. No unrelated account state was accessed.
+
+After Stage1 passed, the user explicitly approved temporarily enabling TX and
+exactly one bounded Interact: PING CR LF (hex50 49 4e 47 0d 0a), observing for
+PONG CR LF within4000ms/4096 RX bytes. Stage2 ran on the same identified setup,
+2026-10-21T10:30:09.983129Z–10:30:22.262198Z, through the unchanged authenticated
+production service/API2/CLI. All76 recorded checks pass. The private evidence at
+`.dutchmate/acceptance/rpi-pico/stage2-20261021T103009Z/` retains exact original/TX
+Profile snapshots, one-request guard, CLI/Follow captures, raw RX and closed v4
+journals (115 and53 records). Intent53 contains the exact six requested bytes;
+TX settlement54 reports backend acceptance of6 bytes only. Independent RX55–60
+spells PONG CR LF; Interact end61 is matched/complete with no audit failures,
+window[54,61). Concurrent Monitor start35/end62 matches those same RX positions;
+Follow delivers identical evidence including all three Interact kinds. These
+ordered host facts do not establish wire completion, DUT-time causation or an
+absence of buffering. Ambient ticks2280–2285 remain present around the response.
+
+Follow SIGINT leaves RX active; detach confirms physical-owner/recorder settlement
+and release. The exact original Profile bytes/hash are restored (TX=false) before
+explicit RX-only reopen, with a fresh session/timestamp origin and ticks2287–2289.
+Counter2286 is in the unobserved closed interval. Joined service stop with Follow
+and RX active exits0; bootstrap cleanup is confirmed, credential invalidated and
+port released without cleanup uncertainty. The terminal Follow frame honestly
+leaves its final source tail unknown; closed-journal audit confirms the segment
+end independently. Read-only SQLite integrity/sequence/payload/hash checks pass
+for both journals. No second TX request, SILENT request, reset, flash or retry.
+
+Safe-open DTR/RTS waveforms/glitches, measured electrical pin levels/baud accuracy,
+OS/driver loss/re-enumeration, non-standard baud, RX load and in-flight physical TX
+cancellation/blocked-write settlement remain unvalidated. This activity joins an
+already-settled write before close; it does not force a pending-write race.
+Selected Stage1/Stage2 results do not establish those claims, other OS/adapter
+combinations, or full Phase1 readiness. The preceding full software gate's one
+installed Monitor checkpoint failure remains a historical failed run. A subsequent
+hardware-free investigation demonstrates a test-control race: a redundant normal
+fault command can be acknowledged from the already-normal audit before the child
+consumes it, then unlink the following emission command unread. The narrow fix in
+`apps/cli/tests/test_cli_monitor_process.py` resets only the fault-injected case.
+Four installed wheel/sdist, Basic/Enhanced-shaped regressions force the original
+interleaving and fail at the same emission checkpoint before the fix; all pass
+afterward. Focused28 cases pass; fresh full11403 pass in1032.65s, zero failures/
+errors/skips, warnings as errors (Core4545/service2777/CLI4081). Ruff clean,
+mypy142 and all seven import contracts kept (77 files/312 dependencies); diff
+clean. No baseline test case removed. Product code, shared fixture, deadlines,
+hardware/account guards, contracts, dependencies and architecture are unchanged.
+Private diagnostics remain ignored under build/. This software result resolves
+the checkpoint discrepancy; it establishes no additional physical acceptance.
 
 Client annotations are accepted010 scope; Core values/v3 persistence/coordinator,
 runtime admission/rate/ownership, production composition and authenticated service
@@ -1119,7 +1189,7 @@ and committed. Other explicit
 deferrals beyond010 remain text/line decoding, regex and Monitor multiple conditions,
 annotation editing/backdating/attachments and derived views, catalogue/discovery, restart recovery/arbitrary
 historical browsing, Console, Control, reconnect/handoff, service management,
-Enhanced production, MCP/AI and physical-hardware acceptance. Profile discovery/
+Enhanced production, MCP/AI and broader physical-hardware acceptance. Profile discovery/
 defaults/writing/migration/overlays/reload, durable Profile identity, session management,
 cleanup retry/operator recovery and external-program execution remain deferred.
 Existing 003 process-crash recovery tests do not imply terminal-reader recovery or
@@ -1132,8 +1202,9 @@ Follow/Interact native/physical acceptance, Console, control, handoff, reconnect
 and real-DUT acceptance remain.
 Feature010 annotation behavior, hardening, installed review and final T024 software
 closure and the separately authorized final pre-commit review/commit are verified.
-Features001–012 are committed software slices. Software-complete009 does not establish
-physical Monitor acceptance. Feature012 current progress and authorization are
+Features001–012 are committed software slices. Software tests alone do not establish
+physical Monitor acceptance; only the identified Stage1/Stage2 observations above do
+so within their declared scope. Feature012 current progress and authorization are
 recorded in Resume Here; final review/software closure is verified and committed. Await
 human review/selection; no physical hardware or another slice is automatically
 authorized.

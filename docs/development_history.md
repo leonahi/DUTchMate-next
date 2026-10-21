@@ -8,6 +8,380 @@ status. Earlier RED/intermediate failures are superseded only by recorded later
 executions, never silently relabeled as passed.
 
 
+## 2026-10-21 — RP2040 acceptance fixture final review and commit verification
+
+The user authorizes the next step after the Monitor investigation: review the
+pending fixture, acceptance records and test-only correction for commit. The
+review covers Core, both supplied firmware contexts, exact target protocol/build/
+wiring/source identity, completed009/012 semantics and the actual current evidence.
+No additional implementation defect is found. Product modules, schemas, Profiles,
+dependencies and architecture remain unchanged; Phase1 remains incomplete.
+
+Reviewed scope is17 files: the four supplied firmware context/index documents,
+ten Pico target/test files, the single Monitor process-test correction/regression
+and current status/history. Commit subject/navigation:
+`Add RP2040 UART acceptance fixture`, `:/^Add RP2040 UART acceptance fixture`.
+The context documents remain subordinate to Core; the fixture is deterministic
+acceptance infrastructure, not production DUTchMate or Enhanced firmware.
+
+Fresh pristine west build at ignored build/precommit-test-dut-rpi-pico succeeds
+without warnings/errors against Zephyr4.4.0 and SDK1.0.1, exact board
+rpi_pico/rp2040. FLASH13696B/RAM3928B plus256B bootloader, UF228160 bytes.
+The rebuilt UF2 is byte-identical to the recorded acceptance image: SHA256
+c549d57f86b269a8812481cbafbf56fd835142c32779f2276b41723b520406f7.
+The original image and source-identity records are preserved. All14 actual-source
+host C tests pass again normally and under address/undefined-behavior sanitizers.
+No firmware or protocol source change invalidates the earlier acceptance record.
+
+The immediately preceding full gate's11403 passes/zero failures/errors/skips in
+1032.65s remain applicable: all code bytes are unchanged during this review.
+Only factual documentation reconciliation follows; another full pytest run is
+not required under the governing validation rule. Fresh Ruff passes, mypy checks
+142 files and all seven import contracts remain kept (77 files/312 dependencies).
+Fresh existing installed artifact audits pass5 cases,192 deselected,5.72s:
+source bytes, exact archive contents, wheel/sdist metadata/dependencies, RECORD
+hashes, installed imports/non-editable paths and private/generated exclusions.
+The new Monitor test is included in the CLI sdist's audited test-source bytes.
+
+Staged review verifies exactly17 regular text files and all142 Python package
+inputs byte-identical to the index. Added content contains no credential/private
+key, real adapter identifier or personal-machine configuration. Pre-existing
+historical local-path references are unchanged, not new acceptance inputs.
+Working/staged whitespace checks pass. Root build/, private .dutchmate/ evidence/
+Profiles/journals, generated firmware, Graphify, local tooling and caches remain
+ignored/excluded. No active Git hook or redirected hooks path is configured.
+Local verification outputs remain under ignored build/precommit-*; no generated
+artifact or private physical evidence is staged. Status advances only the next
+selection; exact recorded physical results and unresolved limits stay explicit.
+
+This commit review performs no serial open, TX, reset, flashing, Control,
+reconnect, account-service access, Graphify, native Linux acceptance or new
+software feature. The original approved private Profile remains TX-disabled.
+No push. Electrical/glitch and DTR/RTS waveform acceptance, wire/DUT-time proof,
+in-flight physical write cancellation, broader DUT/adapter/driver/load coverage,
+native Linux/Windows and Enhanced remain unestablished by these software checks.
+
+## 2026-10-21 — Installed Monitor checkpoint race reproduced and corrected; full software gate GREEN
+
+The user authorizes the next recorded action: investigate the installed Monitor
+checkpoint discrepancy before expanding acceptance. This is a localized,
+hardware-free test-harness investigation, not a new Phase1 feature or physical
+activity. Read current status, Core continuous-RX/Monitor semantics, completed009
+contract/task definitions, the historical failing JUnit and installed-process
+helpers; apply systematic debugging, test-driven regression and fresh verification.
+
+Historical failure: the earlier11398-pass/one-failure full run stops at
+test_t030_installed_binary_monitor_and_active_terminal_markers
+[sdist-timeout-enhanced-shaped-127.0.0.1], waiting for emissions=1 after a valid
+Monitor timeout report. An isolated passing rerun did not establish its cause.
+Investigation identifies a concrete read/unlink race in that test's control flow:
+it calls s.fault("normal") even when audit.fault already equals normal. The wait
+returns without establishing consumption of the newly written command. If the
+child reads that command, the parent replaces its file with emit=True, then the
+child unlinks that path, the new emission is lost unread. Acquisition cannot
+record an RX emission the fixture never performs.
+
+Before correction, add a guarded regression that forces precisely that child
+preemption at the external fixture-control boundary. It executes the original
+installed timeout/readback workflow, preserving real product timing, journal,
+runtime, authentication, HTTP, CLI, packaging and cleanup. All four cases fail
+at the same emissions checkpoint: wheel/sdist crossed with Basic/Enhanced-shaped
+fixtures. Captured child audits show normal_control_read=true, emissions=0,
+rx_commits=1, monitor_reports=1, last_outcome=timeout; service exits normally and
+physical/real-account tripwires remain active. This demonstrates the missing
+checkpoint without a serial device, a timing-budget increase or product changes.
+
+Correction/affected-consumer inventory: only
+`apps/cli/tests/test_cli_monitor_process.py`. Reset normal only when the case
+actually injected end-unconfirmed; healthy matched/timeout cases send no redundant
+fault command. The same file retains the four-case deterministic regression.
+No shared helper, other consumer, production module, API/schema/Profile, Core
+rule, clock, deadline, dependency or architecture change. Existing exact ambient
+RX, marker, one-reader, terminal readback and joined cleanup assertions remain.
+
+| Validation | Observed result |
+|---|---|
+|Forced regression before correction|4 expected failures, zero errors/skips,28.07s; same emission checkpoint as historical failure|
+|Focused installed regression and original workflow matrix|28 passed,129 deselected,44.60s; both artifacts/backend shapes, original IPv4/IPv6 cases|
+|Full repository pytest, warnings as errors|11403 passed in1032.65s (JUnit1032.503s), zero failures/errors/skips; Core4545/service2777/CLI4081|
+|Full test-set comparison|All11399 historical baseline cases retained; exactly four new regression cases|
+|Static/architecture|Ruff clean; mypy142 files; all seven import contracts kept,77 files/312 dependencies|
+|Final scope/privacy/diff|Only the Monitor test and factual status/history updated in this investigation; diagnostic output ignored; git diff --check clean|
+
+Actual test commands, using the populated offline uv cache and established
+guarded numeric loopback/isolated-account harness:
+
+```sh
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync pytest apps/cli/tests/test_cli_monitor_process.py -k post_timeout_rx_survives -q -W error --tb=short --junitxml=build/monitor-checkpoint-red.xml
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync pytest apps/cli/tests/test_cli_monitor_process.py -k 'post_timeout_rx_survives or binary_monitor_and_active_terminal_markers' -q -W error --tb=short --junitxml=build/monitor-checkpoint-focused.xml
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync pytest -q -W error --tb=short -rN --junitxml=build/monitor-checkpoint-full.xml
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync ruff check .
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync mypy .
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync lint-imports
+rtk git diff --check
+```
+
+JUnit records, sanitized RED child-counter snapshots and independent full-suite
+counts/test-set comparison are retained under ignored build/monitor-checkpoint-*.
+The original failed gate is not relabeled successful; this fresh full run verifies
+the correction and includes the required legacy and Interact process regressions.
+Default parent and independently guarded installed children block physical UART/
+discovery and real-account service state. No actual serial device or unrelated
+account state is accessed, no Profile is changed, and the preceding Stage2 RX-only
+Profile remains byte-identical. Existing uncommitted firmware/acceptance changes
+are preserved. No full-gate retry or speculative product correction is needed.
+No Spec Kit, Graphify, commit, push, native Linux acceptance or new software slice.
+Phase1 remains incomplete; all previously declared native, physical/electrical,
+pending-write and Enhanced limits remain. Current next action stays in status.
+
+## 2026-10-21 — Identified macOS Basic UART Stage2: one approved PING/PONG exchange
+
+After the clean observation-only Stage1, the user explicitly approves the exact
+six-byte payload PING CR LF (hex50 49 4e 47 0d 0a; base64 UElORw0K), one bounded
+Interact observing for PONG CR LF (hex50 4f 4e 47 0d 0a),4000ms/4096 RX bytes,
+temporary TX permission and restoration of the original human-owned Profile.
+Same user-identified original RP2040 Pico/test firmware1.0.0/protocol1, FTDI-based
+3.3V adapter and exact selected macOS device as Stage1; UART0 GP0 TX/GP1 RX,
+115200 8N1/no flow, crossed TX/RX/common GND, Pico USB power, adapter VCC/DTR/RTS/
+CTS disconnected. Identity/wiring/actual I/O levels rely on the user's declaration;
+no device enumeration or flash readback. No reset to recapture the boot banner.
+
+Actual execution:2026-10-21T10:30:09.983129Z–10:30:22.262198Z on macOS/arm64,
+Python3.14.3, pySerial3.5. The ignored one-off driver uses unmodified production
+run_service(ServiceConfig), normal private bootstrap/authentication and the real
+API2 CLI. No backend/clock patch or authentication bypass; unauthenticated401 and
+browser-origin403 remain enforced. Exactly one policy boolean changes in the
+approved Profile; both snapshots/hashes are retained. A persistent execution
+latch and single Interact call prevent an accidental rerun; no TX retry occurs.
+
+All76 acceptance checks pass. The six-byte backend ACK is recorded strictly as
+backend_acceptance, independently from RX, overall outcome and audit durability.
+The declared fixture produces one independently recorded PONG CR LF; no assertion
+turns ACK into measured UART transmission, DUT receipt or a causal/time barrier.
+
+| Physical Stage2 result | Observed evidence |
+|---|---|
+|Intent|Sequence53, exact payload/bounds, Profile2 TX authorization,1000ms backend write wait|
+|TX settlement|Sequence54, submitted/acknowledged, accepted_prefix_bytes=6, no failure; backend acceptance only|
+|Authoritative RX|Sequences55–60, six one-byte records spell PONG CR LF; condition0 matches across chunks|
+|Interact end|Sequence61, matched, complete durability, no audit failures; frozen observation window[54,61),6 examined bytes|
+|Concurrent Monitor|Start35/end62, matched/complete at the exact same RX positions;23 examined bytes includes ambient ticks|
+|Concurrent Follow|45 delivered records equal terminal API readback; includes intent/TX/end, alongside RX/Monitor evidence|
+|First closed journal|115 records:108 RX,1 segment start/end,1 Monitor start/end,1 Interact start/TX/end; ticks2280–2285 retained around PONG|
+|Follow cancellation/detach|SIGINT exit130 leaves RX active; new RX follows, then owner/recorder settle and physical release is confirmed|
+|Explicit reopen|Exact original Profile restored with TX=false, new session/timestamp origin, sole service owner; ticks2287–2289|
+|Second closed journal/stop|53 records:51 RX and segment start/end, no TX; service exit0, cleanup_confirmed=true, credential invalidated, no remaining port owner|
+
+The Interact and Monitor share connection/segment, RX positions and decision-clock
+sample. There is no extra physical reader or filtering of periodic output. The
+actual order is intent53, TX54, RX55–60, Interact end61, Monitor end62; early RX
+before TX settlement remains supported by the software contract but was not the
+order observed here. Physical intent-before-write timing is not independently
+instrumented; its durable order and exact request are checked, while registration
+ordering remains established software evidence. No wire timestamp is invented.
+
+Counter2286 is in the explicitly unobserved closed interval, with no continuity
+claim. On the RX-only reopened run, service-stop Follow reports service_stopping,
+next_sequence52, source_end_exclusive=null. This honestly leaves its final tail
+unknown; the closed journal independently includes segment-end52. No cleanup
+uncertainty, false clean-close claim, abandoned writer or stale ownership observed.
+The write was already settled before detach; in-flight write cancellation and
+blocked-writer shutdown are not exercised or inferred. No further payload is
+sent to manufacture those conditions.
+
+Private artifacts:
+`.dutchmate/acceptance/rpi-pico/stage2-20261021T103009Z/`.
+Includes report.json, both Profile snapshots, all CLI stdout/stderr/exit captures,
+Follow NDJSON, unfiltered raw RX, exact-path ownership observations, actual v4
+journals, source revision and copies of the fixture software/source identity
+records. An additional33 hardware-free artifact/document checks pass. Independent
+post-run inspection confirms exact intent/RX bytes, stored
+settlement/end, readback/Follow agreement and both closed journals' schema4,
+quick_check=ok, contiguous sequences and stable read-only hashes. No credential
+is printed or copied. Final Profile bytes/hash exactly equal the approved RX-only
+original. Only this identified device is touched: two explicit opens, one PING
+write, continuous reads and joined closes. No SILENT, Control, reset, flash,
+automatic reconnect, force kill, arbitrary TX, other device or unrelated account.
+
+Current status/history record only actual results. No product behavior, software
+test, dependency, contract or architecture changes; acceptance artifacts remain
+ignored. Driver syntax/single-call/payload guards and factual documentation/diff
+checks pass. No new software full gate is required for this acceptance/docs-only
+activity; the preceding11398-pass/one-installed-Monitor-checkpoint-failure gate
+remains unresolved, despite successful physical Monitor observations. No Spec Kit,
+Graphify, commit or push. Phase1 remains incomplete: native Linux/Windows, broader
+adapter/DUT/driver/load/failure coverage, measured DTR/RTS/safe-open/electrical/wire
+behavior, in-flight physical write cancellation and Enhanced acceptance are not
+established by this one benign exchange. No further activity starts automatically.
+
+## 2026-10-21 — Identified macOS Basic UART observation-only Stage1 passes; no UART TX
+
+The user reports manually flashing the original RP2040 Pico and independently
+verifying its banner/ticks, then identifies a FTDI-based3.3V USB-UART adapter and
+exact macOS serial path. The user confirms actual3.3V I/O, crossed TX/RX/common GND,
+disconnected VCC/DTR/RTS/CTS and a released independent receiver. After an offline
+resolver/Basic-translation check with physical serial construction forbidden, the
+user explicitly approves the prepared human-owned Profile and resumption of Stage1.
+That Profile remains version2 with RX/recording enabled and TX/Control/automatic
+reconnect disabled,115200 8N1/no flow, deasserted DTR/RTS intent and explicit rolling
+persistence budgets. Private Profile/device identities are kept out of public docs.
+
+Actual execution:2026-10-21T10:13:09.899561Z–10:13:24.487965Z on macOS/arm64,
+Python3.14.3, pySerial3.5. The ignored one-off acceptance driver invokes unmodified
+production run_service(ServiceConfig) and the real dutchmate CLI using literal
+API2, normal per-account private bootstrap/authentication, no fake backend/clock,
+no authentication bypass and no production patch. Loopback unauthorized/origin
+requests return401/403. Only the explicitly supplied character-device path is
+used; no device enumeration, UART TX request, Control, reset, flash or automatic
+reconnect. Physical-owner checks use lsof on that exact path and identify only
+the service while connected, and no owner after detach/shutdown.
+
+All55 recorded acceptance checks pass. Initial idle capture has consecutive TICK
+records without Monitor/Follow. Individual record retrieval matches its original
+bounded page; the same idle evidence remains retrievable after close. Follow and
+Monitor share the acquisition/journal stream: all delivered Follow record objects
+equal terminal readback at their sequences, including exact base64 RX bytes.
+Monitor matching spans five separate RX evidence records, without another reader.
+SIGINT stops only the Follow client (exit130); acquisition remains active and
+the subsequent journal snapshot advances. A third Monitor is confirmed admitted
+before explicit detach and settles with durable outcome detached.
+
+| Physical Stage1 result | Observed evidence |
+|---|---|
+|Monitor matched|Complete durability; start69/end75, match spans RX sequences70–74,5 examined bytes|
+|Monitor timeout|Complete durability; start88/end106,17 examined RX bytes; no match|
+|Monitor stopped by detach|Complete durability; start158/end159, outcome detached|
+|First closed v4 journal|161 records:1 segment start,153 RX,3 Monitor starts/3 ends,1 segment end; ticks1261–1269|
+|Explicit reopen|New session/connection timestamp origin, same approved Profile, actual settings115200 8N1/no flow, sole service owner|
+|Second closed v4 journal|53 records:1 segment start,51 RX,1 segment end; ticks1271–1273 before stop|
+|Service stop with Follow/RX active|Exit0; Follow terminal delivered; no remaining port owner, cleanup_confirmed=true, credential invalidated|
+
+The service-stop Follow terminal is service_stopping with an unknown final source
+tail (source_end_exclusive=null), as permitted by its contract. It does not claim
+delivery of the journal's final segment-end record; that record is independently
+verified in the closed journal after shutdown.
+
+Counter1270 is in the explicitly unobserved closed interval between sessions; it
+is not hidden or attributed to an invented loss event. No reboot banner is
+observed during the captures; the boot identity is the user's prior independent
+observation, not a reset-based measurement in this activity. No exact adapter
+model/USB chip serial is independently enumerated; physical selection relies on
+the user's declaration and the recorded exact selected/opened device names.
+
+Normal backend provenance reports POSIX pySerial exclusive intent/success,
+requested/library-reported deasserted DTR/RTS, configure-while-closed strategy,
+open_transition_guarantee=not_guaranteed and electrical_verification=not_verified.
+No waveform measurement occurred. Profile2's UART_SEND capability is present but
+permission remains false; neither journal contains Interact/TX evidence. No backend
+ACK, physical TX/DUT receipt, in-flight write cancellation, wire timing or
+losslessness claim is established by Stage1.
+
+Private artifact directory:
+`.dutchmate/acceptance/rpi-pico/stage1-20261021T101309Z/`.
+It retains report.json, the exact approved Profile/hash, CLI stdout/stderr/exit
+captures, Follow NDJSON, unfiltered raw RX, ownership observations and both actual
+journals. An independent post-stop read-only SQLite audit verifies schema4,
+quick_check=ok, contiguous retained sequences, segment ends and no TX evidence;
+journal hashes remain unchanged across that audit. Credentials are never printed
+or copied to the artifact record. Source revision and product-source no-change
+check are retained. Both physical opens are reported here; the service exits
+cleanly, with no orphan/cleanup uncertainty.
+
+Only acceptance data and current status/history are updated; no production/test/
+dependency/contract or architecture change, so no new software full gate is
+required. The preceding11398-pass/one-failure software gate remains historical
+and unresolved; actual physical Monitor success does not relabel it GREEN.
+Stage2 is unexecuted pending exact payload and temporary TX-policy approval.
+No further hardware action, software slice, Spec Kit, Graphify, commit or push.
+Phase1 remains incomplete; native Linux/Windows, physical TX, electrical/glitch
+measurements and Enhanced acceptance remain outstanding.
+
+## 2026-10-21 — RP2040 test-DUT fixture implementation and hardware-free validation
+
+Separately authorized acceptance infrastructure only, not a new DUTchMate feature
+or Enhanced firmware. The preceding physical acceptance activity was paused before
+device identification; neither Stage 1 nor Stage 2 ran. No board, adapter, serial
+port or real account state was accessed during this firmware work.
+
+Read Core and both supplied firmware contexts before implementation. Finalized
+the target README/protocol before writing firmware. Added the five requested
+target files at hardware/firmware/test_dut/rpi_pico/ and five test-only files under
+its tests/ directory; the four pre-existing untracked firmware context/index
+documents are preserved. No host product, dependency, lock, Profile or Core rule
+changes. Existing architecture/dependency explanations remain accurate.
+
+Selected Zephyr v4.4.0 board rpi_pico/rp2040, using the existing external workspace,
+its complete Python3.12.2/west1.3.0 environment and SDK1.0.1/GNU14.3.0. UART0 uses
+GP0 TX/header1 and GP1 RX/header2, 115200 8N1 with no flow control. Documentation
+requires crossed TX/RX, common ground/header3, verified 3.3V logic, separate USB
+power, and disconnected adapter VCC/DTR/RTS/CTS and Pico reset. No USB CDC.
+
+Protocol1/firmware1.0.0 emits one fixed banner and nominal one-second TICK records
+with a zero-padded uint32 counter. Exact PING CRLF produces one PONG CRLF;
+SILENT CRLF intentionally produces no request response while ticks continue.
+Only one polling loop writes complete records. Eight-byte request storage,
+discard-through-LF overflow recovery, bounded input batches and explicit unknown/
+partial-frame behavior keep the fixture small; no shell/registry/Control/reset
+automation/reconnect/fault-injection or Enhanced mechanism is implemented.
+
+Eleven tests fail against the initial empty scaffold, then pass with the actual
+implementation. Three further ordering/unfinished-frame/late-clock cases are
+already GREEN; final 14 cases pass normally and with address/undefined-behavior
+sanitizers, using actual main.c and test-only UART/device/clock boundaries.
+The final pristine west build succeeds without warnings/errors: BOOT_FLASH256B,
+FLASH13696B, RAM3928B. UF2 is28160 bytes/55 blocks, RP2040 family, sequential flash
+addresses from0x10000000. Generated DTS/configuration confirm UART0 GP0/GP1,
+115200, polling/runtime configuration and disabled console/log/shell/USB stacks.
+
+The banner identifies fixture/firmware/protocol; source revision, dirty/untracked
+state, five source/document SHA256s, resolved manifest, clean actual Zephyr/HAL/
+CMSIS-6 revisions, tool versions and UF2 SHA256 are recorded under ignored build/.
+A banner alone does not identify the binary. Manual BOOTSEL/UF2 flashing and
+wiring instructions are documented but unexecuted. Generated artifacts/caches/
+metadata remain ignored and outside host package inputs.
+
+Initial build attempts expose missing jsonschema in the alternative local
+Python3.14 environment and sandbox-denied default ccache writes. Use the already
+complete environment and a repository build/ compiler cache; no dependency
+installation, external workspace modification or permission workaround in product
+code. Whole-workspace west manifest --freeze cannot run with unrelated uncloned
+projects; instead record the resolved declaration and actual clean build-module
+revisions without fetching unrelated projects.
+
+The first host gate uses an empty offline uv cache and restricted loopback:
+10485 pass,97 fail,817 setup errors in230.361s, zero skips. Diagnostics isolate
+missing cached hatchling and sandbox-denied local sockets; these are not firmware
+regressions. A fresh full run uses the populated offline cache and permitted
+guarded IPv4/IPv6 loopback, with existing serial/discovery/account tripwires intact.
+The fresh run finishes with11398 passes/one failure in1040.11s, zero errors/skips,
+warnings as errors. It is **not a GREEN full gate**. The failed existing case is
+apps/cli/tests/test_cli_monitor_process.py::test_t030_installed_binary_monitor_and_active_terminal_markers[sdist-timeout-enhanced-shaped-127.0.0.1].
+At line378, the fake service's post-timeout `s.wait("emissions", 1)` fails with
+`guarded service checkpoint not reached`. This occurs after its Monitor report
+checks, while waiting for another fake RX emission; no firmware is involved.
+The exact case passes alone in9.03s. Cause is not established and isolation success
+does not erase the full-run failure. No host implementation/test/guard changes,
+speculative fix or further full retry. The discrepancy remains for separately
+scoped investigation; no failed run is relabeled as successful acceptance.
+
+Actual commands (repository root; existing hardware/account guards retained):
+
+```sh
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync pytest -q -W error --tb=short -rN --junitxml=build/test-dut-host-regressions-green.xml
+rtk proxy env UV_OFFLINE=1 uv run --frozen --no-sync pytest 'apps/cli/tests/test_cli_monitor_process.py::test_t030_installed_binary_monitor_and_active_terminal_markers[sdist-timeout-enhanced-shaped-127.0.0.1]' -q -W error --tb=short --junitxml=build/test-dut-host-monitor-diagnostic.xml
+```
+
+The first XML/log basename contains `green` as an intended output name chosen
+before execution, not a result classification; its actual result is one failure.
+Ruff is clean, mypy checks142 files, all seven import contracts remain kept
+(77 modules/312 dependencies). Fixture sources and tracked documentation pass
+whitespace/link/scope checks. A successful firmware build and14 C tests do not
+establish physical behavior or an entirely GREEN repository gate. No commit/push,
+Graphify, physical activity or Native Linux acceptance is performed. Phase1 remains
+incomplete. The build/flash/protocol documentation is ready for human review;
+actual board/adapter identity, wiring, Profile, pin measurements and firmware
+behavior must be established during separately authorized physical work.
+
 ## 2026-10-20 — Feature 012 final authorized pre-commit review/correction/staged verification GREEN; implementation committed, nothing pushed
 
 Completed only the separately authorized final Feature012 review and commit.
