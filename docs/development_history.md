@@ -8,6 +8,173 @@ status. Earlier RED/intermediate failures are superseded only by recorded later
 executions, never silently relabeled as passed.
 
 
+## 2026-10-21 — CI final review and commit; hosted Linux acceptance remains pending
+
+The user authorizes review and commit only. Review the complete five-file CI/
+tooling/status/history change against Core, current status,006–012 installed/
+delivery contracts and hardware/account guards. No additional implementation
+defect found; clarify that test-owned fake Profiles/credentials are used.
+Product code, existing tests/fixtures, hardware, manifests, dependencies, lockfile,
+Core rules and architecture remain unchanged. No Spec Kit or Graphify activity.
+
+Fresh collector-enabled full gate passes11403 in1081.40s (JUnit1081.186s), zero
+failures/errors/skips, warnings as errors: Core4545/service2777/CLI4081. Test
+identities equal the committed baseline. All864 service/CLI process cases and
+five012 source/metadata/RECORD/private-exclusion/installed-import audits pass.
+Six exact archive hashes, both non-editable install formats,40 packaging commands
+and current collector/report source identity verify. Both reports correctly say
+`local_checks_only`. Separate18 reporter tests pass; Ruff clean, mypy144 files,
+seven import contracts kept (77 files/312 dependencies), actionlint1.7.12 and all
+fourteen Bash scripts pass. Six action uses match verified immutable release pins;
+the cached validator archive/checksum manifest still matches official digests.
+
+Stage exactly `.github/workflows/ci.yml`, `tools/ci_acceptance.py`,
+`tools/test_ci_acceptance.py`, `docs/development_status.md` and
+`docs/development_history.md`. Index/product/source-byte comparison and staged
+diff/stat/whitespace/privacy review exclude unrelated/generated/runtime/credential/
+Graphify/local-tooling files. Existing installed-artifact audits apply to the
+unchanged staged package source/manifests. No executable Git hooks add side effects.
+Factual documentation reconciliation records observed results and uses commit
+title `Add hardware-free CI and Linux acceptance evidence` (parent f746238),
+avoiding a self-referential hash. No product/package/validation contract changes.
+
+No push, GitHub-hosted execution, hardware action or real service-account credential
+access. This establishes local macOS/arm64 Python3.14.3 readiness only. Native Linux
+software acceptance remains pending an actual hosted Ubuntu run and review of
+both job artifacts for matching SHA/run/attempt. Physical/electrical/safe-open,
+native Windows and production Enhanced acceptance remain excluded; Phase1 remains
+incomplete. No further product slice started.
+
+## 2026-10-21 — Hardware-free native Linux acceptance automation added; local evidence verified, hosted acceptance pending
+
+The user extends the uncommitted CI task to the planned hardware-free native Linux
+milestone. Review current status, Core,006–012 delivery/installed-process contracts,
+existing builders and parent/child physical/account tripwires. Keep the same two
+independent Ubuntu24.04 jobs and full default test selection. Add only
+`tools/ci_acceptance.py`, its focused reporting tests, workflow evidence steps and
+factual status/history. No product, existing test/shared fixture, dependency, lock,
+Python declaration, import contract or architecture change. No Spec Kit/Graphify.
+
+The unchanged session builders create core/service/CLI wheels and sdists with
+explicit offline uv builds, outside-checkout isolated non-editable wheel/sdist
+installs and exact lock-derived dependency pins. The collector copies those exact
+six tested archives, records SHA256/size/both installed formats and observes40
+actual uv packaging argv/cwd invocations without recording child environments.
+Independent installed children retain the normal authentication/bootstrap/HTTP/
+Core paths, real temporary journals, Basic/Enhanced-shaped fixtures, IPv4/IPv6,
+cancellation/signals/closed pipes/stop and legacy compatibility coverage. No
+physical factory/discovery or real service-account credential path is enabled.
+
+Job snapshots record actual OS/kernel/architecture/Python, image/SHA/ref/run/
+attempt, all installed package versions, SQLite/OpenSSL/libc and input hashes.
+Separate selected command output records uv/GCC/linker/libc tools; retained wheel
+metadata identifies the build generator (local artifacts: Hatchling1.32.4).
+Reports bind command outcomes, JUnit, archive hashes, environment and explicit
+limits; generation time and reporter source hash distinguish postprocessing.
+The static and software evidence allowlists retain only reports/logs/JUnit and
+six distributions, fourteen days, including non-cancelled failures. No temporary
+account home/credential/journal/cache, Graphify or local tooling upload. Existing
+immutable action pins, readonly permissions, caches, cancellation and timeouts
+remain; no Docker, matrix, release automation or new package dependency.
+
+Fresh collector-enabled local full suite:11403 pass in1034.20s (JUnit1033.998s),
+zero failures/errors/skips, warnings as errors. Core4545/service2777/CLI4081;
+case identities exactly equal the committed baseline. Process-suite counts:
+service006:38; CLI007:112,008:111,009:157,010:153,011:96,012:197 (864 total).
+The five012 source/metadata/RECORD/private-exclusion/installed-import audits are
+included, not added to197. Six retained archives and both install formats verify.
+
+The first report correctly refuses completion because its new global T027-prefix
+counter sees141 cases across older features, rather than the five012 audits.
+A focused regression demonstrates RED; qualify the counter by the012 process
+module and verify unrelated legacy T027 names cannot replace a missing012 audit.
+All18 reporter checks pass, covering failures/errors/skips, missing evidence,
+changed archives, install formats, failed steps and local/hosted distinction.
+Reprocessing the actual successful full JUnit and unchanged archives now yields
+`local_checks_only`. This pure report fix does not change the collector, pytest
+invocation, default suites or product behavior; repeat focused reporting/static
+checks rather than rerun the unaffected11403 tests. Ruff clean; mypy144 files;
+all seven import contracts kept (77 files/312 dependencies); actionlint1.7.12,
+all14 Bash run-script syntax checks, six immutable action uses, diff/privacy/scope/
+documentation checks pass. Evidence/local tools remain ignored under build/.
+
+This is macOS/arm64 Python3.14.3 local validation only. No actual Ubuntu run has
+been dispatched, passed or reviewed, and no Linux-specific failure has been
+observed or bypassed. Native Linux software acceptance remains pending: workflow
+existence or even an unreviewed green run cannot establish it. Hosted reports say
+`checks_passed_review_required`; status documents the same-SHA/run/attempt review
+checklist. Physical UART/DUT, USB/driver, electrical/safe-open DTR/RTS glitches,
+native Windows and production Enhanced acceptance are excluded. Backend ACK is
+never wire/DUT proof; Phase1 remains incomplete. No real hardware/account action,
+commit, push or additional product slice in this activity.
+
+## 2026-10-21 — Minimal GitHub Actions CI implemented; local verification passes, hosted Linux pending
+
+The user explicitly requests minimal Python-workspace infrastructure automation,
+not a product feature, Spec Kit activity or hardware acceptance. Read AGENTS,
+Core, current status, pytest configuration, workspace manifests/lockfile and
+default parent/installed-child device/account guards before writing the workflow.
+Only `.github/workflows/ci.yml` and factual status/history change; product code,
+tests, import contracts, Python declaration, dependencies and lockfile remain
+byte-identical to committed baseline f746238.
+
+CI triggers main pushes, PRs targeting main and manual workflow_dispatch. Two
+independent Ubuntu24.04 jobs use official setup-uv, uv0.10.2, Python from
+.python-version and `uv sync --locked --all-packages`. Static validation runs
+Ruff, mypy and import-linter; software validation runs the complete unfiltered
+default pytest suite with warnings as errors. Existing fail-closed physical-
+serial/discovery and isolated-account guards remain active in parent/installed
+children. No device/Profile is supplied. No Docker, matrix, coverage service,
+firmware toolchain, release automation or additional product dependency.
+
+Official public release/tag metadata verifies each immutable action pin:
+checkout v7.0.1 at3d3c42e5aac5ba805825da76410c181273ba90b1;
+setup-uv v10.3.0 at1c37ad07a6a961277cf70c0d37d6f313000f5884;
+upload-artifact v7.0.2 atcf430e030ddbb5b0abf93d22962f4752f3646cd9.
+Readable release comments remain beside every use. Token permissions are read-
+only contents, checkout credentials are not retained, cache keys include declared
+Python/lock/project inputs with separate job suffixes, and superseded PR/ref runs
+are cancelled. Static limit15 minutes; test step45/job60 leaves diagnostic time.
+JUnit, pytest log and selected environment metadata are the only uploaded paths;
+non-cancelled failures are included, retention is7 days, and Bash pipefail retains
+pytest's exit status. No temporary account/credential/journal/cache directory is
+uploaded. Runner image, OS/kernel, actual Python/uv and source commit are recorded.
+
+Local bootstrap experiments use a fresh task-owned cache and separate environment.
+An initially over-strict global UV_OFFLINE override permits three archive audits
+but produces two install setup errors: locked sync populated direct-wheel inputs,
+while the legacy exact-pinned pip resolver still needs registry metadata. Restore
+the harness's normal registry access; its explicit offline archive builds remain
+unchanged. An initial mypy probe also scans the disposable environment/cache under
+build/; relocate only those task-created directories outside the checkout, as CI
+does through normal .venv/setup-uv cache placement. No test, type-check exclusion,
+lockfile, requirement or product behavior is changed to obtain GREEN. The corrected
+bootstrap passes all five artifact/install probes,192 deselected,in13.83s.
+
+Fresh local full gate using the workflow's pytest command and Bash pipefail/tee:
+11403 pass in1048.28s (JUnit1047.825s), zero failures/errors/skips, warnings as
+errors; Core4545/service2777/CLI4081. Its test set exactly matches the preceding
+validated baseline. JUnit/log/environment files are actually produced under
+ignored build/ci/. Ruff passes; mypy checks142 files; all seven import contracts
+remain kept (77 files/312 dependencies). actionlint1.7.12 passes; all nine run
+scripts pass Bash syntax checks, all five action uses match independently
+verified SHA/tag metadata, and a synthetic failed pipeline retains exit7.
+The validator is downloaded only into ignored build/ci-tooling, with archive and
+checksum-manifest digests verified against official release assets. No global
+tool installation or repository dependency/lockfile change. Working diff/scope/
+documentation checks pass; local tooling, cache/environment and reports remain
+excluded. No architecture explanation changes because dependencies/ownership do
+not change.
+
+This verifies local macOS/arm64 Python3.14.3 execution and workflow configuration,
+not an actual GitHub Actions run. Hosted Ubuntu setup, cache restore/save, artifact
+upload, Linux compatibility, runner timing and any platform skips remain pending.
+No Linux failure has been observed or worked around; no physical serial device,
+real service account, hardware action, Spec Kit, Graphify, commit, push or GitHub
+dispatch in this task. CI is infrastructure only; Phase1 remains incomplete and
+all native/physical/electrical/Enhanced acceptance limits remain explicit. No
+further product slice is started.
+
 ## 2026-10-21 — RP2040 acceptance fixture final review and commit verification
 
 The user authorizes the next step after the Monitor investigation: review the

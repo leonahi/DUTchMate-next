@@ -8,46 +8,147 @@ Completed-slice evidence is kept in [development history](development_history.md
 ## Resume Here
 
 - **Active phase**: Phase 1 — Basic backend through CLI; Phase 1 remains incomplete.
-- **Committed baseline**: Features 001–012 on main. Feature 012 implementation:
-  `:/^Implement bounded interact`, `Implement bounded interact`; accepted parent
-  `a28acc363f0ee81e9f269c9a92e55e314bf0f062` (Feature 011).
+- **Committed baseline**: Features 001–012, RP2040 acceptance fixture and CI on main.
+  CI commit `:/^Add hardware-free CI and Linux acceptance evidence`;
+  parent `f746238`, `Add RP2040 UART acceptance fixture`.
 - **Completed slice**: Feature 012 `bounded-interact`; T001–T030 complete (30/30),
   software-complete and committed within macOS/arm64 Python 3.14.3 software scope.
 - **Acceptance infrastructure**: RP2040 test-DUT fixture implemented in
   `hardware/firmware/test_dut/rpi_pico/`; pristine Zephyr build and 14 host C tests
-  (also under ASan/UBSan) pass. Monitor checkpoint race reproduced/corrected in its
-  test only; fresh host gate:11,403 pass, zero failures/errors/skips,1032.65s.
+  (also under ASan/UBSan) pass. Monitor fixture-control race correction is committed.
 - **Physical acceptance**: Identified macOS/FTDI/Pico Stage1 RX-only passes55 checks;
   approved Stage2 single PING/independent PONG passes76 through authenticated
   service/API2/CLI and real v4 journals. Concurrent Follow/Monitor, durable readback,
   joined detach/stop and explicit reopen verified. Port released; TX restored off.
-- **Acceptance review**:17-file fixture/evidence/Monitor-test scope reviewed;
-  fresh cross-build reproduces the accepted UF2 exactly,14 C tests pass normally
-  and sanitized, five archive/install/privacy audits pass. Associated change:
-  `:/^Add RP2040 UART acceptance fixture` (`Add RP2040 UART acceptance fixture`).
-- **Feature012 review**:61-file diff/Core/contract review; retained-end v4
-  settlement-before-start defect corrected with six RED→GREEN cases on both
-  backend shapes. Existing error/cleanup categories and legacy versions retained.
-- **Feature012 final gate**: 11,399 tests passed in 1021.96s (JUnit1021.782s), warnings
-  as errors, zero failures/errors/skips: Core4545/service2777/CLI4077. Ruff clean;
-  mypy142; seven import contracts kept (77 files/312 dependencies); diff clean.
-- **Feature012 package/privacy**:197 Interact/artifact and625 legacy process
-  cases;287 index blobs exported, six archives,39 modules/stack,25 pins,127 RECORD
-  rows verified. Private/generated/runtime/credential/Graphify/tooling excluded.
+- **CI/Linux infrastructure**: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+  has independent static/software jobs on GitHub-hosted Ubuntu24.04; main pushes,
+  PRs to main and manual dispatch, locked all-package uv synchronization.
+- **Acceptance evidence**: Full default gate includes guarded installed wheel/sdist,
+  CLI/service subprocess, IPv4/IPv6, lifecycle and both simulated backend shapes.
+  Retain the exact six tested archives, SHA256 manifest, packaging commands, JUnit,
+  logs and runtime/toolchain identity; reporting checks reject incomplete evidence.
+- **Local verification**: Fresh macOS pre-commit gate11403 pass in1081.40s,
+  zero failures/errors/skips; all864 process cases/five012 audits included.
+  Reporter18 checks, Ruff/mypy144/import7, actionlint/Bash/diff checks pass.
+- **Hosted milestone**: Native Linux acceptance is PENDING. No actual hosted run
+  or reviewed runner evidence exists; workflow availability cannot establish it.
 - **Compatibility/ownership**: Profile1, journals1/2/3, API1/default CLI, old codecs/
   charges, Monitor clocks/security/cleanup retained. One authoritative RX/private
   Acquisition connection; intent ACK before write registration; join before close.
   Backend ACK proves acceptance only, never physical wire/DUT receipt or causation.
-- **Tooling**: No Graphify rerun at pre-commit; T029 result/health limits remain
-  historical and predate this narrow correction. Outputs/backups/tooling stay ignored.
 - **Limits**: Acceptance covers only this setup and one benign exchange; no wire/
   DTR/RTS waveform, in-flight write cancellation, native Linux/Windows or Enhanced
   acceptance. Disconnected DTR/RTS and library state do not establish glitch safety.
-- **Next action**: Separately scope native Linux software acceptance on an identified
-  Linux host/toolchain, initially hardware-free with existing guarded installed
-  suites. No native acceptance, hardware activity or software slice started.
-- **Stop**: Acceptance review/validation complete; no further hardware/account
-  access, Graphify or push. Stage2's original TX-disabled Profile retained.
+- **Next action**: Push main to start CI on GitHub-hosted Ubuntu, review both job
+  artifacts for the same SHA/run/attempt against the checklist below, then record
+  the actual Linux result. Scope product corrections separately.
+- **Stop**: CI reviewed and committed; nothing pushed or dispatched locally.
+  No physical access, additional product slice, Spec Kit or Graphify. Phase1 incomplete.
+
+## Continuous Integration and Native Linux Software Acceptance
+
+[CI workflow](../.github/workflows/ci.yml) is infrastructure for the existing Python
+workspace and the pending hardware-free Linux milestone. Two independent jobs use
+GitHub-hosted `ubuntu-24.04`, official setup-uv/uv0.10.2, `uv python install` from
+`.python-version` (3.14), and `uv sync --locked --all-packages`. The runner image
+and actual Python patch are recorded; the rolling hosted image is not a fixed
+kernel/toolchain. No Docker, OS/Python matrix, firmware build or release automation.
+
+The static job runs Ruff, mypy, import-linter and `git diff --check` (15-minute
+limit). The software job runs
+`uv run --frozen --no-sync python tools/ci_acceptance.py test tests`: the existing
+complete default pytest selection, `-q -W error --tb=short` and JUnit (45-minute
+step/60-minute job). The small [evidence collector](../tools/ci_acceptance.py)
+observes packaging and copies archives without replacing tests, fixtures, guards
+or assertions. Its [fail-closed reporting tests](../tools/test_ci_acceptance.py)
+run separately. Bash pipefail preserves command failures through tee.
+
+The full run includes the existing service006 and CLI007–012 process suites,
+including the012 T027 source-byte/metadata/RECORD/private-exclusion and installed-
+import audits. Existing session builders execute `uv build --offline --package`
+for core/service/CLI, building both wheel and sdist. They create temporary venvs
+outside the checkout, install each archive format non-editably with lock-derived
+exact dependency pins, and exercise production entry points/imports/HTTP/security/
+lifecycle with real temporary journals and both Basic/Enhanced-shaped fixtures.
+The six retained archives are copied from those same builders; they are the inputs
+to the installed tests, not a second untested build. Actual packaging argv/cwd,
+archive byte counts/SHA256 and both installed formats are recorded. These suites
+already belong to the complete gate and are not redundantly rerun or filtered.
+
+Existing parent and independently guarded CLI/service children reject physical
+serial factories/discovery and real-account service state; their tripwires are
+self-tested. Only test-owned fake Profiles and credentials are used. Existing tests,
+strict markers/configuration, import contracts and security checks remain intact.
+Public dependency downloads remain allowed; exact-pinned temporary installs need
+normal registry metadata, while existing archive builds remain explicitly offline.
+No hardware markers are invented to drop default tests. Test-created PTYs and
+numeric IPv4/IPv6 loopback are permitted software fixtures.
+
+Checkout/setup-uv/upload-artifact remain pinned to verified immutable release
+SHAs. Token permissions are `contents: read`; checkout credentials are not retained.
+Concurrency cancels superseded runs for each PR/ref. Caches are keyed by declared
+Python/lock/manifests and separated by job. All-package synchronization prepares
+the declared Hatchling backend used by the offline builders.
+
+Two allowlisted artifacts are uploaded for non-cancelled jobs, including failures,
+with14-day retention: `linux-static-evidence` and
+`linux-software-acceptance-evidence`. They include job reports, OS release/kernel/
+architecture/Python identity, hosted image/run/SHA/ref/attempt, installed package
+versions, SQLite/OpenSSL/libc, uv/GCC/linker/libc tool versions, input hashes,
+command outcomes/logs, JUnit and the six distributions with their manifest.
+Wheel WHEEL metadata also identifies the build generator. No temporary homes,
+credentials, raw journals, caches, Graphify output or local tooling are uploaded.
+An early setup failure may prevent report creation; missing-file warnings do not
+change that failed job into success. Cancelled/timed-out runs cannot establish
+acceptance. Useful failure logs are retained when the runner can complete upload.
+
+### Reviewing the actual hosted evidence
+
+1. Require both jobs to succeed for the same commit SHA, run ID and attempt on
+   GitHub-hosted Ubuntu. Inspect the recorded OS/kernel/architecture, Python/uv,
+   package/toolchain versions and the checked-in workflow/input hashes.
+2. Review both reports and command logs, full JUnit and all seven process-suite
+   summaries. Require no failures/errors/skips, both archive install formats and
+   the five012 archive/installed audits. Missing or skipped coverage is unresolved
+   acceptance, even if pytest itself exits0. The reporter fails closed on it.
+3. Verify all six uploaded archive hashes against the manifest, and inspect the
+   artifact/source/metadata/RECORD/import/privacy audit results. Review any Linux-
+   specific failure as a separate reproducible issue; never weaken guards or
+   assertions to turn it green. Do not upload raw account directories to debug it.
+4. Only after that evidence review, record the run URL, SHA/attempt, environment,
+   counts, artifacts and verified result in status/history. Reports deliberately
+   say `checks_passed_review_required`, never automatically declare acceptance.
+
+**Observed outcome:** Fresh collector-enabled full gate on macOS/arm64 Python3.14.3:
+11403 pass in1034.20s (JUnit1033.998s), zero failures/errors/skips; default test
+identities exactly match the committed baseline. All864 service/CLI007–012 process
+cases and the five012 archive/import audits pass. Six archives, both installed
+formats and40 actual packaging commands are retained. Reporter18 checks pass;
+Ruff/mypy144/import7/actionlint/Bash/diff checks pass. A new reporter-only naming
+collision initially counts141 reused T027 names; a focused RED regression and
+module-qualified count fix restore the required five012 audits. Reprocessing the
+actual full JUnit/archives succeeds as `local_checks_only`; no existing test,
+collector/test-execution path or product code is changed by that postprocessing fix.
+This is local evidence only. No actual GitHub-hosted Linux run has been dispatched
+or reviewed. Native Linux software acceptance, Actions setup/cache/upload behavior
+and hosted timing remain pending. No Linux compatibility failure has yet been
+observed or worked around.
+
+Final separately authorized pre-commit review finds no additional implementation
+defect. Fresh full11403 pass in1081.40s (JUnit1081.186s), zero failures/errors/skips;
+all864 process cases/five012 audits, both install formats, six archive hashes and
+current collector/report source identity verify. Reporter18, Ruff/mypy144/import7,
+actionlint, fourteen Bash scripts and staged diff/privacy checks pass. Only factual
+documentation reconciliation follows that gate. The five-file CI/tooling/status/
+history change is committed under the title in Resume Here; nothing is pushed.
+Linux acceptance remains pending a real hosted run and evidence review.
+
+Physical UART/DUT, serial/USB driver behavior, electrical and safe-open DTR/RTS
+waveforms/glitches, native Windows and production Enhanced backend acceptance are
+explicitly excluded. Simulated Enhanced-shaped fixtures establish software
+neutrality only. Backend ACK does not prove wire transmission or DUT receipt.
+Existing separately recorded macOS physical evidence is unchanged; Phase1 remains
+incomplete. No architecture explanation changes: dependencies/ownership are unchanged.
 
 ## Repository Baseline
 
@@ -1204,9 +1305,9 @@ Feature010 annotation behavior, hardening, installed review and final T024 softw
 closure and the separately authorized final pre-commit review/commit are verified.
 Features001–012 are committed software slices. Software tests alone do not establish
 physical Monitor acceptance; only the identified Stage1/Stage2 observations above do
-so within their declared scope. Feature012 current progress and authorization are
-recorded in Resume Here; final review/software closure is verified and committed. Await
-human review/selection; no physical hardware or another slice is automatically
+so within their declared scope. Feature012 final review/software closure is verified
+and committed. Current infrastructure/acceptance progress and the next action live
+in Resume Here; no further physical activity or product slice is automatically
 authorized.
 
 ## References
